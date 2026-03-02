@@ -1,1 +1,3 @@
-Team member:Jiachi Zhu
+Team member:
+Jiachi Zhu
+Yihan Wang
