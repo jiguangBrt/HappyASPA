@@ -1,0 +1,56 @@
+import os
+from flask import Flask
+from flask_login import LoginManager
+from models import db, User
+
+
+def create_app():
+    app = Flask(__name__)
+
+    # ── Configuration ────────────────────────────────────────────────────────
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-change-in-production')
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+        'DATABASE_URL', 'sqlite:///happyaspa.db'
+    )
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    # ── Extensions ───────────────────────────────────────────────────────────
+    db.init_app(app)
+
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+    login_manager.login_view = 'auth.login'
+    login_manager.login_message = 'Please log in to access this page.'
+    login_manager.login_message_category = 'warning'
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+
+    # ── Blueprints ───────────────────────────────────────────────────────────
+    from blueprints.auth       import auth_bp
+    from blueprints.dashboard  import dashboard_bp
+    from blueprints.vocabulary import vocabulary_bp
+    from blueprints.flashcards import flashcards_bp
+    from blueprints.forum      import forum_bp
+    from blueprints.listening  import listening_bp
+    from blueprints.writing    import writing_bp
+
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(dashboard_bp)
+    app.register_blueprint(vocabulary_bp)
+    app.register_blueprint(flashcards_bp)
+    app.register_blueprint(forum_bp)
+    app.register_blueprint(listening_bp)
+    app.register_blueprint(writing_bp)
+
+    # ── Database initialisation ───────────────────────────────────────────────
+    with app.app_context():
+        db.create_all()
+
+    return app
+
+
+if __name__ == '__main__':
+    app = create_app()
+    app.run(debug=True)

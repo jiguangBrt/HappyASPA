@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}{{ exercise.title }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('writing.index') }}">Writing</a></li>
+    <li class="breadcrumb-item active text-truncate" style="max-width:300px">{{ exercise.title }}</li>
+  </ol>
+</nav>
+
+<div class="row g-4">
+  <!-- Left: Prompt -->
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-warning text-dark fw-bold">
+        <i class="bi bi-file-text me-2"></i>Writing Prompt
+      </div>
+      <div class="card-body">
+        <h5 class="fw-bold">{{ exercise.title }}</h5>
+        <div class="d-flex gap-2 mb-3">
+          <span class="badge bg-warning text-dark">{{ exercise.type|capitalize }}</span>
+          <span class="badge bg-light text-dark border">
+            {% for i in range(exercise.difficulty) %}⭐{% endfor %}
+          </span>
+          {% if exercise.word_limit %}
+          <span class="badge bg-light text-dark border">
+            <i class="bi bi-text-left me-1"></i>{{ exercise.word_limit }} words
+          </span>
+          {% endif %}
+        </div>
+        <p style="white-space: pre-wrap;">{{ exercise.prompt }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Submission Form -->
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white fw-bold border-bottom">
+        <i class="bi bi-pencil me-2 text-warning"></i>Your Response
+      </div>
+      <div class="card-body p-4">
+        <form method="POST">
+          <div class="mb-3">
+            <textarea class="form-control font-monospace" name="content" id="writingArea"
+                      rows="14"
+                      placeholder="Start writing here…"
+                      oninput="updateCount()"
+                      required></textarea>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">
+              Word count: <strong id="wordCount">0</strong>
+              {% if exercise.word_limit %}/ {{ exercise.word_limit }}{% endif %}
+            </small>
+            <button type="submit" class="btn btn-warning text-dark fw-semibold">
+              <i class="bi bi-send me-1"></i>Submit
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateCount() {
+  const text  = document.getElementById('writingArea').value.trim();
+  const count = text === '' ? 0 : text.split(/\s+/).length;
+  document.getElementById('wordCount').textContent = count;
+}
+</script>
+{% endblock %}

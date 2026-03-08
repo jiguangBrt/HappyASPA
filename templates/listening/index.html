@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Listening Practice{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h3 class="fw-bold mb-0"><i class="bi bi-headphones text-info me-2"></i>Listening Practice</h3>
+    <p class="text-muted mb-0 mt-1">Sharpen your academic listening with lectures and discussions.</p>
+  </div>
+  <span class="badge bg-info text-dark fs-6">{{ exercises|length }} exercises</span>
+</div>
+
+{% if exercises %}
+<div class="row g-3">
+  {% for ex in exercises %}
+  <div class="col-md-6 col-lg-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <h6 class="fw-bold mb-0">{{ ex.title }}</h6>
+          <!-- Difficulty stars -->
+          <span class="badge bg-info bg-opacity-10 text-info border flex-shrink-0">
+            {% for i in range(ex.difficulty) %}⭐{% endfor %}
+          </span>
+        </div>
+        {% if ex.description %}
+        <p class="text-muted small mb-2">{{ ex.description }}</p>
+        {% endif %}
+        <div class="d-flex align-items-center gap-2 mb-3">
+          {% if ex.category %}
+          <span class="badge bg-info bg-opacity-10 text-info">{{ ex.category }}</span>
+          {% endif %}
+          {% if ex.duration_seconds %}
+          <small class="text-muted">
+            <i class="bi bi-clock me-1"></i>
+            {{ (ex.duration_seconds // 60) }}m {{ (ex.duration_seconds % 60) }}s
+          </small>
+          {% endif %}
+        </div>
+        {% if ex.audio_url %}
+        <audio controls class="w-100 mb-2" style="height:36px">
+          <source src="{{ ex.audio_url }}" type="audio/mpeg">
+          Your browser does not support the audio element.
+        </audio>
+        {% else %}
+        <div class="alert alert-light border text-center py-2 mb-2 small text-muted">
+          <i class="bi bi-mic-mute me-1"></i>Audio coming soon
+        </div>
+        {% endif %}
+      </div>
+      <div class="card-footer bg-transparent border-top-0 pt-0 pb-3 px-3">
+        <button class="btn btn-outline-info btn-sm w-100"
+                data-bs-toggle="collapse"
+                data-bs-target="#transcript-{{ ex.id }}">
+          <i class="bi bi-file-text me-1"></i>Show Transcript
+        </button>
+        <div class="collapse mt-2" id="transcript-{{ ex.id }}">
+          <div class="bg-light rounded p-3 small" style="max-height:160px;overflow-y:auto;">
+            {% if ex.transcript %}{{ ex.transcript }}{% else %}<em class="text-muted">No transcript available.</em>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+  <i class="bi bi-headphones text-muted" style="font-size: 4rem;"></i>
+  <h5 class="mt-3 text-muted">No listening exercises yet.</h5>
+  <p class="text-muted">Audio content will be added by your instructor.</p>
+</div>
+{% endif %}
+
+{% endblock %}

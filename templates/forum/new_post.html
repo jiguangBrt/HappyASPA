@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}New Post{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('forum.index') }}">Forum</a></li>
+    <li class="breadcrumb-item active">New Post</li>
+  </ol>
+</nav>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-danger text-white fw-bold">
+        <i class="bi bi-pencil me-2"></i>Create a New Post
+      </div>
+      <div class="card-body p-4">
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Title</label>
+            <input type="text" class="form-control" name="title"
+                   placeholder="A clear, descriptive title" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Category <span class="text-muted fw-normal">(optional)</span></label>
+            <select class="form-select" name="category">
+              <option value="">— Select category —</option>
+              <option>Vocabulary</option>
+              <option>Grammar</option>
+              <option>Listening</option>
+              <option>Writing</option>
+              <option>General</option>
+            </select>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Content</label>
+            <textarea class="form-control" name="content" rows="6"
+                      placeholder="Share your question or thoughts…" required></textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-danger">
+              <i class="bi bi-send me-1"></i>Publish Post
+            </button>
+            <a href="{{ url_for('forum.index') }}" class="btn btn-outline-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}{{ post.title }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('forum.index') }}">Forum</a></li>
+    <li class="breadcrumb-item active text-truncate" style="max-width:300px">{{ post.title }}</li>
+  </ol>
+</nav>
+
+<!-- Post Card -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body p-4">
+    <div class="d-flex align-items-center gap-3 mb-3">
+      <div class="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center"
+           style="width:46px;height:46px;">
+        <span class="fw-bold text-danger fs-5">{{ post.author.username[0]|upper }}</span>
+      </div>
+      <div>
+        <div class="fw-semibold">{{ post.author.username }}</div>
+        <small class="text-muted">{{ post.created_at.strftime('%B %d, %Y at %H:%M') }}</small>
+      </div>
+      {% if post.category %}
+      <span class="badge bg-danger bg-opacity-10 text-danger ms-auto">{{ post.category }}</span>
+      {% endif %}
+    </div>
+
+    <h4 class="fw-bold">{{ post.title }}</h4>
+    <p class="mb-0" style="white-space: pre-wrap;">{{ post.content }}</p>
+  </div>
+  <div class="card-footer bg-transparent text-muted small">
+    <i class="bi bi-eye me-1"></i>{{ post.views }} views
+    &nbsp;&bull;&nbsp;
+    <i class="bi bi-chat me-1"></i>{{ post.comments|length }} comments
+  </div>
+</div>
+
+<!-- Comments -->
+<h5 class="fw-bold mb-3"><i class="bi bi-chat-left-text me-2 text-danger"></i>
+  Comments ({{ post.comments|length }})
+</h5>
+
+{% if post.comments %}
+<div class="list-group shadow-sm mb-4">
+  {% for comment in post.comments %}
+  <div class="list-group-item border-0 border-bottom py-3">
+    <div class="d-flex gap-3">
+      <div class="rounded-circle bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+           style="width:36px;height:36px;">
+        <span class="fw-bold text-secondary small">{{ comment.author.username[0]|upper }}</span>
+      </div>
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="fw-semibold small">{{ comment.author.username }}</span>
+          <small class="text-muted">{{ comment.created_at.strftime('%b %d, %H:%M') }}</small>
+        </div>
+        <p class="mb-0 small">{{ comment.content }}</p>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Add Comment Form -->
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-4">
+    <h6 class="fw-bold mb-3"><i class="bi bi-reply me-1"></i>Leave a Comment</h6>
+    <form method="POST" action="{{ url_for('forum.add_comment', post_id=post.id) }}">
+      <div class="mb-3">
+        <textarea class="form-control" name="content" rows="3"
+                  placeholder="Share your thoughts…" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-danger">
+        <i class="bi bi-send me-1"></i>Post Comment
+      </button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
