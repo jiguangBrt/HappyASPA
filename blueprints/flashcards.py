@@ -12,7 +12,7 @@ def index():
     cards = (
         Flashcard.query
         .filter(
-            (Flashcard.is_public == True) |
+            Flashcard.is_public.is_(True) |
             (Flashcard.created_by == current_user.id)
         )
         .order_by(Flashcard.created_at.desc())
