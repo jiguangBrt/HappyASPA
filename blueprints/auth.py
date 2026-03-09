@@ -66,3 +66,42 @@ def logout():
     logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('auth.login'))
+
+
+@auth_bp.route('/change-username', methods=['POST'])
+@login_required
+def change_username():
+    new_username = request.form.get('new_username', '').strip()
+    if not new_username:
+        flash('Username cannot be empty.', 'danger')
+    elif len(new_username) < 2 or len(new_username) > 80:
+        flash('Username must be between 2 and 80 characters.', 'danger')
+    elif User.query.filter_by(username=new_username).first():
+        flash('That username is already taken.', 'danger')
+    else:
+        current_user.username = new_username
+        db.session.commit()
+        flash('Username updated successfully!', 'success')
+    return redirect(request.referrer or url_for('dashboard.index'))
+
+
+@auth_bp.route('/change-password', methods=['POST'])
+@login_required
+def change_password():
+    current_password = request.form.get('current_password', '')
+    new_password     = request.form.get('new_password', '')
+    confirm_password = request.form.get('confirm_password', '')
+
+    if not current_user.check_password(current_password):
+        flash('Current password is incorrect.', 'danger')
+    elif not new_password:
+        flash('New password cannot be empty.', 'danger')
+    elif len(new_password) < 6:
+        flash('New password must be at least 6 characters.', 'danger')
+    elif new_password != confirm_password:
+        flash('New passwords do not match.', 'danger')
+    else:
+        current_user.set_password(new_password)
+        db.session.commit()
+        flash('Password changed successfully!', 'success')
+    return redirect(request.referrer or url_for('dashboard.index'))
