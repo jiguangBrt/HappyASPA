@@ -3,232 +3,177 @@
 {% block title %}Speaking Practice - HappyASPA{% endblock %}
 
 {% block content %}
-<!-- 头部：风格与 Writing 保持一致 -->
-<div class="d-flex align-items-center justify-content-between mb-4">
-  <div>
-    <h3 class="fw-bold mb-0">
-      <i class="bi bi-mic-fill text-primary me-2"></i>Speaking Practice
-    </h3>
-    <p class="text-muted mb-0 mt-1">Improve your pronunciation with instant AI feedback.</p>
-  </div>
-  <span class="badge bg-primary text-white fs-6">{{ topics|length }} topics</span>
-</div>
+<div class="container mt-5">
+    <h1 class="mb-4">📢 English Speaking Practice</h1>
 
-<div class="row g-4">
-  
-  <!-- 左侧：话题列表 -->
-  <div class="col-lg-7">
-    <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white py-3">
-        <h5 class="mb-0 fw-bold"><i class="bi bi-list-task me-2 text-primary"></i>Today's Topics</h5>
-      </div>
-      <div class="card-body p-0">
-        {% if topics %}
-        <div class="list-group list-group-flush">
-          {% for topic in topics %}
-          <button class="list-group-item list-group-item-action py-3 topic-btn border-start border-4 {% if loop.first %}border-primary bg-light{% else %}border-transparent{% endif %}" 
-                  onclick="selectTopic('{{ topic.text }}', this)"
-                  style="cursor: pointer;">
-            <div class="d-flex w-100 justify-content-between align-items-center">
-              <div>
-                <h6 class="mb-1 fw-bold text-dark">{{ topic.text }}</h6>
-                <small class="text-muted">Click to select</small>
-              </div>
-              <span class="badge rounded-pill 
-                         {% if topic.difficulty == 'Easy' %}bg-success bg-opacity-25 text-success
-                         {% elif topic.difficulty == 'Medium' %}bg-warning bg-opacity-25 text-warning text-dark
-                         {% else %}bg-danger bg-opacity-25 text-danger{% endif %}">
-                {{ topic.difficulty }}
-              </span>
+    <!-- 题目列表 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Today's Topics</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for exercise in topics %}
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h6 class="card-title">{{ exercise.title }}</h6>
+                            <p class="text-muted small">Difficulty: {{ exercise.difficulty }}</p>
+                            <p class="card-text">{{ exercise.prompt[:80] }}...</p>
+                            <button class="btn btn-primary btn-sm" onclick="selectExercise({{ exercise.id }})">
+                                Practice This
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
-          </button>
-          {% endfor %}
         </div>
-        {% else %}
-        <div class="text-center py-5 text-muted">No topics available.</div>
-        {% endif %}
-      </div>
     </div>
-  </div>
 
-  <!-- 右侧：控制台 + 历史 -->
-  <div class="col-lg-5">
-    
-    <!-- 录音控制台 -->
-    <div class="card border-0 shadow-sm mb-4">
-      <div class="card-header bg-white py-3">
-        <h5 class="mb-0 fw-bold"><i class="bi bi-record-circle me-2 text-danger"></i>Recording Studio</h5>
-      </div>
-      <div class="card-body text-center py-5">
-        <h5 id="current-topic" class="mb-4 text-muted fst-italic">Select a topic to start</h5>
-        
-        <div class="mb-4 position-relative d-inline-block">
-          <i id="mic-icon" class="bi bi-mic text-secondary" style="font-size: 5rem;"></i>
-          <div id="recording-pulse" class="position-absolute top-0 start-0 w-100 h-100 rounded-circle bg-danger opacity-25" 
-               style="display:none; animation: pulse 1.5s infinite;"></div>
+    <!-- 录音区域 -->
+    <div id="recording-section" class="card mb-4" style="display: none;">
+        <div class="card-header">
+            <h5>Recording Area</h5>
         </div>
-        
-        <div id="timer" class="mb-4 fw-monospace fs-4 text-danger" style="display:none; font-family: monospace;">00:00</div>
-
-        <div class="d-grid gap-2">
-          <button id="btn-record" class="btn btn-primary btn-lg" disabled>
-            <i class="bi bi-mic-fill me-2"></i>Start Recording
-          </button>
-          <button id="btn-stop" class="btn btn-danger btn-lg" style="display:none;">
-            <i class="bi bi-stop-fill me-2"></i>Stop & Get Score
-          </button>
+        <div class="card-body">
+            <div class="mb-3">
+                <button id="start-btn" class="btn btn-success" onclick="startRecording()">
+                    🎤 Start Recording
+                </button>
+                <button id="stop-btn" class="btn btn-danger ms-2" onclick="stopRecording()" disabled>
+                    ⏹ Stop & Get Score
+                </button>
+            </div>
+            <!-- 评分和反馈展示 -->
+            <div id="result-area" class="mt-3">
+                <h6 id="score-display" class="text-primary"></h6>
+                <p id="feedback-display" class="text-muted"></p>
+                <!-- 录音播放 -->
+                <audio id="audio-player" controls style="display: none; margin-top: 10px;" class="w-100"></audio>
+            </div>
         </div>
-
-        <!-- 结果区 -->
-        <div id="result-area" class="mt-4 text-start" style="display:none; background: #f8f9fa; border-radius: 8px; padding: 15px;">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="fw-bold text-dark">AI Feedback:</span>
-            <span class="badge bg-success fs-6">Score: <span id="score-val">0</span></span>
-          </div>
-          <p id="feedback-val" class="text-muted small mb-3 fst-italic">...</p>
-          <div class="border-top pt-2">
-            <small class="text-muted d-block mb-1">Your Recording:</small>
-            <audio id="audio-playback" controls class="w-100"></audio>
-          </div>
-          <button class="btn btn-sm btn-outline-secondary mt-2 w-100" onclick="resetRecorder()">
-            <i class="bi bi-arrow-repeat me-1"></i>Try Again
-          </button>
-        </div>
-      </div>
     </div>
 
     <!-- 历史记录 -->
-    <div class="card border-0 shadow-sm">
-      <div class="card-header bg-white py-2">
-        <h6 class="mb-0 fw-bold text-muted"><i class="bi bi-clock-history me-2"></i>Recent Attempts</h6>
-      </div>
-      <ul class="list-group list-group-flush">
-        {% for record in records %}
-        <li class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center">
-          <div class="text-truncate me-2" style="max-width: 150px;">
-            <small class="fw-bold text-dark">{{ record.topic[:30] }}...</small>
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-primary rounded-pill">{{ record.ai_score }}</span>
-            <small class="text-muted" style="font-size: 0.75rem;">{{ record.created_at.strftime('%H:%M') }}</small>
-          </div>
-        </li>
-        {% else %}
-        <li class="list-group-item text-center text-muted py-3">
-          <small>No recordings yet.</small>
-        </li>
-        {% endfor %}
-      </ul>
+    <div class="card">
+        <div class="card-header">
+            <h5>Your Practice History</h5>
+        </div>
+        <div class="card-body">
+            {% if records %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Topic</th>
+                        <th>Score</th>
+                        <th>Feedback</th>
+                        <th>Recording</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr>
+                        <td>{{ record.exercise.title }}</td>
+                        <td>{{ record.score if record.score else '—' }}</td>
+                        <td>{{ record.feedback[:50] }}... if record.feedback else '—' }}</td>
+                        <td>
+                            {% if record.audio_url %}
+                            <audio controls class="w-100">
+                                <source src="{{ record.audio_url }}" type="audio/webm">
+                            </audio>
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                        <td>{{ record.submitted_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">No practice records yet. Start practicing!</p>
+            {% endif %}
+        </div>
     </div>
-
-  </div>
 </div>
+{% endblock %}
 
-<style>
-  @keyframes pulse {
-    0% { transform: scale(1); opacity: 0.5; }
-    100% { transform: scale(1.5); opacity: 0; }
-  }
-  .topic-btn:hover { background-color: #f8f9fa !important; }
-  .topic-btn.active { background-color: #e7f1ff !important; border-left-color: #0d6efd !important; }
-</style>
-
+{% block scripts %}
 <script>
-  let mediaRecorder;
-  let audioChunks = [];
-  let timerInterval;
-  let seconds = 0;
-  let currentTopicText = "";
+let mediaRecorder;
+let audioChunks = [];
+let currentExerciseId = null;
 
-  function selectTopic(text, element) {
-    currentTopicText = text;
-    document.getElementById('current-topic').innerText = `"${text}"`;
-    document.getElementById('current-topic').classList.remove('text-muted', 'fst-italic');
-    document.getElementById('current-topic').classList.add('text-primary', 'fw-bold');
-    document.getElementById('btn-record').disabled = false;
-    
-    document.querySelectorAll('.topic-btn').forEach(btn => btn.classList.remove('active', 'border-primary', 'bg-light'));
-    element.classList.add('active', 'border-primary', 'bg-light');
-    
-    resetRecorder();
-  }
+// 选择题目
+function selectExercise(exerciseId) {
+    currentExerciseId = exerciseId;
+    document.getElementById('recording-section').style.display = 'block';
+    // 清空之前的结果
+    document.getElementById('score-display').innerText = '';
+    document.getElementById('feedback-display').innerText = '';
+    document.getElementById('audio-player').style.display = 'none';
+}
 
-  function resetRecorder() {
-    document.getElementById('result-area').style.display = 'none';
-    document.getElementById('btn-record').style.display = 'inline-block';
-    document.getElementById('btn-stop').style.display = 'none';
-    document.getElementById('btn-stop').disabled = false;
-    document.getElementById('btn-stop').innerHTML = '<i class="bi bi-stop-fill me-2"></i>Stop & Get Score';
-    document.getElementById('mic-icon').className = 'bi bi-mic text-secondary';
-    document.getElementById('recording-pulse').style.display = 'none';
-    document.getElementById('timer').style.display = 'none';
-    clearInterval(timerInterval);
-    if(currentTopicText) document.getElementById('btn-record').disabled = false;
-  }
-
-  document.getElementById('btn-record').addEventListener('click', async () => {
-    if (!currentTopicText) return alert("Please select a topic first!");
+// 开始录音
+async function startRecording() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
-      audioChunks = [];
-      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        await uploadAudio(audioBlob);
-      };
-      mediaRecorder.start();
-      
-      document.getElementById('btn-record').style.display = 'none';
-      document.getElementById('btn-stop').style.display = 'inline-block';
-      document.getElementById('mic-icon').className = 'bi bi-mic-fill text-danger';
-      document.getElementById('recording-pulse').style.display = 'block';
-      document.getElementById('timer').style.display = 'block';
-      
-      seconds = 0;
-      timerInterval = setInterval(() => {
-        seconds++;
-        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-        const s = (seconds % 60).toString().padStart(2, '0');
-        document.getElementById('timer').innerText = `${m}:${s}`;
-      }, 1000);
+        audioChunks = [];
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        
+        mediaRecorder.ondataavailable = (e) => {
+            audioChunks.push(e.data);
+        };
+        
+        mediaRecorder.start();
+        document.getElementById('start-btn').disabled = true;
+        document.getElementById('stop-btn').disabled = false;
     } catch (err) {
-      alert("Microphone error: " + err);
-      resetRecorder();
+        alert('Failed to start recording: ' + err.message);
     }
-  });
+}
 
-  document.getElementById('btn-stop').addEventListener('click', () => {
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop();
-      mediaRecorder.stream.getTracks().forEach(track => track.stop());
-      document.getElementById('btn-stop').disabled = true;
-      document.getElementById('btn-stop').innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
-    }
-  });
+// 停止录音并上传
+async function stopRecording() {
+    if (!mediaRecorder) return;
+    
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+    document.getElementById('start-btn').disabled = false;
+    document.getElementById('stop-btn').disabled = true;
 
-  async function uploadAudio(blob) {
-    const formData = new FormData();
-    formData.append('audio', blob, 'rec.webm');
-    formData.append('topic_text', currentTopicText);
+    mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const formData = new FormData();
+        formData.append('audio', audioBlob, `rec_${Date.now()}.webm`);
+        formData.append('exercise_id', currentExerciseId);
 
-    try {
-      const res = await fetch('/speaking/upload', { method: 'POST', body: formData });
-      const data = await res.json();
-      if (data.success) {
-        document.getElementById('result-area').style.display = 'block';
-        document.getElementById('score-val').innerText = data.score;
-        document.getElementById('feedback-val').innerText = data.feedback;
-        document.getElementById('audio-playback').src = "{{ url_for('static', filename='') }}" + data.path;
-        setTimeout(() => location.reload(), 2500); // 自动刷新以更新历史记录
-      } else {
-        alert("Error: " + data.error);
-        resetRecorder();
-      }
-    } catch (e) {
-      alert("Network error");
-      resetRecorder();
-    }
-  }
+        try {
+            const response = await fetch('/speaking/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                // 展示结果
+                document.getElementById('score-display').innerText = `Score: ${result.score}/100`;
+                document.getElementById('feedback-display').innerText = result.feedback;
+                const audioPlayer = document.getElementById('audio-player');
+                audioPlayer.src = result.audio_url;
+                audioPlayer.style.display = 'block';
+                
+                // 刷新页面（展示新记录）
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                alert('Upload failed: ' + (result.error || 'Unknown error'));
+            }
+        } catch (err) {
+            alert('Error uploading: ' + err.message);
+        }
+    };
+}
 </script>
 {% endblock %}
