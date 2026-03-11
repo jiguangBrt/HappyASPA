@@ -5,7 +5,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
 
-
 # ─────────────────────────────────────────────
 # Users
 # ─────────────────────────────────────────────
@@ -26,6 +25,7 @@ class User(UserMixin, db.Model):
     forum_posts         = db.relationship('ForumPost',              backref='author', lazy=True)
     forum_comments      = db.relationship('ForumComment',           backref='author', lazy=True)
     forum_likes         = db.relationship('ForumLike',              backref='user',   lazy=True)
+    forum_favorites     = db.relationship('ForumFavorite',          backref='user',   lazy=True) # <--- 新增：收藏关联
     listening_progress  = db.relationship('UserListeningProgress',  backref='user',   lazy=True)
     writing_submissions = db.relationship('UserWritingSubmission',  backref='user',   lazy=True)
     activity_logs       = db.relationship('UserActivityLog',        backref='user',   lazy=True)
@@ -39,7 +39,6 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return f'<User {self.username}>'
-
 
 # ─────────────────────────────────────────────
 # Vocabulary
@@ -58,7 +57,6 @@ class VocabularyWord(db.Model):
 
     progress = db.relationship('UserVocabularyProgress', backref='word', lazy=True)
 
-
 class UserVocabularyProgress(db.Model):
     __tablename__ = 'user_vocabulary_progress'
 
@@ -69,7 +67,6 @@ class UserVocabularyProgress(db.Model):
     attempts        = db.Column(db.Integer,  default=0)
     correct_count   = db.Column(db.Integer,  default=0)
     last_reviewed_at = db.Column(db.DateTime, nullable=True)
-
 
 # ─────────────────────────────────────────────
 # Flashcards
@@ -88,7 +85,6 @@ class Flashcard(db.Model):
 
     progress = db.relationship('UserFlashcardProgress', backref='flashcard', lazy=True)
 
-
 class UserFlashcardProgress(db.Model):
     __tablename__ = 'user_flashcard_progress'
 
@@ -98,7 +94,6 @@ class UserFlashcardProgress(db.Model):
     is_bookmarked = db.Column(db.Boolean, default=False)
     times_viewed  = db.Column(db.Integer, default=0)
     last_viewed_at = db.Column(db.DateTime, nullable=True)
-
 
 # ─────────────────────────────────────────────
 # Forum
@@ -115,8 +110,27 @@ class ForumPost(db.Model):
     created_at = db.Column(db.DateTime,    default=datetime.utcnow)
     updated_at = db.Column(db.DateTime,    default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    comments = db.relationship('ForumComment', backref='post', lazy=True, cascade='all, delete-orphan')
-    likes    = db.relationship('ForumLike',    backref='post', lazy=True, cascade='all, delete-orphan')
+    comments  = db.relationship('ForumComment', backref='post', lazy=True, cascade='all, delete-orphan')
+    likes     = db.relationship('ForumLike',    backref='post', lazy=True, cascade='all, delete-orphan')
+    favorites = db.relationship('ForumFavorite', backref='post', lazy=True, cascade='all, delete-orphan') # <--- 新增：收藏关联
+
+    # 👇 新增：判断点赞、收藏状态的辅助方法
+    def is_liked_by(self, user):
+        if not user or not user.is_authenticated:
+            return False
+        from models import ForumLike
+        return ForumLike.query.filter_by(post_id=self.id, user_id=user.id).first() is not None
+
+    def is_favorited_by(self, user):
+        if not user or not user.is_authenticated:
+            return False
+        from models import ForumFavorite
+        return ForumFavorite.query.filter_by(post_id=self.id, user_id=user.id).first() is not None
+
+    @property
+    def like_count(self):
+        from models import ForumLike
+        return ForumLike.query.filter_by(post_id=self.id).count()
 
 
 class ForumComment(db.Model):
@@ -137,6 +151,14 @@ class ForumLike(db.Model):
     user_id    = db.Column(db.Integer, db.ForeignKey('users.id'),       nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+# 👇 新增：收藏表
+class ForumFavorite(db.Model):
+    __tablename__ = 'forum_favorites'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    post_id    = db.Column(db.Integer, db.ForeignKey('forum_posts.id'), nullable=False)
+    user_id    = db.Column(db.Integer, db.ForeignKey('users.id'),       nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # ─────────────────────────────────────────────
 # Listening
@@ -168,7 +190,6 @@ class UserListeningProgress(db.Model):
     attempts        = db.Column(db.Integer, default=0)
     last_attempt_at = db.Column(db.DateTime, nullable=True)
 
-
 # ─────────────────────────────────────────────
 # Writing
 # ─────────────────────────────────────────────
@@ -198,7 +219,6 @@ class UserWritingSubmission(db.Model):
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
     feedback     = db.Column(db.Text,    nullable=True)   # 预留 AI 反馈字段
     score        = db.Column(db.Float,   nullable=True)
-
 
 # ─────────────────────────────────────────────
 # Activity Log（学习轨迹核心）

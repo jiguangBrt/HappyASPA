@@ -1,9 +1,10 @@
 from flask import Blueprint, render_template
 from flask_login import login_required, current_user
-from models import UserActivityLog
+# 👇 修改：多引入了 db, ForumPost, ForumFavorite, ForumLike
+from models import db, UserActivityLog, ForumPost, ForumFavorite, ForumLike
+from sqlalchemy import func
 
 dashboard_bp = Blueprint('dashboard', __name__)
-
 
 @dashboard_bp.route('/')
 @login_required
@@ -18,8 +19,6 @@ def index():
     )
 
     # Summary stats per module
-    from sqlalchemy import func
-    from models import db
     stats = (
         db.session.query(
             UserActivityLog.module,
@@ -31,8 +30,25 @@ def index():
     )
     stats_dict = {row.module: row.count for row in stats}
 
+    # 👇 新增：查询当前用户收藏的帖子，按收藏时间倒序
+    favorite_posts = db.session.query(ForumPost)\
+        .join(ForumFavorite, ForumPost.id == ForumFavorite.post_id)\
+        .filter(ForumFavorite.user_id == current_user.id)\
+        .order_by(ForumFavorite.created_at.desc())\
+        .all()
+
+    # 👇 新增：查询当前用户点赞的帖子，按点赞时间倒序
+    liked_posts = db.session.query(ForumPost)\
+        .join(ForumLike, ForumPost.id == ForumLike.post_id)\
+        .filter(ForumLike.user_id == current_user.id)\
+        .order_by(ForumLike.created_at.desc())\
+        .all()
+
+    # 👇 修改：把查出来的 favorite_posts 和 liked_posts 传给前端模板
     return render_template(
         'dashboard.html',
         recent_activity=recent_activity,
-        stats=stats_dict
+        stats=stats_dict,
+        favorite_posts=favorite_posts,
+        liked_posts=liked_posts
     )

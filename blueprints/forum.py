@@ -1,6 +1,9 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from models import db, ForumPost, ForumComment, UserActivityLog
+from sqlalchemy import func  # <--- 新增：用于统计点赞数
+
+# 👇 修改：引入了新的 ForumLike 和 ForumFavorite 模型
+from models import db, ForumPost, ForumComment, UserActivityLog, ForumLike, ForumFavorite
 
 forum_bp = Blueprint('forum', __name__, url_prefix='/forum')
 
@@ -8,7 +11,12 @@ forum_bp = Blueprint('forum', __name__, url_prefix='/forum')
 @forum_bp.route('/')
 @login_required
 def index():
-    posts = ForumPost.query.order_by(ForumPost.created_at.desc()).all()
+    # 👇 修改：使用外连接(outerjoin)关联点赞表，并按点赞数降序、创建时间降序排列
+    posts = db.session.query(ForumPost)\
+        .outerjoin(ForumLike, ForumPost.id == ForumLike.post_id)\
+        .group_by(ForumPost.id)\
+        .order_by(func.count(ForumLike.id).desc(), ForumPost.created_at.desc())\
+        .all()
 
     log = UserActivityLog(user_id=current_user.id, module='forum', action='viewed')
     db.session.add(log)
@@ -73,3 +81,58 @@ def add_comment(post_id):
         flash('Comment cannot be empty.', 'danger')
 
     return redirect(url_for('forum.post_detail', post_id=post_id))
+
+# ─────────────────────────────────────────────
+# 👇 点赞 和 收藏
+# ─────────────────────────────────────────────
+
+@forum_bp.route('/post/<int:post_id>/like', methods=['POST'])
+@login_required
+def like_post(post_id):
+    post = ForumPost.query.get_or_404(post_id)
+    
+    # 检查当前用户是否已经点赞过这篇帖子
+    like = ForumLike.query.filter_by(user_id=current_user.id, post_id=post.id).first()
+    
+    if like:
+        # 如果已经点赞，再次点击就是取消点赞
+        db.session.delete(like)
+        flash('Unliked the post.', 'info')
+    else:
+        # 如果没点赞，则添加点赞记录
+        new_like = ForumLike(user_id=current_user.id, post_id=post.id)
+        db.session.add(new_like)
+        
+        # 可选：记录用户点赞的行为到日志
+        log = UserActivityLog(user_id=current_user.id, module='forum', action='liked', ref_id=post.id)
+        db.session.add(log)
+        
+        flash('Liked the post!', 'success')
+        
+    db.session.commit()
+    
+    # 刷新页面，返回原本所在的页面（帖子详情页或首页）
+    return redirect(request.referrer or url_for('forum.post_detail', post_id=post.id))
+
+
+@forum_bp.route('/post/<int:post_id>/favorite', methods=['POST'])
+@login_required
+def favorite_post(post_id):
+    post = ForumPost.query.get_or_404(post_id)
+    
+    # 检查当前用户是否已经收藏
+    favorite = ForumFavorite.query.filter_by(user_id=current_user.id, post_id=post.id).first()
+    
+    if favorite:
+        # 取消收藏
+        db.session.delete(favorite)
+        flash('Removed from favorites.', 'info')
+    else:
+        # 添加收藏
+        new_favorite = ForumFavorite(user_id=current_user.id, post_id=post.id)
+        db.session.add(new_favorite)
+        flash('Saved to favorites!', 'success')
+        
+    db.session.commit()
+    
+    return redirect(request.referrer or url_for('forum.post_detail', post_id=post.id))
