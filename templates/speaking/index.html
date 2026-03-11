@@ -1,25 +1,179 @@
 {% extends 'base.html' %}
-{% block title %}Speaking Practice{% endblock %}
+
+{% block title %}Speaking Practice - HappyASPA{% endblock %}
 
 {% block content %}
-<div class="d-flex align-items-center justify-content-between mb-4">
-  <div>
-    <h3 class="fw-bold mb-0"><i class="bi bi-mic-fill text-primary me-2"></i>Speaking Practice</h3>
-    <p class="text-muted mb-0 mt-1">Speaking content is being prepared by the team.</p>
-  </div>
-</div>
+<div class="container mt-5">
+    <h1 class="mb-4">📢 English Speaking Practice</h1>
 
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-4">
-    <div class="d-flex gap-3 align-items-start">
-      <div class="rounded-3 bg-primary bg-opacity-10 p-3">
-        <i class="bi bi-hourglass-split text-primary" style="font-size: 1.5rem;"></i>
-      </div>
-      <div class="flex-grow-1">
-        <h5 class="fw-bold mb-1">Coming Soon</h5>
-        <p class="text-muted mb-0">This page will include guided speaking tasks and classroom routines.</p>
-      </div>
+    <!-- 题目列表 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Today's Topics</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for exercise in topics %}
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h6 class="card-title">{{ exercise.title }}</h6>
+                            <p class="text-muted small">Difficulty: {{ exercise.difficulty }}</p>
+                            <p class="card-text">{{ exercise.prompt[:80] }}...</p>
+                            <button class="btn btn-primary btn-sm" onclick="selectExercise({{ exercise.id }})">
+                                Practice This
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
-  </div>
+
+    <!-- 录音区域 -->
+    <div id="recording-section" class="card mb-4" style="display: none;">
+        <div class="card-header">
+            <h5>Recording Area</h5>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <button id="start-btn" class="btn btn-success" onclick="startRecording()">
+                    🎤 Start Recording
+                </button>
+                <button id="stop-btn" class="btn btn-danger ms-2" onclick="stopRecording()" disabled>
+                    ⏹ Stop & Get Score
+                </button>
+            </div>
+            <!-- 评分和反馈展示 -->
+            <div id="result-area" class="mt-3">
+                <h6 id="score-display" class="text-primary"></h6>
+                <p id="feedback-display" class="text-muted"></p>
+                <!-- 录音播放 -->
+                <audio id="audio-player" controls style="display: none; margin-top: 10px;" class="w-100"></audio>
+            </div>
+        </div>
+    </div>
+
+    <!-- 历史记录 -->
+    <div class="card">
+        <div class="card-header">
+            <h5>Your Practice History</h5>
+        </div>
+        <div class="card-body">
+            {% if records %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Topic</th>
+                        <th>Score</th>
+                        <th>Feedback</th>
+                        <th>Recording</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr>
+                        <td>{{ record.exercise.title }}</td>
+                        <td>{{ record.score if record.score else '—' }}</td>
+                        <td>{{ record.feedback[:50] }}... if record.feedback else '—' }}</td>
+                        <td>
+                            {% if record.audio_url %}
+                            <audio controls class="w-100">
+                                <source src="{{ record.audio_url }}" type="audio/webm">
+                            </audio>
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                        <td>{{ record.submitted_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">No practice records yet. Start practicing!</p>
+            {% endif %}
+        </div>
+    </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let mediaRecorder;
+let audioChunks = [];
+let currentExerciseId = null;
+
+// 选择题目
+function selectExercise(exerciseId) {
+    currentExerciseId = exerciseId;
+    document.getElementById('recording-section').style.display = 'block';
+    // 清空之前的结果
+    document.getElementById('score-display').innerText = '';
+    document.getElementById('feedback-display').innerText = '';
+    document.getElementById('audio-player').style.display = 'none';
+}
+
+// 开始录音
+async function startRecording() {
+    try {
+        audioChunks = [];
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        
+        mediaRecorder.ondataavailable = (e) => {
+            audioChunks.push(e.data);
+        };
+        
+        mediaRecorder.start();
+        document.getElementById('start-btn').disabled = true;
+        document.getElementById('stop-btn').disabled = false;
+    } catch (err) {
+        alert('Failed to start recording: ' + err.message);
+    }
+}
+
+// 停止录音并上传
+async function stopRecording() {
+    if (!mediaRecorder) return;
+    
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+    document.getElementById('start-btn').disabled = false;
+    document.getElementById('stop-btn').disabled = true;
+
+    mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const formData = new FormData();
+        formData.append('audio', audioBlob, `rec_${Date.now()}.webm`);
+        formData.append('exercise_id', currentExerciseId);
+
+        try {
+            const response = await fetch('/speaking/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                // 展示结果
+                document.getElementById('score-display').innerText = `Score: ${result.score}/100`;
+                document.getElementById('feedback-display').innerText = result.feedback;
+                const audioPlayer = document.getElementById('audio-player');
+                audioPlayer.src = result.audio_url;
+                audioPlayer.style.display = 'block';
+                
+                // 刷新页面（展示新记录）
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                alert('Upload failed: ' + (result.error || 'Unknown error'));
+            }
+        } catch (err) {
+            alert('Error uploading: ' + err.message);
+        }
+    };
+}
+</script>
 {% endblock %}
