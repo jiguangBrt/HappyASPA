@@ -31,20 +31,20 @@ def create_app():
     from blueprints.auth       import auth_bp
     from blueprints.dashboard  import dashboard_bp
     from blueprints.vocabulary import vocabulary_bp
-    from blueprints.flashcards import flashcards_bp
+    #from blueprints.flashcards import flashcards_bp
     from blueprints.forum      import forum_bp
     from blueprints.listening  import listening_bp
-    from blueprints.writing    import writing_bp
-    from blueprints.speaking   import speaking_bp  # 新增：导入口语蓝图
+    #from blueprints.writing    import writing_bp
+    from blueprints.speaking   import speaking_bp 
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(vocabulary_bp)
-    app.register_blueprint(flashcards_bp)
+    #app.register_blueprint(flashcards_bp)
     app.register_blueprint(forum_bp)
     app.register_blueprint(listening_bp)
-    app.register_blueprint(writing_bp)
-    app.register_blueprint(speaking_bp)  # 新增：注册口语蓝图
+    #app.register_blueprint(writing_bp)
+    app.register_blueprint(speaking_bp)  
 
     # ── Database initialisation ───────────────────────────────────────────────
     with app.app_context():
