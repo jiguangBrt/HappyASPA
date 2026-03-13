@@ -2,24 +2,217 @@
 {% block title %}Speaking Practice{% endblock %}
 
 {% block content %}
+<!-- 页面头部 -->
 <div class="d-flex align-items-center justify-content-between mb-4">
   <div>
-    <h3 class="fw-bold mb-0"><i class="bi bi-mic-fill text-primary me-2"></i>Speaking Practice</h3>
-    <p class="text-muted mb-0 mt-1">Speaking content is being prepared by the team.</p>
+    <h3 class="fw-bold mb-0"><i class="bi bi-mic text-primary me-2"></i>Speaking Practice</h3>
+    <p class="text-muted mb-0 mt-1">Improve your academic speaking with guided exercises.</p>
   </div>
+  <span class="badge bg-primary text-white fs-6">{{ exercises|length }} exercises</span>
 </div>
 
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-4">
-    <div class="d-flex gap-3 align-items-start">
-      <div class="rounded-3 bg-primary bg-opacity-10 p-3">
-        <i class="bi bi-hourglass-split text-primary" style="font-size: 1.5rem;"></i>
-      </div>
-      <div class="flex-grow-1">
-        <h5 class="fw-bold mb-1">Coming Soon</h5>
-        <p class="text-muted mb-0">This page will include guided speaking tasks and classroom routines.</p>
+<!-- 口语练习列表 -->
+{% if exercises %}
+<div class="row g-3">
+  {% for ex in exercises %}
+  <div class="col-md-6 col-lg-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <!-- 练习标题 + 难度星级 -->
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <h6 class="fw-bold mb-0">{{ ex.title }}</h6>
+          <span class="badge bg-primary bg-opacity-10 text-primary border flex-shrink-0">
+            {% for i in range(ex.difficulty) %}⭐{% endfor %}
+          </span>
+        </div>
+        
+        <!-- 练习描述 -->
+        {% if ex.description %}
+        <p class="text-muted small mb-2">{{ ex.description }}</p>
+        {% endif %}
+        
+        <!-- 分类 + 时长 -->
+        <div class="d-flex align-items-center gap-2 mb-3">
+          {% if ex.category %}
+          <span class="badge bg-primary bg-opacity-10 text-primary">{{ ex.category }}</span>
+          {% endif %}
+          {% if ex.duration_minutes %}
+          <small class="text-muted">
+            <i class="bi bi-clock me-1"></i>
+            {{ ex.duration_minutes }} min
+          </small>
+          {% endif %}
+        </div>
+
+        <!-- 口语提示折叠面板 -->
+        <button class="btn btn-outline-primary btn-sm w-100 mb-2"
+                data-bs-toggle="collapse"
+                data-bs-target="#prompt-{{ ex.id }}">
+          <i class="bi bi-file-text me-1"></i>Show Speaking Prompt
+        </button>
+        <div class="collapse mt-2" id="prompt-{{ ex.id }}">
+          <div class="bg-light rounded p-3 small" style="max-height:120px;overflow-y:auto;">
+            {% if ex.prompt %}{{ ex.prompt }}{% else %}<em class="text-muted">No prompt available.</em>{% endif %}
+          </div>
+        </div>
+
+        <!-- 录音/停止按钮组 -->
+        <div class="d-flex gap-2 mt-2">
+          <button class="btn btn-primary btn-sm flex-grow-1 record-btn"
+                  data-exercise-id="{{ ex.id }}"
+                  onclick="startRecording('{{ ex.id }}')">
+            <i class="bi bi-record-circle me-1"></i>Record
+          </button>
+          <button class="btn btn-danger btn-sm flex-grow-1 stop-btn"
+                  data-exercise-id="{{ ex.id }}"
+                  onclick="stopRecording('{{ ex.id }}')"
+                  disabled>
+            <i class="bi bi-stop-circle me-1"></i>Stop
+          </button>
+        </div>
+        
+        
+        <!-- 音频播放区域 -->
+        <div class="mt-3" id="audio-player-{{ ex.id }}">
+          <div class="alert alert-light border text-center py-2 small text-muted">
+            <i class="bi bi-mic-mute me-1"></i>No recording yet
+          </div>
+          <!-- 新增：删除按钮（默认隐藏） -->
+          <button class="btn btn-outline-danger btn-sm w-100 mt-2 d-none"
+                  id="delete-btn-{{ ex.id }}"
+                  onclick="deleteRecording('{{ ex.id }}')">
+            <i class="bi bi-trash me-1"></i>Delete Recording
+          </button>
+        </div>
+
+        <!-- 提交录音按钮 -->
+        <button class="btn btn-success btn-sm w-100 mt-3"
+                onclick="submitRecording('{{ ex.id }}')"
+                id="submit-btn-{{ ex.id }}"
+                disabled>
+          <i class="bi bi-check-lg me-1"></i>Submit Recording
+        </button>
       </div>
     </div>
   </div>
+  {% endfor %}
 </div>
+{% else %}
+<!-- 无练习时的空状态 -->
+<div class="text-center py-5">
+  <i class="bi bi-mic text-muted" style="font-size: 4rem;"></i>
+  <h5 class="mt-3 text-muted">No speaking exercises yet.</h5>
+  <p class="text-muted">Speaking activities will be added by your instructor.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // 全局录音相关变量（按练习ID存储）
+  let mediaRecorder = null;
+  let audioChunks = {}; // { exerciseId: [音频块] }
+  let audioUrl = {};    // { exerciseId: 音频URL }
+
+  /**
+   * 开始录音
+   * @param {number} exerciseId - 练习ID
+   */
+  function startRecording(exerciseId) {
+    // 获取按钮元素
+    const recordBtn = document.querySelector(`.record-btn[data-exercise-id="${exerciseId}"]`);
+    const stopBtn = document.querySelector(`.stop-btn[data-exercise-id="${exerciseId}"]`);
+    
+    // 切换按钮状态
+    recordBtn.disabled = true;
+    stopBtn.disabled = false;
+
+    // 初始化当前练习的音频块
+    audioChunks[exerciseId] = [];
+
+    // 请求麦克风权限并开始录音
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        mediaRecorder = new MediaRecorder(stream);
+        
+        // 收集音频数据
+        mediaRecorder.ondataavailable = (e) => {
+          audioChunks[exerciseId].push(e.data);
+        };
+
+        // 录音停止后处理
+        mediaRecorder.onstop = () => {
+          // 生成音频URL
+          const audioBlob = new Blob(audioChunks[exerciseId], { type: 'audio/mpeg' });
+          audioUrl[exerciseId] = URL.createObjectURL(audioBlob);
+          
+          // 更新音频播放区域
+          const audioPlayer = document.getElementById(`audio-player-${exerciseId}`);
+          audioPlayer.innerHTML = `
+            <audio controls class="w-100" style="height:36px">
+              <source src="${audioUrl[exerciseId]}" type="audio/mpeg">
+              Your browser does not support the audio element.
+            </audio>
+          `;
+
+          // 启用提交按钮
+          document.getElementById(`submit-btn-${exerciseId}`).disabled = false;
+          
+          // 停止所有音轨，释放麦克风
+          stream.getTracks().forEach(track => track.stop());
+        };
+
+        // 开始录音
+        mediaRecorder.start();
+      })
+      .catch(err => {
+        alert('Could not access microphone: ' + err.message);
+        // 恢复按钮状态
+        recordBtn.disabled = false;
+        stopBtn.disabled = true;
+      });
+  }
+
+  /**
+   * 停止录音
+   * @param {number} exerciseId - 练习ID
+   */
+  function stopRecording(exerciseId) {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+      
+      // 恢复按钮状态
+      const recordBtn = document.querySelector(`.record-btn[data-exercise-id="${exerciseId}"]`);
+      const stopBtn = document.querySelector(`.stop-btn[data-exercise-id="${exerciseId}"]`);
+      
+      recordBtn.disabled = false;
+      stopBtn.disabled = true;
+    }
+  }
+
+  /**
+   * 提交录音
+   * @param {number} exerciseId - 练习ID
+   */
+  function submitRecording(exerciseId) {
+    if (audioUrl[exerciseId]) {
+      // 提示提交成功（可扩展：对接后端接口保存录音）
+      alert(`Recording for exercise ${exerciseId} submitted successfully!`);
+      
+      // 记录学习行为（与UserActivityLog模型对接）
+      fetch('/speaking/log-activity', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          exercise_id: exerciseId, 
+          action: 'submitted_recording' 
+        })
+      }).catch(err => console.error('Failed to log activity:', err));
+    } else {
+      alert('No recording to submit!');
+    }
+  }
+</script>
 {% endblock %}

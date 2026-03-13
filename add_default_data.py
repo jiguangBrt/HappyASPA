@@ -1,19 +1,19 @@
 """
 Flask CLI 命令：向数据库填充或更新默认初始数据（支持更新新增列）
 
-使用方法：
+使用方法（在激活了虚拟环境的终端中运行）：
     flask add-default-data
 """
 
 import click
 from flask.cli import with_appcontext
-from models import db, ListeningExercise
+from models import db, ListeningExercise, SpeakingExercise
 
 
 @click.command(name='add-default-data')
 @with_appcontext
 def add_default_data():
-    """向数据库插入或更新默认初始数据"""
+    """向数据库插入或更新默认初始数据（支持 Listening 和 Speaking）"""
     print("🚀 开始填充/更新默认数据...")
 
     # ─────────────────────────────────────────────
@@ -36,7 +36,6 @@ def add_default_data():
             'difficulty': 2,
             'category': 'TED Talk',
             'duration_seconds': 189,
-            # 假设这是你新增的列，或者包含更新后的内容
             'questions': [
                 {
                     "time": 5.0,
@@ -48,25 +47,50 @@ def add_default_data():
                         "Only big challenges are worth trying."
                     ],
                     "answer": 1
-                },
-                # ... 其他题目
+                }
             ]
         },
     ]
 
     for data in listening_defaults:
-        # 1. 尝试查询是否存在该标题的记录
         exercise = ListeningExercise.query.filter_by(title=data['title']).first()
-
         if exercise:
-            # 2. 如果存在，遍历数据字典，更新每一个字段
-            print(f"  🔄 检测到已存在，正在更新内容：{data['title']}")
+            print(f"  🔄 听力练习已存在，正在更新：{data['title']}")
             for key, value in data.items():
                 setattr(exercise, key, value)
         else:
-            # 3. 如果不存在，创建新记录
-            print(f"  ✅ 正在插入新练习：{data['title']}")
+            print(f"  ✅ 正在插入新听力练习：{data['title']}")
             exercise = ListeningExercise(**data)
+            db.session.add(exercise)
+
+    # ─────────────────────────────────────────────
+    # Speaking Exercises（口语练习）
+    # ─────────────────────────────────────────────
+
+    speaking_defaults = [
+        {
+            'title': 'Self Introduction',
+            'prompt': 'Talk about your academic background and study goals (2-3 minutes).',
+            'difficulty': 1,
+            'category': 'Interview',
+        },
+        {
+            'title': 'Describe a Research Topic',
+            'prompt': 'Explain your favorite research topic and why it interests you (3-5 minutes).',
+            'difficulty': 2,
+            'category': 'Presentation',
+        },
+    ]
+
+    for data in speaking_defaults:
+        exercise = SpeakingExercise.query.filter_by(title=data['title']).first()
+        if exercise:
+            print(f"  🔄 口语练习已存在，正在更新：{data['title']}")
+            for key, value in data.items():
+                setattr(exercise, key, value)
+        else:
+            print(f"  ✅ 正在插入新口语练习：{data['title']}")
+            exercise = SpeakingExercise(**data)
             db.session.add(exercise)
 
     # ─────────────────────────────────────────────
