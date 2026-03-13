@@ -7,7 +7,7 @@ Flask CLI 命令：向数据库填充默认初始数据（防重复插入）
 
 import click
 from flask.cli import with_appcontext
-from models import db, ListeningExercise
+from models import db, ListeningExercise, SpeakingExercise
 
 
 @click.command(name='add-default-data')
@@ -51,6 +51,33 @@ def add_default_data():
             exercise = ListeningExercise(**data)
             db.session.add(exercise)
             print(f"  ✅ 插入听力练习：{data['title']}")
+
+    # ─────────────────────────────────────────────
+    # Speaking Exercises（口语练习）
+    # ─────────────────────────────────────────────
+
+    speaking_defaults = [
+        {
+            'title': 'Self Introduction',
+            'prompt': 'Talk about your academic background and study goals (2-3 minutes).',
+            'difficulty': 1,
+            'category': 'Interview',
+        },
+        {
+            'title': 'Describe a Research Topic',
+            'prompt': 'Explain your favorite research topic and why it interests you (3-5 minutes).',
+            'difficulty': 2,
+            'category': 'Presentation',
+        },
+    ]
+
+    for data in speaking_defaults:
+        if SpeakingExercise.query.filter_by(title=data['title']).first():
+            print(f"  ⏩ 口语练习已存在，跳过：{data['title']}")
+        else:
+            exercise = SpeakingExercise(**data)
+            db.session.add(exercise)
+            print(f"  ✅ 插入口语练习：{data['title']}")
 
     # ─────────────────────────────────────────────
     # 提交
