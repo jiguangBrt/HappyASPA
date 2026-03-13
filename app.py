@@ -1,6 +1,7 @@
 import os
 from flask import Flask
 from flask_login import LoginManager
+from flask_migrate import Migrate
 from models import db, User
 
 
@@ -24,6 +25,7 @@ def create_app():
 
     # ── Extensions ───────────────────────────────────────────────────────────
     db.init_app(app)
+    migrate = Migrate(app, db)
 
     login_manager = LoginManager()
     login_manager.init_app(app)
@@ -50,9 +52,14 @@ def create_app():
     app.register_blueprint(listening_bp)
     app.register_blueprint(speaking_bp)
 
+    # ── CLI Commands ─────────────────────────────────────────────────────────
+    from add_default_data import add_default_data
+    app.cli.add_command(add_default_data)
+
     # ── Database initialisation ───────────────────────────────────────────────
-    with app.app_context():
-        db.create_all()
+    # db.create_all() 已由 Flask-Migrate 的 flask db upgrade 负责管理，此处保留注释
+    # with app.app_context():
+    #     db.create_all()
 
     return app
 
