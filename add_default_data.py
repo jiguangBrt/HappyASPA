@@ -41,6 +41,52 @@ def add_default_data():
             'difficulty': 2,
             'category': 'TED Talk',
             'duration_seconds': 189,
+            'questions': [
+                {
+                    "time": 5.0,
+                    "question": "What is the main idea of the talk?",
+                    "options": [
+                        "You should try to write a novel in 30 days.",
+                        "Taking small steps for 30 days can lead to new habits.",
+                        "It is impossible to change your life in a month.",
+                        "Only big challenges are worth trying."
+                    ],
+                    "answer": 1
+                },
+                {
+                    "time": 35.0,
+                    "question": "What did the speaker do during his first 30-day challenge?",
+                    "options": [
+                        "He wrote a novel.",
+                        "He took a picture every day.",
+                        "He climbed a mountain.",
+                        "He biked to work every day."
+                    ],
+                    "answer": 1
+                },
+                {
+                    "time": 70.0,
+                    "question": "What happened when the speaker gave up sugar for 30 days?",
+                    "options": [
+                        "He lost weight.",
+                        "He felt more energetic.",
+                        "He ate a lot of sugar on day 31.",
+                        "He never ate sugar again."
+                    ],
+                    "answer": 2
+                },
+                {
+                    "time": 120.0,
+                    "question": "What is the speaker's final advice to the audience?",
+                    "options": [
+                        "Start a 30-day challenge right now.",
+                        "Think about something you've always wanted to try and give it a shot.",
+                        "Only try challenges that are easy.",
+                        "Don't tell anyone about your goals."
+                    ],
+                    "answer": 1
+                }
+            ]
         },
     ]
 
