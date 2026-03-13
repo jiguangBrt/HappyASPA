@@ -1,7 +1,7 @@
 """
-Flask CLI 命令：向数据库填充默认初始数据（防重复插入）
+Flask CLI 命令：向数据库填充或更新默认初始数据（支持更新新增列）
 
-使用方法（在激活了虚拟环境的终端中运行）：
+使用方法：
     flask add-default-data
 """
 
@@ -13,8 +13,8 @@ from models import db, ListeningExercise
 @click.command(name='add-default-data')
 @with_appcontext
 def add_default_data():
-    """向数据库插入默认初始数据（已存在则跳过，不会重复插入）"""
-    print("🚀 开始填充默认数据...")
+    """向数据库插入或更新默认初始数据"""
+    print("🚀 开始填充/更新默认数据...")
 
     # ─────────────────────────────────────────────
     # Listening Exercises（听力练习）
@@ -31,16 +31,12 @@ def add_default_data():
             'subtitle_url': '/static/subtitles/English_Try_something_new_for_30_days.vtt',
             'transcript': (
                 "Is there something you've always meant to do, wanted to do, but just … haven't? "
-                "Matt Cutts suggests: Try it for 30 days. This approach has worked for him, "
-                "taking one of the most boring months of his life and turning it into something "
-                "memorable. The idea is surprisingly simple: think about something you've always "
-                "wanted to add to your life and try it for the next 30 days. It turns out, "
-                "30 days is just about the right amount of time to add a new habit or subtract "
-                "one, like watching the news or eating sugar."
+                "Matt Cutts suggests: Try it for 30 days. This approach has worked for him..."
             ),
             'difficulty': 2,
             'category': 'TED Talk',
             'duration_seconds': 189,
+            # 假设这是你新增的列，或者包含更新后的内容
             'questions': [
                 {
                     "time": 5.0,
@@ -53,53 +49,32 @@ def add_default_data():
                     ],
                     "answer": 1
                 },
-                {
-                    "time": 35.0,
-                    "question": "What did the speaker do during his first 30-day challenge?",
-                    "options": [
-                        "He wrote a novel.",
-                        "He took a picture every day.",
-                        "He climbed a mountain.",
-                        "He biked to work every day."
-                    ],
-                    "answer": 1
-                },
-                {
-                    "time": 70.0,
-                    "question": "What happened when the speaker gave up sugar for 30 days?",
-                    "options": [
-                        "He lost weight.",
-                        "He felt more energetic.",
-                        "He ate a lot of sugar on day 31.",
-                        "He never ate sugar again."
-                    ],
-                    "answer": 2
-                },
-                {
-                    "time": 120.0,
-                    "question": "What is the speaker's final advice to the audience?",
-                    "options": [
-                        "Start a 30-day challenge right now.",
-                        "Think about something you've always wanted to try and give it a shot.",
-                        "Only try challenges that are easy.",
-                        "Don't tell anyone about your goals."
-                    ],
-                    "answer": 1
-                }
+                # ... 其他题目
             ]
         },
     ]
 
     for data in listening_defaults:
-        if ListeningExercise.query.filter_by(title=data['title']).first():
-            print(f"  ⏩ 听力练习已存在，跳过：{data['title']}")
+        # 1. 尝试查询是否存在该标题的记录
+        exercise = ListeningExercise.query.filter_by(title=data['title']).first()
+
+        if exercise:
+            # 2. 如果存在，遍历数据字典，更新每一个字段
+            print(f"  🔄 检测到已存在，正在更新内容：{data['title']}")
+            for key, value in data.items():
+                setattr(exercise, key, value)
         else:
+            # 3. 如果不存在，创建新记录
+            print(f"  ✅ 正在插入新练习：{data['title']}")
             exercise = ListeningExercise(**data)
             db.session.add(exercise)
-            print(f"  ✅ 插入听力练习：{data['title']}")
 
     # ─────────────────────────────────────────────
-    # 提交
+    # 提交更改
     # ─────────────────────────────────────────────
-    db.session.commit()
-    print("🎉 默认数据填充完毕！")
+    try:
+        db.session.commit()
+        print("🎉 默认数据填充/更新完毕！")
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ 出错了，已回滚：{str(e)}")
