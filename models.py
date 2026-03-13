@@ -222,6 +222,34 @@ class UserWritingSubmission(db.Model):
     score        = db.Column(db.Float,   nullable=True)
 
 # ─────────────────────────────────────────────
+# Speaking (新增)
+# ─────────────────────────────────────────────
+class SpeakingExercise(db.Model):
+    __tablename__ = 'speaking_exercises'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    prompt = db.Column(db.Text, nullable=False)  # 口语练习题目/提示
+    difficulty = db.Column(db.Integer, default=1)  # 1-5
+    category = db.Column(db.String(50), nullable=True)  # 如：interview/lecture/discussion
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # 关联用户的录音提交
+    submissions = db.relationship('UserSpeakingSubmission', backref='exercise', lazy=True)
+
+class UserSpeakingSubmission(db.Model):
+    __tablename__ = 'user_speaking_submissions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    exercise_id = db.Column(db.Integer, db.ForeignKey('speaking_exercises.id'), nullable=False)
+    audio_filename = db.Column(db.String(256), nullable=False)  # 音频文件名（存储路径）
+    duration_seconds = db.Column(db.Float, nullable=True)  # 录音时长
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    feedback = db.Column(db.Text, nullable=True)  # 预留反馈字段
+    score = db.Column(db.Float, nullable=True)  # 预留评分字段
+
+# ─────────────────────────────────────────────
 # Activity Log（学习轨迹核心）
 # ─────────────────────────────────────────────
 class UserActivityLog(db.Model):
