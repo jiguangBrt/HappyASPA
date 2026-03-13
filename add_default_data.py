@@ -31,7 +31,12 @@ def add_default_data():
             'subtitle_url': '/static/subtitles/English_Try_something_new_for_30_days.vtt',
             'transcript': (
                 "Is there something you've always meant to do, wanted to do, but just … haven't? "
-                "Matt Cutts suggests: Try it for 30 days. This approach has worked for him..."
+                "Matt Cutts suggests: Try it for 30 days. This approach has worked for him, "
+                "taking one of the most boring months of his life and turning it into something "
+                "memorable. The idea is surprisingly simple: think about something you've always "
+                "wanted to add to your life and try it for the next 30 days. It turns out, "
+                "30 days is just about the right amount of time to add a new habit or subtract "
+                "one, like watching the news or eating sugar."
             ),
             'difficulty': 2,
             'category': 'TED Talk',
@@ -47,6 +52,39 @@ def add_default_data():
                         "Only big challenges are worth trying."
                     ],
                     "answer": 1
+                },
+                {
+                    "time": 35.0,
+                    "question": "What did the speaker do during his first 30-day challenge?",
+                    "options": [
+                        "He wrote a novel.",
+                        "He took a picture every day.",
+                        "He climbed a mountain.",
+                        "He biked to work every day."
+                    ],
+                    "answer": 1
+                },
+                {
+                    "time": 70.0,
+                    "question": "What happened when the speaker gave up sugar for 30 days?",
+                    "options": [
+                        "He lost weight.",
+                        "He felt more energetic.",
+                        "He ate a lot of sugar on day 31.",
+                        "He never ate sugar again."
+                    ],
+                    "answer": 2
+                },
+                {
+                    "time": 120.0,
+                    "question": "What is the speaker's final advice to the audience?",
+                    "options": [
+                        "Start a 30-day challenge right now.",
+                        "Think about something you've always wanted to try and give it a shot.",
+                        "Only try challenges that are easy.",
+                        "Don't tell anyone about your goals."
+                    ],
+                    "answer": 1
                 }
             ]
         },
@@ -55,7 +93,7 @@ def add_default_data():
     for data in listening_defaults:
         exercise = ListeningExercise.query.filter_by(title=data['title']).first()
         if exercise:
-            print(f"  🔄 听力练习已存在，正在更新：{data['title']}")
+            print(f"  🔄 听力练习已存在，正在同步更新：{data['title']}")
             for key, value in data.items():
                 setattr(exercise, key, value)
         else:
@@ -85,7 +123,7 @@ def add_default_data():
     for data in speaking_defaults:
         exercise = SpeakingExercise.query.filter_by(title=data['title']).first()
         if exercise:
-            print(f"  🔄 口语练习已存在，正在更新：{data['title']}")
+            print(f"  🔄 口语练习已存在，正在同步更新：{data['title']}")
             for key, value in data.items():
                 setattr(exercise, key, value)
         else:
@@ -98,7 +136,7 @@ def add_default_data():
     # ─────────────────────────────────────────────
     try:
         db.session.commit()
-        print("🎉 默认数据填充/更新完毕！")
+        print("🎉 所有默认数据填充/同步完毕！")
     except Exception as e:
         db.session.rollback()
-        print(f"❌ 出错了，已回滚：{str(e)}")
+        print(f"❌ 数据库提交失败，已回滚。错误详情: {str(e)}")
