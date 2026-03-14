@@ -56,6 +56,11 @@
           </div>
         </div>
 
+        <a href="{{ url_for('speaking.exercise_detail', exercise_id=ex.id) }}" 
+            class="btn btn-outline-dark w-100 mt-2">
+              <i class="bi bi-eye me-1"></i> View Details
+        </a>
+
         <!-- 录音/停止按钮组 -->
         <div class="d-flex gap-2 mt-2">
           <button class="btn btn-primary btn-sm flex-grow-1 record-btn"
@@ -113,7 +118,7 @@
   let mediaRecorder = null;
   let audioChunks = {}; // { exerciseId: [音频块] }
   let audioUrl = {};    // { exerciseId: 音频URL }
-
+  let submissionId = {};
   /**
    * 开始录音
    * @param {number} exerciseId - 练习ID
@@ -194,25 +199,58 @@
    * 提交录音
    * @param {number} exerciseId - 练习ID
    */
-  function submitRecording(exerciseId) {
-    if (audioUrl[exerciseId]) {
-      // 提示提交成功（可扩展：对接后端接口保存录音）
-      alert(`Recording for exercise ${exerciseId} submitted successfully!`);
-      
-      // 记录学习行为（与UserActivityLog模型对接）
-      fetch('/speaking/log-activity', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          exercise_id: exerciseId, 
-          action: 'submitted_recording' 
-        })
-      }).catch(err => console.error('Failed to log activity:', err));
-    } else {
-      alert('No recording to submit!');
-    }
+ function submitRecording(exerciseId) {
+  // 1. 先检查有没有录过音
+  if (!audioUrl[exerciseId]) {
+    alert('No recording to submit!');
+    return;
   }
+
+  // 2. 让按钮变成“提交中”状态，防止重复点击
+  const submitBtn = document.getElementById(`submit-btn-${exerciseId}`);
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Submitting...';
+
+  // 3. 把浏览器里的音频 blob 转成 FormData 传给后端
+  fetch(audioUrl[exerciseId])
+    .then(res => res.blob())
+    .then(blob => {
+      const formData = new FormData();
+      // 音频文件（名字随便起，后端会重命名）
+      formData.append('audio_file', blob, `recording_${exerciseId}_${Date.now()}.webm`);
+      // 练习ID
+      formData.append('exercise_id', exerciseId);
+      // 录音时长（从 audio 标签里拿）
+      const audioEl = document.querySelector(`#audio-player-${exerciseId} audio`);
+      formData.append('duration', audioEl ? audioEl.duration : 0);
+
+      // ✅ 关键：调用真正的上传接口，而不是 log-activity
+      return fetch('/speaking/upload-audio', {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin' // 带上登录信息
+      });
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === 'success') {
+        alert('✅ Recording submitted successfully!');
+        // 把提交ID存起来，后面删除要用
+        submissionId[exerciseId] = data.submission_id;
+        // 按钮变成“已提交”，不能再点
+        submitBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Submitted';
+        submitBtn.disabled = true;
+      } else {
+        throw new Error(data.message || 'Upload failed');
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert('❌ Failed to submit: ' + err.message);
+      // 出错了，按钮恢复原样
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Submit Recording';
+    });
+}
 </script>
 {% endblock %}

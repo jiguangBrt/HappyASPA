@@ -2,6 +2,7 @@ from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, timezone
 
 db = SQLAlchemy()
 
@@ -218,7 +219,7 @@ class UserWritingSubmission(db.Model):
     exercise_id  = db.Column(db.Integer, db.ForeignKey('writing_exercises.id'),  nullable=False)
     content      = db.Column(db.Text,    nullable=False)
     word_count   = db.Column(db.Integer, nullable=True)
-    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    submitted_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     feedback     = db.Column(db.Text,    nullable=True)   # 预留 AI 反馈字段
     score        = db.Column(db.Float,   nullable=True)
 
