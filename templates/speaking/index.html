@@ -200,16 +200,7 @@
       alert(`Recording for exercise ${exerciseId} submitted successfully!`);
       
       // 记录学习行为（与UserActivityLog模型对接）
-      fetch('/speaking/log-activity', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          exercise_id: exerciseId, 
-          action: 'submitted_recording' 
-        })
-      }).catch(err => console.error('Failed to log activity:', err));
+      // (Removed) activity tracking
     } else {
       alert('No recording to submit!');
     }
