@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import func  # <--- 新增：用于统计点赞数
 
 # 👇 修改：引入了新的 ForumLike 和 ForumFavorite 模型
-from models import db, ForumPost, ForumComment, UserActivityLog, ForumLike, ForumFavorite
+from models import db, ForumPost, ForumComment, ForumLike, ForumFavorite
 
 forum_bp = Blueprint('forum', __name__, url_prefix='/forum')
 
@@ -17,10 +17,6 @@ def index():
         .group_by(ForumPost.id)\
         .order_by(func.count(ForumLike.id).desc(), ForumPost.created_at.desc())\
         .all()
-
-    log = UserActivityLog(user_id=current_user.id, module='forum', action='viewed')
-    db.session.add(log)
-    db.session.commit()
 
     return render_template('forum/index.html', posts=posts)
 
@@ -52,9 +48,6 @@ def new_post():
                 category=category
             )
             db.session.add(post)
-
-            log = UserActivityLog(user_id=current_user.id, module='forum', action='posted')
-            db.session.add(log)
             db.session.commit()
 
             flash('Post created!', 'success')
@@ -72,9 +65,6 @@ def add_comment(post_id):
     if content:
         comment = ForumComment(post_id=post.id, user_id=current_user.id, content=content)
         db.session.add(comment)
-
-        log = UserActivityLog(user_id=current_user.id, module='forum', action='commented', ref_id=post_id)
-        db.session.add(log)
         db.session.commit()
         flash('Comment added!', 'success')
     else:
@@ -104,8 +94,6 @@ def like_post(post_id):
         db.session.add(new_like)
         
         # 可选：记录用户点赞的行为到日志
-        log = UserActivityLog(user_id=current_user.id, module='forum', action='liked', ref_id=post.id)
-        db.session.add(log)
         
         flash('Liked the post!', 'success')
         

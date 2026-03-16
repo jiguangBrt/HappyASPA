@@ -31,6 +31,7 @@ class User(UserMixin, db.Model):
     writing_submissions = db.relationship('UserWritingSubmission',  backref='user',   lazy=True)
     activity_logs       = db.relationship('UserActivityLog',        backref='user',   lazy=True)
     created_flashcards  = db.relationship('Flashcard', backref='creator', lazy=True)
+    schedule_items      = db.relationship('UserScheduleItem',       backref='user',   lazy=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -236,7 +237,13 @@ class SpeakingExercise(db.Model):
     category = db.Column(db.String(50), nullable=True)  # 如：interview/lecture/discussion
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # 关联用户的录音提交
+    # 👇 新增 1：在数据库表里加一列，用来存创建这个话题的用户的 ID
+    creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True) 
+    
+    # 👇 新增 2：建立模型层面的关联，这样前端就能直接用 ex.creator.username 拿到名字了
+    creator = db.relationship('User', backref='created_exercises')
+
+    # 关联用户的录音提交（保留你原来的这行代码）
     submissions = db.relationship('UserSpeakingSubmission', backref='exercise', lazy=True)
 
 class UserSpeakingSubmission(db.Model):
@@ -265,3 +272,16 @@ class UserActivityLog(db.Model):
     action    = db.Column(db.String(50), nullable=False)
     ref_id    = db.Column(db.Integer,    nullable=True)   # 关联资源 ID
     timestamp = db.Column(db.DateTime,   default=datetime.utcnow)
+
+
+# Dashboard schedule items
+class UserScheduleItem(db.Model):
+    __tablename__ = 'user_schedule_items'
+
+    id             = db.Column(db.Integer, primary_key=True)
+    user_id        = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    scheduled_date = db.Column(db.Date, nullable=False, index=True)
+    kind           = db.Column(db.String(30), nullable=False)  # listening / speaking / vocabulary / custom
+    title          = db.Column(db.String(200), nullable=False)
+    notes          = db.Column(db.Text, nullable=True)
+    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
