@@ -30,6 +30,7 @@ class User(UserMixin, db.Model):
     writing_submissions = db.relationship('UserWritingSubmission',  backref='user',   lazy=True)
     activity_logs       = db.relationship('UserActivityLog',        backref='user',   lazy=True)
     created_flashcards  = db.relationship('Flashcard', backref='creator', lazy=True)
+    schedule_items      = db.relationship('UserScheduleItem',       backref='user',   lazy=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -264,3 +265,16 @@ class UserActivityLog(db.Model):
     action    = db.Column(db.String(50), nullable=False)
     ref_id    = db.Column(db.Integer,    nullable=True)   # 关联资源 ID
     timestamp = db.Column(db.DateTime,   default=datetime.utcnow)
+
+
+# Dashboard schedule items
+class UserScheduleItem(db.Model):
+    __tablename__ = 'user_schedule_items'
+
+    id             = db.Column(db.Integer, primary_key=True)
+    user_id        = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    scheduled_date = db.Column(db.Date, nullable=False, index=True)
+    kind           = db.Column(db.String(30), nullable=False)  # listening / speaking / vocabulary / custom
+    title          = db.Column(db.String(200), nullable=False)
+    notes          = db.Column(db.Text, nullable=True)
+    created_at     = db.Column(db.DateTime, default=datetime.utcnow)

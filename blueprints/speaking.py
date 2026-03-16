@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, current_app, url_for
 from flask_login import login_required, current_user
-from models import db, UserActivityLog, SpeakingExercise, UserSpeakingSubmission
+from models import db, SpeakingExercise, UserSpeakingSubmission
 from flask import send_from_directory
 import os
 import uuid
@@ -17,9 +17,6 @@ def allowed_file(filename):
 @login_required
 def index():  # ✅ 函数名与端点名一致（speaking.index）
     # 记录访问日志
-    log = UserActivityLog(user_id=current_user.id, module='speaking', action='viewed')
-    db.session.add(log)
-    db.session.commit()
     
     # 获取所有口语练习
     exercises = SpeakingExercise.query.all()
@@ -74,13 +71,6 @@ def upload_audio():
         )
         db.session.add(submission)
         # 记录活动日志
-        activity_log = UserActivityLog(
-            user_id=current_user.id,
-            module='speaking',
-            action='submitted_audio',
-            ref_id=exercise_id
-        )
-        db.session.add(activity_log)
         db.session.commit()
         
         return jsonify({
