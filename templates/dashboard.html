@@ -35,7 +35,7 @@
     {
       'title': 'Academic Misconduct',
       'front': 'What it is and how to avoid it.',
-      'back': 'Do your own work, cite sources, and do not reuse others’ writing without permission. If unsure, ask the teacher before submitting.',
+      'back': "Do your own work, cite sources, and do not reuse others' writing without permission. If unsure, ask the teacher before submitting.",
       'icon': 'bi-shield-check',
       'color': 'danger'
     },
@@ -61,28 +61,6 @@
           <h6 class="fw-bold mb-2">{{ card.title }}</h6>
           <p class="mb-0 small">{{ card.back }}</p>
         </div>
-      </div>
-    </div>
-  </div>
-  {% endfor %}
-</div>
-
-<!-- ── Activity Stats ──────────────────────────────────────────────────── -->
-<h5 class="fw-bold mb-3"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Your Progress Overview</h5>
-<div class="row g-3 mb-4">
-  {% set modules = [
-    ('listening',  'Listening',   'bi-headphones',    'info'),
-    ('speaking',   'Speaking',    'bi-mic',           'primary'),
-    ('vocabulary', 'Vocabulary',  'bi-book',          'primary'),
-    ('forum',      'Forum',       'bi-chat-dots',     'danger'),
-  ] %}
-  {% for key, label, icon, color in modules %}
-  <div class="col-6 col-md-4 col-lg-2">
-    <div class="card border-0 shadow-sm h-100 text-center">
-      <div class="card-body py-3">
-        <i class="bi {{ icon }} text-{{ color }}" style="font-size: 1.8rem;"></i>
-        <div class="display-6 fw-bold mt-1">{{ stats.get(key, 0) }}</div>
-        <div class="small text-muted">{{ label }}</div>
       </div>
     </div>
   </div>
@@ -162,33 +140,107 @@
 </div>
 
 <!-- ── Recent Activity ─────────────────────────────────────────────────── -->
-<h5 class="fw-bold mb-3"><i class="bi bi-clock-history text-primary me-2"></i>Recent Activity</h5>
-{% if recent_activity %}
-<div class="card border-0 shadow-sm">
-  <ul class="list-group list-group-flush">
-    {% for log in recent_activity %}
-    <li class="list-group-item d-flex justify-content-between align-items-center py-3">
-      <div class="d-flex align-items-center gap-3">
-        {% set icon_map = {
-          'vocabulary': ('bi-book',          'text-primary'),
-          'listening':  ('bi-headphones',    'text-info'),
-          'speaking':   ('bi-mic',           'text-primary'),
-          'forum':      ('bi-chat-dots',     'text-danger')
-        } %}
-        {% set icon_info = icon_map.get(log.module, ('bi-activity', 'text-secondary')) %}
-        <i class="bi {{ icon_info[0] }} {{ icon_info[1] }}" style="font-size: 1.2rem;"></i>
-        <span>
-          <span class="fw-semibold text-capitalize">{{ log.module }}</span>
-          <span class="text-muted"> — {{ log.action }}</span>
-        </span>
+<h5 class="fw-bold mb-3"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Personal Growth</h5>
+<div class="row g-3 mb-5">
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm h-100 text-center">
+      <div class="card-body py-3">
+        <div class="display-6 fw-bold">{{ growth_stats.vocab_mastered }}</div>
+        <div class="small text-muted">Words Mastered</div>
       </div>
-      <small class="text-muted">{{ log.timestamp.strftime('%b %d, %H:%M') }}</small>
-    </li>
-    {% endfor %}
-  </ul>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm h-100 text-center">
+      <div class="card-body py-3">
+        <div class="display-6 fw-bold">{{ growth_stats.vocab_learning }}</div>
+        <div class="small text-muted">Words Learning</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm h-100 text-center">
+      <div class="card-body py-3">
+        <div class="display-6 fw-bold">{{ growth_stats.listening_completed }}</div>
+        <div class="small text-muted">Listening Completed</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm h-100 text-center">
+      <div class="card-body py-3">
+        <div class="display-6 fw-bold">{{ growth_stats.speaking_submissions }}</div>
+        <div class="small text-muted">Speaking Submissions</div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<h5 class="fw-bold mb-3 mt-5"><i class="bi bi-bookmark-star-fill text-warning me-2"></i>My Favorites</h5>
+<!-- ── Calendar Reminder ─────────────────────────────────────────────────── -->
+<h5 class="fw-bold mb-3"><i class="bi bi-calendar-event-fill text-primary me-2"></i>My Schedule</h5>
+<div class="card border-0 shadow-sm mb-5">
+  <div class="card-body">
+    {% if not schedule_table_ready %}
+    <div class="alert alert-warning mb-3">
+      日程表还没创建好：请先运行 <code>flask --app app:create_app db upgrade</code>。
+    </div>
+    {% endif %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="fw-semibold text-muted small" id="scheduleRangeLabel"></div>
+      <div class="text-muted small">Click a day to add / manage schedules</div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-bordered align-middle text-center mb-0 schedule-calendar">
+        <thead class="table-light">
+          <tr>
+            <th class="py-2">Mon</th>
+            <th class="py-2">Tue</th>
+            <th class="py-2">Wed</th>
+            <th class="py-2">Thu</th>
+            <th class="py-2">Fri</th>
+            <th class="py-2">Sat</th>
+            <th class="py-2">Sun</th>
+          </tr>
+        </thead>
+        <tbody id="scheduleCalendarBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="scheduleModalLabel"><i class="bi bi-calendar-plus me-2"></i>Schedule</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2 text-muted small">Date: <span class="fw-semibold" id="scheduleModalDate"></span></div>
+        <div id="existingScheduleList" class="mb-3"></div>
+
+        <div class="mb-2 fw-semibold">Add New</div>
+        <select class="form-select mb-2" id="scheduleKind">
+          <option value="listening">听听力1篇</option>
+          <option value="speaking">使用口语板块</option>
+          <option value="vocabulary">学词汇10个</option>
+          <option value="custom">自定义…</option>
+        </select>
+        <input type="text" class="form-control d-none" id="scheduleCustomTitle" placeholder="自定义日程内容">
+        <textarea class="form-control mt-2" id="scheduleNotes" rows="2" placeholder="备注（可选）"></textarea>
+        <div class="text-danger small mt-2 d-none" id="scheduleError"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="scheduleSaveBtn">
+          <i class="bi bi-check-lg me-1"></i>Save
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h5 class="fw-bold mb-3"><i class="bi bi-bookmark-star-fill text-warning me-2"></i>My Favorites</h5>
 {% if favorite_posts %}
 <div class="list-group shadow-sm mb-4">
   {% for post in favorite_posts %}
@@ -226,13 +278,6 @@
 </div>
 {% endif %}
 
-{% else %}
-<div class="alert alert-light border text-center py-4">
-  <i class="bi bi-emoji-smile text-muted" style="font-size: 2rem;"></i>
-  <p class="mt-2 mb-0 text-muted">No activity yet — pick a module above to get started!</p>
-</div>
-{% endif %}
-
 {% endblock %}
 
 {% block scripts %}
@@ -253,5 +298,275 @@
     backface-visibility: hidden; -webkit-backface-visibility: hidden;
   }
   .flip-card-back { transform: rotateY(180deg); }
+
+  .schedule-calendar td { height: 88px; padding: 6px; cursor: pointer; vertical-align: top; }
+  .schedule-calendar td:hover { background: rgba(59,110,191,.08); }
+  .schedule-day { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+  .schedule-day .date { font-weight: 700; font-size: .9rem; }
+  .schedule-day .meta { font-size: .75rem; color: #6c757d; }
+  .schedule-badges { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+
+  .schedule-reminder {
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 1080;
+    border-radius: 0;
+    margin: 0;
+  }
 </style>
+
+<script>
+  const calendarStartIso = {{ calendar_start|tojson }};
+  const scheduleItems = {{ schedule_items|tojson }};
+  const todaySchedule = {{ today_schedule|tojson }};
+  const scheduleTableReady = {{ schedule_table_ready|tojson }};
+
+  const scheduleModalEl = document.getElementById('scheduleModal');
+  const scheduleModal = new bootstrap.Modal(scheduleModalEl);
+
+  const scheduleRangeLabel = document.getElementById('scheduleRangeLabel');
+  const scheduleCalendarBody = document.getElementById('scheduleCalendarBody');
+  const scheduleModalDate = document.getElementById('scheduleModalDate');
+  const existingScheduleList = document.getElementById('existingScheduleList');
+  const scheduleKind = document.getElementById('scheduleKind');
+  const scheduleCustomTitle = document.getElementById('scheduleCustomTitle');
+  const scheduleNotes = document.getElementById('scheduleNotes');
+  const scheduleError = document.getElementById('scheduleError');
+  const scheduleSaveBtn = document.getElementById('scheduleSaveBtn');
+
+  let selectedDateIso = null;
+  const itemsByDate = new Map();
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function toIsoDate(d) {
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  }
+  function addDays(d, days) {
+    const next = new Date(d.getTime());
+    next.setDate(next.getDate() + days);
+    return next;
+  }
+  function formatRange(start, end) {
+    return `${start.getFullYear()}-${pad2(start.getMonth() + 1)}-${pad2(start.getDate())} → ${end.getFullYear()}-${pad2(end.getMonth() + 1)}-${pad2(end.getDate())} (4×7)`;
+  }
+
+  function kindBadgeClass(kind) {
+    if (kind === 'listening') return 'bg-info text-dark';
+    if (kind === 'speaking') return 'bg-primary';
+    if (kind === 'vocabulary') return 'bg-success';
+    return 'bg-secondary';
+  }
+
+  function recommendedTitle(kind) {
+    if (kind === 'listening') return '听听力1篇';
+    if (kind === 'speaking') return '使用口语板块';
+    if (kind === 'vocabulary') return '学词汇10个';
+    return '';
+  }
+
+  function indexItems(items) {
+    itemsByDate.clear();
+    for (const item of items) {
+      const key = item.scheduled_date;
+      if (!itemsByDate.has(key)) itemsByDate.set(key, []);
+      itemsByDate.get(key).push(item);
+    }
+  }
+
+  function renderCalendar() {
+    const start = new Date(`${calendarStartIso}T00:00:00`);
+    const end = addDays(start, 27);
+    scheduleRangeLabel.textContent = formatRange(start, end);
+
+    scheduleCalendarBody.innerHTML = '';
+    for (let week = 0; week < 4; week++) {
+      const tr = document.createElement('tr');
+      for (let day = 0; day < 7; day++) {
+        const d = addDays(start, week * 7 + day);
+        const iso = toIsoDate(d);
+        const td = document.createElement('td');
+        td.dataset.date = iso;
+
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'schedule-day';
+        dayHeader.innerHTML = `<span class="date">${d.getDate()}</span><span class="meta">${itemsByDate.get(iso)?.length ? itemsByDate.get(iso).length + ' item(s)' : ''}</span>`;
+        td.appendChild(dayHeader);
+
+        const badges = document.createElement('div');
+        badges.className = 'schedule-badges';
+        const items = itemsByDate.get(iso) || [];
+        for (const item of items.slice(0, 4)) {
+          const span = document.createElement('span');
+          span.className = `badge rounded-pill ${kindBadgeClass(item.kind)}`;
+          span.title = item.notes || '';
+          span.textContent = item.title;
+          badges.appendChild(span);
+        }
+        td.appendChild(badges);
+
+        td.addEventListener('click', () => openScheduleModal(iso));
+        tr.appendChild(td);
+      }
+      scheduleCalendarBody.appendChild(tr);
+    }
+  }
+
+  function setError(msg) {
+    if (!msg) {
+      scheduleError.classList.add('d-none');
+      scheduleError.textContent = '';
+      return;
+    }
+    scheduleError.classList.remove('d-none');
+    scheduleError.textContent = msg;
+  }
+
+  function renderExistingList(dateIso) {
+    const items = itemsByDate.get(dateIso) || [];
+    if (!items.length) {
+      existingScheduleList.innerHTML = '<div class="text-muted small">No schedules yet.</div>';
+      return;
+    }
+    existingScheduleList.innerHTML = `
+      <div class="list-group">
+        ${items.map(item => `
+          <div class="list-group-item d-flex justify-content-between align-items-center gap-2">
+            <div class="min-w-0">
+              <span class="badge rounded-pill ${kindBadgeClass(item.kind)} me-2">${item.kind}</span>
+              <span class="fw-semibold">${item.title}</span>
+              ${item.notes ? `<div class="text-muted small mt-1">${item.notes}</div>` : ''}
+            </div>
+            <button class="btn btn-sm btn-outline-danger flex-shrink-0" data-id="${item.id}">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    existingScheduleList.querySelectorAll('button[data-id]').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await deleteScheduleItem(Number(btn.dataset.id));
+      });
+    });
+  }
+
+  function openScheduleModal(dateIso) {
+    selectedDateIso = dateIso;
+    scheduleModalDate.textContent = dateIso;
+    scheduleKind.value = 'listening';
+    scheduleCustomTitle.value = '';
+    scheduleNotes.value = '';
+    scheduleCustomTitle.classList.add('d-none');
+    setError('');
+    renderExistingList(dateIso);
+    if (!scheduleTableReady) {
+      scheduleKind.disabled = true;
+      scheduleCustomTitle.disabled = true;
+      scheduleNotes.disabled = true;
+      scheduleSaveBtn.disabled = true;
+      setError('日程功能需要先升级数据库：flask --app app:create_app db upgrade');
+    } else {
+      scheduleKind.disabled = false;
+      scheduleCustomTitle.disabled = false;
+      scheduleNotes.disabled = false;
+      scheduleSaveBtn.disabled = false;
+    }
+    scheduleModal.show();
+  }
+
+  scheduleKind.addEventListener('change', () => {
+    if (scheduleKind.value === 'custom') {
+      scheduleCustomTitle.classList.remove('d-none');
+      scheduleCustomTitle.focus();
+    } else {
+      scheduleCustomTitle.classList.add('d-none');
+      scheduleCustomTitle.value = '';
+    }
+    setError('');
+  });
+
+  async function createScheduleItem() {
+    const kind = scheduleKind.value;
+    const title = kind === 'custom' ? scheduleCustomTitle.value.trim() : recommendedTitle(kind);
+    const notes = scheduleNotes.value.trim();
+
+    if (!selectedDateIso) return;
+    if (!title) {
+      setError('Please enter a title.');
+      return;
+    }
+
+    scheduleSaveBtn.disabled = true;
+    setError('');
+    try {
+      const resp = await fetch('/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scheduled_date: selectedDateIso,
+          kind,
+          title,
+          notes
+        })
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        setError(data.error || 'Failed to save.');
+        return;
+      }
+      if (!itemsByDate.has(data.scheduled_date)) itemsByDate.set(data.scheduled_date, []);
+      itemsByDate.get(data.scheduled_date).push(data);
+      renderExistingList(selectedDateIso);
+      renderCalendar();
+      scheduleNotes.value = '';
+      if (kind === 'custom') scheduleCustomTitle.value = '';
+    } finally {
+      scheduleSaveBtn.disabled = false;
+    }
+  }
+
+  async function deleteScheduleItem(id) {
+    if (!selectedDateIso) return;
+    const resp = await fetch(`/schedule/${id}`, { method: 'DELETE' });
+    if (!resp.ok) return;
+
+    const items = itemsByDate.get(selectedDateIso) || [];
+    const next = items.filter(it => it.id !== id);
+    if (next.length) itemsByDate.set(selectedDateIso, next);
+    else itemsByDate.delete(selectedDateIso);
+
+    renderExistingList(selectedDateIso);
+    renderCalendar();
+  }
+
+  scheduleSaveBtn.addEventListener('click', createScheduleItem);
+
+  function showTodayReminder() {
+    if (!todaySchedule || !todaySchedule.length) return;
+    const nav = document.querySelector('nav.navbar');
+    const topOffset = nav ? nav.offsetHeight : 0;
+    const titles = todaySchedule.map(i => i.title).join('，');
+
+    const el = document.createElement('div');
+    el.className = 'alert alert-info alert-dismissible fade show schedule-reminder';
+    el.style.top = `${topOffset}px`;
+    el.role = 'alert';
+    el.innerHTML = `
+      <div class="container d-flex align-items-center justify-content-between gap-3">
+        <div class="text-truncate"><strong>今日计划：</strong>${titles}</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    `;
+    document.body.appendChild(el);
+    window.setTimeout(() => {
+      try { bootstrap.Alert.getOrCreateInstance(el).close(); } catch (_) { el.remove(); }
+    }, 10000);
+  }
+
+  indexItems(scheduleItems);
+  renderCalendar();
+  showTodayReminder();
+</script>
 {% endblock %}
