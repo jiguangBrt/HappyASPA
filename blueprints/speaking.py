@@ -23,11 +23,17 @@ def index():
     db.session.commit()
     
     exercises = SpeakingExercise.query.all()
-    user_submissions = UserSpeakingSubmission.query.filter_by(user_id=current_user.id).all()
+    
+    # 获取用户的所有原始提交记录
+    raw_submissions = UserSpeakingSubmission.query.filter_by(user_id=current_user.id).all()
+    
+    # 【核心修改点】将列表转换为字典：{ exercise_id: submission对象 }
+    user_submissions_dict = {sub.exercise_id: sub for sub in raw_submissions}
     
     return render_template('speaking/index.html', 
                            exercises=exercises, 
-                           user_submissions=user_submissions)
+                           # 把字典传给前端
+                           user_submissions=user_submissions_dict)
 
 # 2. 新建口语练习（GET 展示表单 / POST 创建）
 @speaking_bp.route('/new', methods=['GET', 'POST'])
