@@ -43,48 +43,48 @@ def add_default_data():
             'duration_seconds': 189,
             'questions': [
                 {
-                    "time": 5.0,
-                    "question": "What is the main idea of the talk?",
+                    "time": 47.0,
+                    "question": "What does the speaker say about the 30-day duration?",
                     "options": [
-                        "You should try to write a novel in 30 days.",
-                        "Taking small steps for 30 days can lead to new habits.",
-                        "It is impossible to change your life in a month.",
-                        "Only big challenges are worth trying."
+                        "It is too short to form a habit.",
+                        "It is just the right amount of time to add a new habit.",
+                        "It is longer than most people can handle.",
+                        "It is only suitable for physical challenges."
                     ],
                     "answer": 1
                 },
                 {
-                    "time": 35.0,
+                    "time": 92.0,
                     "question": "What did the speaker do during his first 30-day challenge?",
                     "options": [
-                        "He wrote a novel.",
                         "He took a picture every day.",
-                        "He climbed a mountain.",
-                        "He biked to work every day."
+                        "He rode his bike to work every day.",
+                        "He climbed a mountain every day.",
+                        "Both A and B."
+                    ],
+                    "answer": 3
+                },
+                {
+                    "time": 142.0,
+                    "question": "What can be inferred from the speaker’s experience of writing a novel in 30 days?",
+                    "options": [
+                        "Writing a novel is easier than expected.",
+                        "You can accomplish big things by breaking them into daily tasks.",
+                        "It is necessary to have previous writing experience.",
+                        "The novel he wrote was a bestseller."
                     ],
                     "answer": 1
                 },
                 {
-                    "time": 70.0,
-                    "question": "What happened when the speaker gave up sugar for 30 days?",
+                    "time": 188.0,
+                    "question": " What is the main idea of the talk?",
                     "options": [
-                        "He lost weight.",
-                        "He felt more energetic.",
-                        "He ate a lot of sugar on day 31.",
-                        "He never ate sugar again."
+                        "You should try to write a novel in 30 days.",
+                        "It is impossible to change your life in a month.",
+                        "Taking small steps for 30 days can lead to new habits.",
+                        "Only big challenges are worth trying."
                     ],
                     "answer": 2
-                },
-                {
-                    "time": 120.0,
-                    "question": "What is the speaker's final advice to the audience?",
-                    "options": [
-                        "Start a 30-day challenge right now.",
-                        "Think about something you've always wanted to try and give it a shot.",
-                        "Only try challenges that are easy.",
-                        "Don't tell anyone about your goals."
-                    ],
-                    "answer": 1
                 }
             ]
         },
