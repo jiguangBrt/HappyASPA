@@ -2,6 +2,7 @@ from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, timezone
 
 db = SQLAlchemy()
 
@@ -219,7 +220,7 @@ class UserWritingSubmission(db.Model):
     exercise_id  = db.Column(db.Integer, db.ForeignKey('writing_exercises.id'),  nullable=False)
     content      = db.Column(db.Text,    nullable=False)
     word_count   = db.Column(db.Integer, nullable=True)
-    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    submitted_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     feedback     = db.Column(db.Text,    nullable=True)   # 预留 AI 反馈字段
     score        = db.Column(db.Float,   nullable=True)
 
@@ -236,7 +237,13 @@ class SpeakingExercise(db.Model):
     category = db.Column(db.String(50), nullable=True)  # 如：interview/lecture/discussion
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # 关联用户的录音提交
+    # 👇 新增 1：在数据库表里加一列，用来存创建这个话题的用户的 ID
+    creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True) 
+    
+    # 👇 新增 2：建立模型层面的关联，这样前端就能直接用 ex.creator.username 拿到名字了
+    creator = db.relationship('User', backref='created_exercises')
+
+    # 关联用户的录音提交（保留你原来的这行代码）
     submissions = db.relationship('UserSpeakingSubmission', backref='exercise', lazy=True)
 
 class UserSpeakingSubmission(db.Model):
