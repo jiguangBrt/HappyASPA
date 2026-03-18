@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exercise.title }} - Speaking Practice{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- 面包屑导航 -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('speaking.index') }}">Speaking Practice</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ exercise.title }}</li>
+        </ol>
+    </nav>
+
+    <!-- 题目详情卡片 -->
+    <div class="card mb-5 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+                <i class="bi bi-mic-fill me-2"></i>{{ exercise.title }}
+                <span class="badge bg-light text-primary ms-2">Difficulty: {{ exercise.difficulty }}</span>
+                <span class="badge bg-light text-primary ms-1">{{ exercise.category }}</span>
+            </h4>
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">Speaking Prompt</h5>
+            <p class="card-text lead">{{ exercise.prompt }}</p>
+            <p class="text-muted">Created at: {{ exercise.created_at.strftime('%Y-%m-%d') }}</p>
+        </div>
+    </div>
+
+    <!-- 录音列表 -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-record-circle me-2"></i>All Recordings ({{ submissions|length }})
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if submissions %}
+                <div class="list-group">
+                    {% for sub in submissions %}
+                        <div class="list-group-item list-group-item-action mb-2 rounded">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <h6 class="mb-1">
+                                    <i class="bi bi-person-circle me-1"></i> {{ sub.username }}
+                                </h6>
+                                <small class="text-muted">{{ sub.submitted_at }}</small>
+                            </div>
+                            
+                            <!-- 音频播放器 -->
+                            <div class="mt-2">
+                                <audio controls class="w-100" style="height: 40px;">
+                                    <source src="{{ url_for('speaking.get_audio', filename=sub.audio_filename) }}" type="audio/webm">
+                                    Your browser does not support the audio element.
+                                </audio>
+                            </div>
+                            
+                            <!-- 录音信息 -->
+                            <div class="mt-2 d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Duration: {{ sub.duration }}s</small>
+                                <div>
+                                    <span class="badge bg-secondary">{{ sub.score }}</span>
+                                    <span class="badge bg-info ms-1">{{ sub.feedback|truncate(30) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-light border text-center py-4">
+                    <i class="bi bi-mic-mute me-2 fs-4"></i>
+                    <span class="fs-5 text-muted">No recordings for this exercise yet. Be the first to submit!</span>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

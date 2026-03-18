@@ -18,7 +18,7 @@ def create_app():
     # 新增：文件上传配置
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads/speaking')  # 音频存储路径
     app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 最大50MB
-    app.config['ALLOWED_EXTENSIONS'] = {'wav', 'mp3', 'ogg', 'm4a'}  # 允许的音频格式
+    app.config['ALLOWED_EXTENSIONS'] = {'wav', 'mp3', 'ogg', 'm4a','webm'}  # 允许的音频格式
 
     # 创建上传目录（如果不存在）
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
