@@ -61,9 +61,24 @@ def new_post():
 def add_comment(post_id):
     post = ForumPost.query.get_or_404(post_id)
     content = request.form.get('content', '').strip()
+    
+    # 👇 新增 1：获取前端表单可能传过来的 parent_id
+    parent_id = request.form.get('parent_id')
+    
+    # 如果传了 parent_id 且是数字，就转成整数；否则设为 None（代表这是一条独立评论，不是回复）
+    if parent_id and parent_id.isdigit():
+        parent_id = int(parent_id)
+    else:
+        parent_id = None
 
     if content:
-        comment = ForumComment(post_id=post.id, user_id=current_user.id, content=content)
+        # 👇 新增 2：在创建评论实例时，把 parent_id 也存进去
+        comment = ForumComment(
+            post_id=post.id, 
+            user_id=current_user.id, 
+            content=content,
+            parent_id=parent_id  # <--- 加了这一行
+        )
         db.session.add(comment)
         db.session.commit()
         flash('Comment added!', 'success')
