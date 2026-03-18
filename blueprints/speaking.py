@@ -215,3 +215,21 @@ def delete_exercise(exercise_id):
         current_app.logger.error(f"Error deleting exercise: {str(e)}")
         flash('An error occurred while deleting the exercise.', 'danger')
         return redirect(url_for('speaking.index'))
+
+# ==========================================
+# 🎓 NEW: 学术情景模拟 (Academic Scenarios) 专属路由
+# ==========================================
+
+# 8. 学术情景库（列表页）
+@speaking_bp.route('/academic-scenarios')
+@login_required
+def academic_index():
+    # 目前先直接渲染静态页面，方便你预览前端 UI
+    return render_template('speaking/academic_index.html')
+
+# 9. 学术情景模拟室（沉浸式练习页）
+@speaking_bp.route('/academic-scenarios/<int:scenario_id>')
+@login_required
+def academic_detail(scenario_id):
+    # 先把 scenario_id 传给前端。等后面建好了数据库，这里就会用 query.get_or_404(scenario_id) 去查真实数据了
+    return render_template('speaking/academic_detail.html', scenario_id=scenario_id)
