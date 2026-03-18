@@ -1,86 +1,325 @@
 {% extends 'base.html' %}
-{% block title %}Vocabulary{% endblock %}
+
+{% block title %}Vocabulary Practice{% endblock %}
 
 {% block content %}
 <div class="d-flex align-items-center justify-content-between mb-4">
   <div>
     <h3 class="fw-bold mb-0"><i class="bi bi-book text-primary me-2"></i>Vocabulary Practice</h3>
-    <p class="text-muted mb-0 mt-1">Build your academic word bank, one word at a time.</p>
+    <p class="text-muted mb-0 mt-1">Choose a word book and start learning.</p>
   </div>
-  <span class="badge bg-primary fs-6">{{ words|length }} words</span>
+  <span class="badge bg-primary fs-6" id="totalWordsBadge">0 words</span>
 </div>
 
-{% if words %}
-<!-- Filter Bar -->
-<div class="row g-2 mb-4">
-  <div class="col-md-6">
-    <input type="text" class="form-control" id="wordSearch"
-           placeholder="🔍  Search words…" oninput="filterWords()">
-  </div>
-  <div class="col-md-3">
-    <select class="form-select" id="diffFilter" onchange="filterWords()">
-      <option value="">All difficulties</option>
-      <option value="1">⭐ Level 1</option>
-      <option value="2">⭐⭐ Level 2</option>
-      <option value="3">⭐⭐⭐ Level 3</option>
-      <option value="4">⭐⭐⭐⭐ Level 4</option>
-      <option value="5">⭐⭐⭐⭐⭐ Level 5</option>
-    </select>
-  </div>
+<!-- 分类选项卡区域（始终显示） -->
+<div id="categorySection">
+  <h5 class="fw-bold mb-3"><i class="bi bi-grid-3x3-gap-fill me-2"></i>Word Books</h5>
+  <div class="row g-3" id="categoryGrid"></div>
 </div>
 
-<!-- Word Cards -->
-<div class="row g-3" id="wordList">
-  {% for word in words %}
-  <div class="col-md-6 col-lg-4 word-item"
-       data-word="{{ word.word|lower }}"
-       data-diff="{{ word.difficulty }}">
-    <div class="card border-0 shadow-sm h-100">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-start mb-2">
-          <h5 class="fw-bold text-primary mb-0">{{ word.word }}</h5>
-          <span class="badge bg-light text-dark border">
-            {% for i in range(word.difficulty) %}⭐{% endfor %}
-          </span>
-        </div>
-        {% if word.phonetic %}
-        <p class="text-muted small mb-1"><em>{{ word.phonetic }}</em></p>
-        {% endif %}
-        <p class="mb-2">{{ word.definition }}</p>
-        {% if word.example_sentence %}
-        <p class="text-muted small fst-italic border-start border-3 border-primary ps-2 mb-0">
-          "{{ word.example_sentence }}"
-        </p>
-        {% endif %}
-        {% if word.category %}
-        <span class="badge bg-primary bg-opacity-10 text-primary mt-2">{{ word.category }}</span>
-        {% endif %}
+<!-- 单词学习区域（初始隐藏） -->
+<div id="learningSection" style="display: none;">
+  <div class="d-flex align-items-center mb-3">
+    <button class="btn btn-outline-secondary btn-sm me-2" id="backToCategoriesBtn">
+      <i class="bi bi-arrow-left"></i> Back
+    </button>
+    <h5 class="fw-bold mb-0" id="currentCategoryName"></h5>
+  </div>
+
+  <!-- 单词卡片 -->
+  <div class="card border-0 shadow-sm text-center p-4 mb-4">
+    <div class="card-body">
+      <div id="wordDisplay" class="display-1 fw-bold text-primary mb-3">--</div>
+      
+      <!-- 释义区域（初始隐藏） -->
+      <div id="meaningContainer" style="display: none;" class="mb-3">
+        <div class="text-muted small">中文释义</div>
+        <div id="meaningText" class="h3"></div>
       </div>
+
+      <!-- 进度状态 -->
+      <div id="progressInfo" class="text-muted small mb-3"></div>
+
+      <!-- 按钮容器（统一父容器，避免布局冲突） -->
+      <div class="d-flex justify-content-center gap-3" id="buttonContainer">
+        <!-- 初始认识/不认识按钮 -->
+        <button class="btn btn-success btn-lg" id="knownBtn">
+          <i class="bi bi-check-circle-fill me-2"></i>认识
+        </button>
+        <button class="btn btn-danger btn-lg" id="unknownBtn">
+          <i class="bi bi-x-circle-fill me-2"></i>不认识
+        </button>
+
+        <!-- 下一个按钮（初始隐藏） -->
+        <button class="btn btn-primary btn-lg" id="nextBtn" style="display: none;">
+          <i class="bi bi-arrow-right-circle-fill me-2"></i>下一个
+        </button>
+
+        <!-- 记错了按钮（初始隐藏） -->
+        <button class="btn btn-warning btn-lg" id="mistakeBtn" style="display: none;">
+          <i class="bi bi-arrow-counterclockwise me-2"></i>记错了
+        </button>
+      </div>
+
+      <!-- 加载提示 -->
+      <div id="loader" class="spinner-border text-primary mt-3" style="display: none;" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+
+      <!-- 错误信息 -->
+      <div id="errorMsg" class="text-danger mt-3"></div>
     </div>
   </div>
-  {% endfor %}
 </div>
-
-{% else %}
-<div class="text-center py-5">
-  <i class="bi bi-book text-muted" style="font-size: 4rem;"></i>
-  <h5 class="mt-3 text-muted">No words available yet.</h5>
-  <p class="text-muted">Check back soon — new vocabulary will be added by your instructor.</p>
-</div>
-{% endif %}
-
 {% endblock %}
 
 {% block scripts %}
+{{ super() }}
 <script>
-function filterWords() {
-  const search = document.getElementById('wordSearch').value.toLowerCase();
-  const diff   = document.getElementById('diffFilter').value;
-  document.querySelectorAll('.word-item').forEach(el => {
-    const matchWord = el.dataset.word.includes(search);
-    const matchDiff = diff === '' || el.dataset.diff === diff;
-    el.style.display = (matchWord && matchDiff) ? '' : 'none';
+  // 状态变量
+  let currentCategory = null;
+  let currentWordId = null;
+  let currentMeaning = '';
+  let tempChoice = null; // true=认识, false=不认识
+
+  // DOM 元素
+  const categoryGrid = document.getElementById('categoryGrid');
+  const learningSection = document.getElementById('learningSection');
+  const categorySection = document.getElementById('categorySection');
+  const currentCategoryName = document.getElementById('currentCategoryName');
+  const wordDisplay = document.getElementById('wordDisplay');
+  const knownBtn = document.getElementById('knownBtn');
+  const unknownBtn = document.getElementById('unknownBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const mistakeBtn = document.getElementById('mistakeBtn');
+  const backBtn = document.getElementById('backToCategoriesBtn');
+  const loader = document.getElementById('loader');
+  const errorMsg = document.getElementById('errorMsg');
+  const progressInfo = document.getElementById('progressInfo');
+  const meaningContainer = document.getElementById('meaningContainer');
+  const meaningText = document.getElementById('meaningText');
+  const totalWordsBadge = document.getElementById('totalWordsBadge');
+
+  // 初始化：加载分类列表
+  async function loadCategories() {
+    showLoader(true);
+    clearError();
+
+    try {
+      const response = await fetch('/vocabulary/api/categories');
+      if (!response.ok) throw new Error('加载分类失败');
+      const categories = await response.json();
+      renderCategories(categories);
+
+      // 更新总单词数（所有分类单词数之和）
+      const total = categories.reduce((sum, cat) => sum + cat.count, 0);
+      totalWordsBadge.textContent = `${total} words`;
+    } catch (error) {
+      showError(error.message);
+      categoryGrid.innerHTML = '<div class="col-12 text-center py-4">加载失败，请刷新页面重试</div>';
+    } finally {
+      showLoader(false);
+    }
+  }
+
+  // 渲染分类卡片
+  function renderCategories(categories) {
+    if (!categories || categories.length === 0) {
+      categoryGrid.innerHTML = '<div class="col-12 text-center py-4">暂无词书</div>';
+      return;
+    }
+
+    categoryGrid.innerHTML = '';
+    categories.forEach(cat => {
+      const col = document.createElement('div');
+      col.className = 'col-md-4 col-lg-3';
+      col.innerHTML = `
+        <div class="card h-100 border-0 shadow-sm category-card" data-cat-id="${cat.id}" data-cat-name="${cat.name}" style="cursor: pointer;">
+          <div class="card-body text-center">
+            <i class="bi bi-book fs-1 text-primary mb-3"></i>
+            <h6 class="fw-bold">${cat.name}</h6>
+            <p class="text-muted small">${cat.count} 个单词</p>
+          </div>
+        </div>
+      `;
+      col.querySelector('.category-card').addEventListener('click', () => selectCategory(cat.id, cat.name));
+      categoryGrid.appendChild(col);
+    });
+  }
+
+  // 选择分类，进入学习模式
+  function selectCategory(catId, catName) {
+    currentCategory = catId;
+    currentCategoryName.innerText = catName;
+    categorySection.style.display = 'none';
+    learningSection.style.display = 'block';
+    loadNextWord();
+  }
+
+  // 返回分类选择
+  function backToCategories() {
+    categorySection.style.display = 'block';
+    learningSection.style.display = 'none';
+    currentCategory = null;
+    currentWordId = null;
+    tempChoice = null;
+    clearError();
+  }
+
+  // 重置所有按钮显示状态（核心修复）
+  function resetButtons() {
+    // 初始状态：只显示 认识/不认识
+    knownBtn.style.display = 'inline-block';
+    unknownBtn.style.display = 'inline-block';
+    nextBtn.style.display = 'none';
+    mistakeBtn.style.display = 'none';
+    // 隐藏释义
+    meaningContainer.style.display = 'none';
+  }
+
+  // 加载下一个单词
+  async function loadNextWord() {
+    if (!currentCategory) return;
+
+    showLoader(true);
+    clearError();
+    setAllButtonsDisabled(true);
+
+    try {
+      const response = await fetch(`/vocabulary/api/next?category=${currentCategory}`);
+      if (!response.ok) throw new Error('加载单词失败');
+      const word = await response.json();
+      displayWord(word);
+      currentWordId = word.id;
+      // 重置按钮状态
+      resetButtons();
+      tempChoice = null;
+      setAllButtonsDisabled(false);
+    } catch (error) {
+      showError(error.message);
+      wordDisplay.innerText = '😢';
+      progressInfo.innerText = '错误';
+    } finally {
+      showLoader(false);
+    }
+  }
+
+  // 显示单词
+  function displayWord(word) {
+    wordDisplay.innerText = word.word;
+    progressInfo.innerText = `当前状态：${word.status}`;
+    currentMeaning = word.meaning || '暂无释义';
+  }
+
+  // 处理用户初步选择（认识/不认识）
+  function handleChoice(known) {
+    tempChoice = known;
+    // 显示释义
+    meaningText.innerText = currentMeaning;
+    meaningContainer.style.display = 'block';
+
+    // 隐藏初始按钮
+    knownBtn.style.display = 'none';
+    unknownBtn.style.display = 'none';
+
+    // 显示后续按钮
+    nextBtn.style.display = 'inline-block';
+    // 只有选择认识才显示记错了
+    if (known) {
+      mistakeBtn.style.display = 'inline-block';
+    } else {
+      mistakeBtn.style.display = 'none';
+    }
+
+    setAllButtonsDisabled(false);
+  }
+
+  // 最终提交记录
+  async function submitFinal(known) {
+    setAllButtonsDisabled(true);
+    showLoader(true);
+    clearError();
+
+    try {
+      const response = await fetch('/vocabulary/api/record', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ word_id: currentWordId, known: known })
+      });
+      if (!response.ok) throw new Error('提交失败');
+      await loadNextWord();
+    } catch (error) {
+      showError(error.message);
+      // 出错时重置按钮
+      resetButtons();
+      setAllButtonsDisabled(false);
+    } finally {
+      showLoader(false);
+    }
+  }
+
+  // 控制所有按钮禁用状态
+  function setAllButtonsDisabled(disabled) {
+    const btns = [knownBtn, unknownBtn, nextBtn, mistakeBtn];
+    btns.forEach(btn => {
+      if (btn) btn.disabled = disabled;
+    });
+  }
+
+  // 工具函数
+  function showLoader(show) {
+    loader.style.display = show ? 'inline-block' : 'none';
+  }
+
+  function showError(msg) {
+    errorMsg.innerText = msg;
+  }
+
+  function clearError() {
+    errorMsg.innerText = '';
+  }
+
+  // 事件绑定
+  knownBtn.addEventListener('click', () => handleChoice(true));
+  unknownBtn.addEventListener('click', () => handleChoice(false));
+
+  nextBtn.addEventListener('click', () => {
+    if (tempChoice !== null) {
+      submitFinal(tempChoice);
+    }
   });
-}
+
+  mistakeBtn.addEventListener('click', () => {
+    submitFinal(false); // 记错了，提交不认识
+  });
+
+  backBtn.addEventListener('click', backToCategories);
+
+  // 页面加载
+  loadCategories();
 </script>
+
+<style>
+  .category-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .category-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
+  }
+  #wordDisplay {
+    word-break: break-word;
+  }
+  #meaningContainer {
+    animation: fadeIn 0.3s;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  /* 确保按钮显示/隐藏时布局稳定 */
+  #buttonContainer {
+    min-height: 70px;
+  }
+</style>
 {% endblock %}
