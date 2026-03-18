@@ -1,21 +1,25 @@
-Sprint cycle: 2026/3/17 - 2026/3/22
+# Sprint cycle: 2026/3/17 - 2026/3/22
 
-Team PO: Jing Lu
+**Team PO**: Jing Lu
 
-Team SM: Qiyin Huang
+**Team SM**: Qiyin Huang
 
-Developers: Qiyin Huang, Jing Lu, Xingzhuo Bao, Hang Ge, Jiachi Zhu, Sihan Wang, Yihan Wang, Yukun Wang
+**Developers**: Qiyin Huang, Jing Lu, Xingzhuo Bao, Hang Ge, Jiachi Zhu, Sihan Wang, Yihan Wang, Yukun Wang
 
-Sprint Goal: Complete the basic setup of core functional modules and database iterations, optimize some advanced features.
+**Working Hours**: Sun–Fri, 10:00 AM – 12:00 AM (Saturdays off)
 
-Selected User Story & Task Plan
+
+## Sprint Goal: 
+Complete the basic setup of core functional modules and database iterations, optimize some advanced features.
+
+## Selected User Story & Task Plan
 <table>
   <thead>
     <tr>
       <th>module</th>
       <th>user story</th>
       <th>task description</th>
-      <th>owner</th>
+      <th>person in charge</th>
     </tr>
   </thead>
   <tbody>
@@ -60,7 +64,7 @@ Selected User Story & Task Plan
       <td>Jiachi Zhu</td>
     </tr>
     <tr>
-      <td>As a user engaging in a discussion, I want to be able to reply directly to a specific comment under a post, so that I can have focused, threaded conversations without losing the context of who I am talking to.<br>2. As a user participating in a thread, I want my reply to clearly indicate which specific comment I am responding to, so that other readers can understand the relationship between our messages.</td>
+      <td>As a user engaging in a discussion, I want to be able to reply directly to a specific comment under a post, so that I can have focused, threaded conversations without losing the context of who I am talking to.<br>As a user participating in a thread, I want my reply to clearly indicate which specific comment I am responding to, so that other readers can understand the relationship between our messages.</td>
       <td>Reply to the comments of the corresponding post and comment. </td>
       <td>Jiachi Zhu</td>
     </tr>
