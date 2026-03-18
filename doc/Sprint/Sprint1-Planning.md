@@ -16,10 +16,10 @@ Complete the basic setup of core functional modules and database iterations, opt
 <table>
   <thead>
     <tr>
-      <th>module</th>
-      <th>user story</th>
-      <th>task description</th>
-      <th>person in charge</th>
+      <th>Module</th>
+      <th>User Story</th>
+      <th>Task Description</th>
+      <th>Person in charge</th>
     </tr>
   </thead>
   <tbody>
