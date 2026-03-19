@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Scenarios Library</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f8f9fa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        /* 卡片悬浮动效，增加高级感 */
+        .scenario-card { transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer; }
+        .scenario-card:hover { transform: translateY(-5px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+        .icon-box { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 12px; }
+    </style>
+</head>
+<body>
+
+<div class="container py-5">
+    <div class="mb-5 text-center">
+        <h2 class="fw-bold mb-3"><i class="bi bi-mortarboard-fill text-primary me-2"></i>Academic Scenarios</h2>
+        <p class="text-muted mx-auto" style="max-width: 600px;">
+            Simulate real university interactions. Master formal communication, critical thinking, and academic reasoning before stepping into the classroom.
+        </p>
+    </div>
+
+    <div class="d-flex justify-content-center gap-2 mb-4 flex-wrap">
+        <button class="btn btn-primary rounded-pill px-4">All Scenarios</button>
+        <button class="btn btn-outline-secondary rounded-pill px-4">Office Hours</button>
+        <button class="btn btn-outline-secondary rounded-pill px-4">Seminars</button>
+        <button class="btn btn-outline-secondary rounded-pill px-4">Presentations</button>
+    </div>
+
+    <div class="row g-4">
+        
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100 scenario-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="icon-box bg-primary bg-opacity-10 text-primary fs-3">
+                            <i class="bi bi-door-open-fill"></i>
+                        </div>
+                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle">⭐⭐⭐ Hard</span>
+                    </div>
+                    <h5 class="fw-bold mb-2">Requesting a Deadline Extension</h5>
+                    <p class="text-muted small mb-3 line-clamp-2">Explain a critical issue with your World Bank dataset and formally negotiate an extension for your Macroeconomics paper.</p>
+                    <div class="d-flex flex-wrap gap-2 mt-auto">
+                        <span class="badge bg-light text-dark border"><i class="bi bi-tag me-1"></i>Negotiation</span>
+                        <span class="badge bg-light text-dark border"><i class="bi bi-tag me-1"></i>Problem Solving</span>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top-0 pt-0 pb-4 px-4">
+                    <a href="#" class="btn btn-outline-primary w-100 fw-medium">Start Simulation <i class="bi bi-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100 scenario-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="icon-box bg-success bg-opacity-10 text-success fs-3">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning-subtle text-dark">⭐⭐ Medium</span>
+                    </div>
+                    <h5 class="fw-bold mb-2">Disagreeing with a Classmate</h5>
+                    <p class="text-muted small mb-3">Politely interrupt a Sociology seminar discussion to present counter-evidence regarding technology and unemployment.</p>
+                    <div class="d-flex flex-wrap gap-2 mt-auto">
+                        <span class="badge bg-light text-dark border"><i class="bi bi-tag me-1"></i>Critical Thinking</span>
+                        <span class="badge bg-light text-dark border"><i class="bi bi-tag me-1"></i>Citing Sources</span>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top-0 pt-0 pb-4 px-4">
+                    <a href="#" class="btn btn-outline-primary w-100 fw-medium">Start Simulation <i class="bi bi-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100 scenario-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="icon-box bg-purple bg-opacity-10 text-purple fs-3" style="color: #6f42c1; background-color: #f3e8fc;">
+                            <i class="bi bi-bar-chart-fill"></i>
+                        </div>
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle">⭐ Easy</span>
+                    </div>
+                    <h5 class="fw-bold mb-2">Explaining an Anomaly</h5>
+                    <p class="text-muted small mb-3">Respond to a guest scholar's question about an unexpected spike in your biology lab poster presentation data.</p>
+                    <div class="d-flex flex-wrap gap-2 mt-auto">
+                        <span class="badge bg-light text-dark border"><i class="bi bi-tag me-1"></i>Data Description</span>
+                        <span class="badge bg-light text-dark border"><i class="bi bi-tag me-1"></i>Hypothesizing</span>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top-0 pt-0 pb-4 px-4">
+                    <a href="#" class="btn btn-outline-primary w-100 fw-medium">Start Simulation <i class="bi bi-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>
