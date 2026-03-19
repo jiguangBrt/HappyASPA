@@ -150,7 +150,7 @@ def add_default_data():
             'title': 'Self Introduction',
             'prompt': 'Talk about your academic background and study goals (2-3 minutes).',
             'difficulty': 1,
-            'category': 'Interview',
+            'category': 'General Speaking',
         },
         {
             'title': 'Describe a Research Topic',
