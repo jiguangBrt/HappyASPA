@@ -144,6 +144,17 @@ class ForumComment(db.Model):
     content    = db.Column(db.Text,     nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # 👇 新增 1：自引用外键，记录这条评论是回复哪条评论的（允许为空，为空说明是直接回复帖子的主评论）
+    parent_id  = db.Column(db.Integer, db.ForeignKey('forum_comments.id'), nullable=True)
+
+    # 👇 新增 2：建立关系。这样你可以很方便地用 comment.parent 找到被回复的评论，或者用 comment.replies 找到它的所有子回复。
+    replies    = db.relationship(
+        'ForumComment', 
+        backref=db.backref('parent', remote_side=[id]), 
+        lazy=True, 
+        cascade='all, delete-orphan'
+    )
+
 
 class ForumLike(db.Model):
     __tablename__ = 'forum_likes'
