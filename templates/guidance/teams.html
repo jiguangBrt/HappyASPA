@@ -1,7 +1,256 @@
 {% extends "base.html" %}
 
-{% block title %}{{ card.title }}{% endblock %}
+{% block title %}How to Use Microsoft Teams Step-by-Step for Beginners{% endblock %}
 
 {% block content %}
+<div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    <h1 class="h3 fw-bold mb-1">How to Use Microsoft Teams Step-by-Step for Beginners</h1>
+    <div class="text-muted">For DIICSU newcomers: join meetings correctly, join the right chat group, and follow class updates.</div>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <span class="badge text-bg-primary"><i class="bi bi-people me-1"></i>Teams</span>
+    <span class="badge text-bg-light border"><i class="bi bi-mortarboard me-1"></i>DIICSU</span>
+  </div>
+</div>
+
+<div class="alert alert-info d-flex gap-2 align-items-start" role="alert">
+  <i class="bi bi-lightbulb flex-shrink-0" style="font-size: 1.25rem;"></i>
+  <div>
+    <div class="fw-semibold mb-1">What you must be able to do (minimum beginner level)</div>
+    <ol class="mb-0 ps-3">
+      <li>Join a Teams class meeting on time with correct audio/video settings.</li>
+      <li>Join the correct chat group (class chat or your project group) and send a clear message.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <i class="bi bi-list-ul text-primary"></i>
+      <div class="fw-bold">Table of contents</div>
+    </div>
+    <div class="row g-2">
+      <div class="col-12 col-md-6">
+        <div class="list-group">
+          <a class="list-group-item list-group-item-action" href="#start-to-finish">How to Use Microsoft Teams from Start to Finish</a>
+          <a class="list-group-item list-group-item-action" href="#getting-started">Getting Started with Teams</a>
+          <a class="list-group-item list-group-item-action" href="#create-manage-teams">Creating and Managing Teams</a>
+          <a class="list-group-item list-group-item-action" href="#chats">Using Private and Group Chats</a>
+        </div>
+      </div>
+      <div class="col-12 col-md-6">
+        <div class="list-group">
+          <a class="list-group-item list-group-item-action" href="#meetings">Scheduling and Joining Meetings</a>
+          <a class="list-group-item list-group-item-action" href="#files">Sharing Files and Collaborating on Documents</a>
+          <a class="list-group-item list-group-item-action" href="#presence">Managing Presence and Notifications</a>
+          <a class="list-group-item list-group-item-action" href="#references">References</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2 id="start-to-finish" class="h4 fw-bold mt-4">How to Use Microsoft Teams from Start to Finish</h2>
+<div class="row g-3 mb-4">
+  <div class="col-12 col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="fw-bold mb-2"><i class="bi bi-check2-square text-primary me-2"></i>Before your first DIICSU class</div>
+        <ol class="mb-0 ps-3">
+          <li>Install Teams (desktop or mobile) or use the web version.</li>
+          <li>Sign in with your school Microsoft account (or the account provided by DIICSU).</li>
+          <li>Join the class Team (invite link or code) and pin it.</li>
+          <li>Find the class chat and your project-group chat (if applicable).</li>
+          <li>Do a quick audio test: choose the right mic/speaker.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="fw-bold mb-2"><i class="bi bi-camera-video text-primary me-2"></i>When it's time to join a meeting</div>
+        <ol class="mb-0 ps-3">
+          <li>Open the meeting from <span class="fw-semibold">Calendar</span> or the teacher's link.</li>
+          <li>Check camera and microphone before you click <span class="fw-semibold">Join now</span>.</li>
+          <li>If you enter the lobby, wait until the teacher admits you.</li>
+          <li>Use <span class="fw-semibold">Chat</span> for questions, and <span class="fw-semibold">Raise hand</span> if needed.</li>
+          <li>After class, check the meeting chat and Files for materials.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-warning" role="alert">
+  <div class="fw-semibold mb-1"><i class="bi bi-exclamation-triangle me-2"></i>Common mistakes (avoid these)</div>
+  <ul class="mb-0">
+    <li>Joining with the wrong account (personal vs school) and not seeing the class Team.</li>
+    <li>Clicking <span class="fw-semibold">Join</span> too early without checking mic/speaker, then you can't hear the teacher.</li>
+    <li>Posting homework questions in the wrong place (class channel vs private chat).</li>
+  </ul>
+</div>
+
+<h2 id="getting-started" class="h4 fw-bold mt-4">Getting Started with Teams</h2>
+<p class="mb-2">To begin using Teams, follow these steps:</p>
+<ol class="mb-3 ps-3">
+  <li>Download and install Microsoft Teams on your device, or use the web version at <span class="fw-semibold">teams.microsoft.com</span>.</li>
+  <li>Sign in with your Microsoft account (for DIICSU: use your school account if provided).</li>
+  <li>In a supported browser (Edge/Chrome), you can use Teams without downloading.</li>
+</ol>
+
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <figure class="mb-0">
+      <img class="img-fluid rounded border" src="{{ url_for('static', filename='pictures/Getting_Started.png') }}" alt="Microsoft Teams main interface showing key tabs">
+      <figcaption class="small text-muted mt-2">Main tabs you'll use most: Activity, Chat, Teams, Calendar, and Files.</figcaption>
+    </figure>
+  </div>
+</div>
+
+<p class="mb-4">Tip: click your profile picture to set your status (Available, Busy, Do Not Disturb).</p>
+
+<h2 id="create-manage-teams" class="h4 fw-bold mt-4">Creating and Managing Teams</h2>
+<p class="mb-2">A <span class="fw-semibold">Team</span> is a workspace for a group such as a department, project group, or class.</p>
+<p class="mb-2">To create a new team:</p>
+<ol class="mb-3 ps-3">
+  <li>Click the <span class="fw-semibold">Teams</span> tab.</li>
+  <li>Select <span class="fw-semibold">Join or create a team</span>.</li>
+  <li>Click <span class="fw-semibold">Create team</span>, then choose to start from scratch or from an existing group.</li>
+  <li>Name your team, add members, and set privacy options.</li>
+</ol>
+<p class="mb-4">You can also join existing teams with a code or an invite link.</p>
+
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <figure class="mb-0">
+      <img class="img-fluid rounded border" src="{{ url_for('static', filename='pictures/Add_To_Team.jpg') }}" alt="Join or add to a team in Microsoft Teams">
+      <figcaption class="small text-muted mt-2">Join a team using an invite link or code.</figcaption>
+    </figure>
+  </div>
+  <div class="col-12">
+    <figure class="mb-0">
+      <img class="img-fluid rounded border" src="{{ url_for('static', filename='pictures/Create_Team.jpg') }}" alt="Create a team in Microsoft Teams">
+      <figcaption class="small text-muted mt-2">Create a team (for your project group or class).</figcaption>
+    </figure>
+  </div>
+</div>
+
+<h2 id="chats" class="h4 fw-bold mt-4">Using Private and Group Chats</h2>
+<p class="mb-2">
+  The <span class="fw-semibold">Chat</span> feature allows direct messaging between individuals or small groups.
+  For DIICSU, this is where you'll most often communicate with your project group.
+</p>
+<p class="mb-2">To start a chat:</p>
+<ol class="mb-3 ps-3">
+  <li>Click the <span class="fw-semibold">Chat</span> tab.</li>
+  <li>Select the <span class="fw-semibold">New chat</span> icon.</li>
+  <li>Enter names, then begin messaging.</li>
+</ol>
+<p class="mb-3">
+  You can also start voice/video calls, share files, and schedule meetings within any chat. Use <span class="fw-semibold">@mentions</span> to get someone's attention.
+</p>
+
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <figure class="mb-0">
+      <img class="img-fluid rounded border" src="{{ url_for('static', filename='pictures/Chat_in_Team.png') }}" alt="Chat in Microsoft Teams">
+      <figcaption class="small text-muted mt-2">Use Chat for your class/project group messages and @mentions.</figcaption>
+    </figure>
+  </div>
+</div>
+
+<h2 id="meetings" class="h4 fw-bold mt-4">Scheduling and Joining Meetings</h2>
+<p class="mb-2">
+  The built-in <span class="fw-semibold">Calendar</span> helps you organize and join meetings easily. For DIICSU students, your main job is to
+  <span class="fw-semibold">join the teacher's meeting link correctly</span> and be ready to speak.
+</p>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <div class="fw-bold mb-2"><i class="bi bi-box-arrow-in-right text-primary me-2"></i>How to join a meeting (DIICSU checklist)</div>
+    <ol class="mb-0 ps-3">
+      <li>Open the meeting link from your teacher or open <span class="fw-semibold">Calendar</span> → select the meeting → <span class="fw-semibold">Join</span>.</li>
+      <li>On the pre-join screen, confirm:
+        <ul class="mb-0 mt-1">
+          <li><span class="fw-semibold">Correct speaker</span> (you can hear)</li>
+          <li><span class="fw-semibold">Correct microphone</span> (it moves when you speak)</li>
+          <li>Camera on/off based on teacher rules</li>
+        </ul>
+      </li>
+      <li>Set your name clearly (e.g., "DIICSU_YourName" if required).</li>
+      <li>Click <span class="fw-semibold">Join now</span>. If you enter the lobby, wait to be admitted.</li>
+      <li>If you can't hear anything: open <span class="fw-semibold">More (...)</span> &gt; <span class="fw-semibold">Settings</span> &gt; <span class="fw-semibold">Device settings</span> and re-select speaker/mic.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-12 col-lg-6">
+        <figure class="mb-0">
+          <img class="img-fluid rounded border" src="{{ url_for('static', filename='pictures/Add_To_Meetings.png') }}" alt="Create a meeting in Microsoft Teams calendar">
+          <figcaption class="small text-muted mt-2">Create a meeting from Calendar.</figcaption>
+        </figure>
+      </div>
+      <div class="col-12 col-lg-6">
+        <figure class="mb-0">
+          <img class="img-fluid rounded border" src="{{ url_for('static', filename='pictures/Add_To_Meeting2.png') }}" alt="Meeting details and save invite in Microsoft Teams">
+          <figcaption class="small text-muted mt-2">Set time, add people, then Save.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="mb-4">
+  If you need to create your own meeting: <span class="fw-semibold">Calendar</span> → <span class="fw-semibold">New meeting</span> → fill details → <span class="fw-semibold">Save</span>.
+</p>
+
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <div class="fw-bold mb-2"><i class="bi bi-tools text-primary me-2"></i>In meetings, you can</div>
+    <ul class="mb-0">
+      <li>Share your screen</li>
+      <li>Use chat and reactions</li>
+      <li>Enable live captions</li>
+      <li>Record the meeting (if permitted)</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="files" class="h4 fw-bold mt-4">Sharing Files and Collaborating on Documents</h2>
+<p class="mb-2">Microsoft Teams makes it easy to upload and work on files with your team.</p>
+<ul class="mb-3">
+  <li>Use the <span class="fw-semibold">Attach</span> icon in any chat or channel to upload files.</li>
+  <li>Files shared in chats are stored in <span class="fw-semibold">OneDrive</span>.</li>
+  <li>Files shared in channels go to <span class="fw-semibold">SharePoint</span>.</li>
+  <li>You can collaborate in real time on Word, Excel, and PowerPoint without leaving Teams.</li>
+</ul>
+
+<h2 id="presence" class="h4 fw-bold mt-4">Managing Presence and Notifications</h2>
+<p class="mb-2">You can control how and when you appear available to others.</p>
+<ul class="mb-4">
+  <li>Click your profile image to set your status (Available, Busy, Do Not Disturb, etc.).</li>
+  <li>Add a custom status message if needed.</li>
+  <li>Go to <span class="fw-semibold">Settings</span> &gt; <span class="fw-semibold">Notifications</span> to control alerts for chats, mentions, and meetings.</li>
+  <li>Presence indicators help others know your availability; read receipts show message delivery.</li>
+</ul>
+
+<h2 id="references" class="h4 fw-bold mt-4">References</h2>
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <div class="text-muted small mb-2">Some parts of this guide are adapted from the following resource (accessed March 19, 2026).</div>
+    <ul class="mb-0">
+      <li>
+        Windows Report — “How to use Microsoft Teams”
+        <a href="https://windowsreport.com/how-to-use-microsoft-teams/" target="_blank" rel="noopener noreferrer">https://windowsreport.com/how-to-use-microsoft-teams/</a>
+      </li>
+    </ul>
+  </div>
+</div>
 {% endblock %}
 
