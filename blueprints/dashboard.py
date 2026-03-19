@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta
 
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, abort
 from flask_login import login_required, current_user
 from sqlalchemy import func
 from sqlalchemy.exc import OperationalError
@@ -17,6 +17,41 @@ from models import (
 )
 
 dashboard_bp = Blueprint('dashboard', __name__)
+
+OVERALL_GUIDANCE_CARDS = [
+    {
+        "key": "teams",
+        "title": "Use Microsoft Teams",
+        "front": "Announcements, materials, and group work.",
+        "back": "Check the class Team daily: announcements, files, and channels. Keep group decisions in the channel/chat so everyone has a record.",
+        "icon": "bi-people",
+        "color": "primary",
+    },
+    {
+        "key": "diicsu",
+        "title": "DIICSU Introduction",
+        "front": "Course support and weekly workflow.",
+        "back": "Add your DIICSU overview here (what it is, where to access it, and what students should do each week). This card is designed to be edited by your instructor.",
+        "icon": "bi-building",
+        "color": "secondary",
+    },
+    {
+        "key": "misconduct",
+        "title": "Academic Misconduct",
+        "front": "What it is and how to avoid it.",
+        "back": "Do your own work, cite sources, and do not reuse others' writing without permission. If unsure, ask the teacher before submitting.",
+        "icon": "bi-shield-check",
+        "color": "danger",
+    },
+    {
+        "key": "focus",
+        "title": "Class Focus",
+        "front": "What to prioritize in this class.",
+        "back": "Listening and speaking are the core focus. Use the forum to ask questions, and build vocabulary continuously to support both skills.",
+        "icon": "bi-bullseye",
+        "color": "success",
+    },
+]
 
 RECOMMENDED_SCHEDULES = {
     "listening": "\u542c\u542c\u529b1\u7bc7",
@@ -115,6 +150,7 @@ def index():
         schedule_items=schedule_items_payload,
         today_schedule=today_schedule_payload,
         schedule_table_ready=schedule_table_ready,
+        overall_guidance_cards=OVERALL_GUIDANCE_CARDS,
         growth_stats={
             "vocab_mastered": vocab_mastered,
             "vocab_learning": vocab_learning,
@@ -124,6 +160,17 @@ def index():
         favorite_posts=favorite_posts,
         liked_posts=liked_posts,
     )
+
+
+@dashboard_bp.route("/guidance/<card_key>")
+@login_required
+def guidance_page(card_key: str):
+    card = next(
+        (item for item in OVERALL_GUIDANCE_CARDS if item["key"] == card_key), None
+    )
+    if not card:
+        abort(404)
+    return render_template(f"guidance/{card_key}.html", card=card)
 
 
 @dashboard_bp.route("/schedule", methods=["POST"])
