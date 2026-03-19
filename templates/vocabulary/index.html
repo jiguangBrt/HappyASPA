@@ -40,24 +40,24 @@
       <!-- 进度状态 -->
       <div id="progressInfo" class="text-muted small mb-3"></div>
 
-      <!-- 按钮容器（统一父容器，避免布局冲突） -->
+      <!-- 按钮容器 -->
       <div class="d-flex justify-content-center gap-3" id="buttonContainer">
         <!-- 初始认识/不认识按钮 -->
         <button class="btn btn-success btn-lg" id="knownBtn">
-          <i class="bi bi-check-circle-fill me-2"></i>认识
+          <i class="bi bi-check-circle-fill me-2"></i>Known
         </button>
         <button class="btn btn-danger btn-lg" id="unknownBtn">
-          <i class="bi bi-x-circle-fill me-2"></i>不认识
+          <i class="bi bi-x-circle-fill me-2"></i>Unknown
         </button>
 
         <!-- 下一个按钮（初始隐藏） -->
         <button class="btn btn-primary btn-lg" id="nextBtn" style="display: none;">
-          <i class="bi bi-arrow-right-circle-fill me-2"></i>下一个
+          <i class="bi bi-arrow-right-circle-fill me-2"></i>Next
         </button>
 
         <!-- 记错了按钮（初始隐藏） -->
         <button class="btn btn-warning btn-lg" id="mistakeBtn" style="display: none;">
-          <i class="bi bi-arrow-counterclockwise me-2"></i>记错了
+          <i class="bi bi-arrow-counterclockwise me-2"></i>Mistake
         </button>
       </div>
 
@@ -71,16 +71,47 @@
     </div>
   </div>
 </div>
+
+<!-- 鼓励弹窗（Bootstrap 模态框） -->
+<div class="modal fade" id="encouragementModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <i class="bi bi-emoji-smile display-1 text-warning mb-3"></i>
+        <h3 class="fw-bold mb-2">Excellent!</h3>
+        <p class="text-muted mb-4">You've reviewed 5 words. Keep up the great work!</p>
+        <div class="d-flex justify-content-center gap-3">
+          <button class="btn btn-primary px-4" id="continueLearningBtn" data-bs-dismiss="modal">Continue Learning</button>
+          <button class="btn btn-outline-secondary px-4" id="takeBreakBtn">Take a break</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
 <script>
+  // 英文分类名称映射（基于分类ID）
+  const categoryDisplayNames = {
+    'cs': 'Computer Science',
+    'civil': 'Civil Engineering',
+    'mech': 'Mechanical Engineering',
+    'math': 'Applied Mathematics',
+    'traffic': 'Traffic Control',
+    'academic': 'Academic English'
+  };
+
   // 状态变量
   let currentCategory = null;
   let currentWordId = null;
   let currentMeaning = '';
   let tempChoice = null; // true=认识, false=不认识
+  let wordsReviewedCount = 0; // 当前词书学习会话中已背诵的单词数
 
   // DOM 元素
   const categoryGrid = document.getElementById('categoryGrid');
@@ -99,6 +130,11 @@
   const meaningContainer = document.getElementById('meaningContainer');
   const meaningText = document.getElementById('meaningText');
   const totalWordsBadge = document.getElementById('totalWordsBadge');
+
+  // 弹窗元素
+  const encouragementModal = new bootstrap.Modal(document.getElementById('encouragementModal'));
+  const continueBtn = document.getElementById('continueLearningBtn');
+  const breakBtn = document.getElementById('takeBreakBtn');
 
   // 初始化：加载分类列表
   async function loadCategories() {
@@ -133,26 +169,30 @@
     categories.forEach(cat => {
       const col = document.createElement('div');
       col.className = 'col-md-4 col-lg-3';
+      // 使用英文名称，若映射中不存在则回退到原 cat.name
+      const displayName = categoryDisplayNames[cat.id] || cat.name;
       col.innerHTML = `
-        <div class="card h-100 border-0 shadow-sm category-card" data-cat-id="${cat.id}" data-cat-name="${cat.name}" style="cursor: pointer;">
+        <div class="card h-100 border-0 shadow-sm category-card" data-cat-id="${cat.id}" data-cat-name="${displayName}" style="cursor: pointer;">
           <div class="card-body text-center">
             <i class="bi bi-book fs-1 text-primary mb-3"></i>
-            <h6 class="fw-bold">${cat.name}</h6>
+            <h6 class="fw-bold">${displayName}</h6>
             <p class="text-muted small">${cat.count} 个单词</p>
           </div>
         </div>
       `;
-      col.querySelector('.category-card').addEventListener('click', () => selectCategory(cat.id, cat.name));
+      col.querySelector('.category-card').addEventListener('click', () => selectCategory(cat.id, displayName));
       categoryGrid.appendChild(col);
     });
   }
 
   // 选择分类，进入学习模式
-  function selectCategory(catId, catName) {
+  function selectCategory(catId, catDisplayName) {
     currentCategory = catId;
-    currentCategoryName.innerText = catName;
+    currentCategoryName.innerText = catDisplayName;
     categorySection.style.display = 'none';
     learningSection.style.display = 'block';
+    // 重置计数器
+    wordsReviewedCount = 0;
     loadNextWord();
   }
 
@@ -163,17 +203,16 @@
     currentCategory = null;
     currentWordId = null;
     tempChoice = null;
+    wordsReviewedCount = 0; // 重置计数器
     clearError();
   }
 
-  // 重置所有按钮显示状态（核心修复）
+  // 重置所有按钮显示状态
   function resetButtons() {
-    // 初始状态：只显示 认识/不认识
     knownBtn.style.display = 'inline-block';
     unknownBtn.style.display = 'inline-block';
     nextBtn.style.display = 'none';
     mistakeBtn.style.display = 'none';
-    // 隐藏释义
     meaningContainer.style.display = 'none';
   }
 
@@ -191,7 +230,6 @@
       const word = await response.json();
       displayWord(word);
       currentWordId = word.id;
-      // 重置按钮状态
       resetButtons();
       tempChoice = null;
       setAllButtonsDisabled(false);
@@ -211,20 +249,16 @@
     currentMeaning = word.meaning || '暂无释义';
   }
 
-  // 处理用户初步选择（认识/不认识）
+  // 处理用户初步选择
   function handleChoice(known) {
     tempChoice = known;
-    // 显示释义
     meaningText.innerText = currentMeaning;
     meaningContainer.style.display = 'block';
 
-    // 隐藏初始按钮
     knownBtn.style.display = 'none';
     unknownBtn.style.display = 'none';
 
-    // 显示后续按钮
     nextBtn.style.display = 'inline-block';
-    // 只有选择认识才显示记错了
     if (known) {
       mistakeBtn.style.display = 'inline-block';
     } else {
@@ -247,10 +281,18 @@
         body: JSON.stringify({ word_id: currentWordId, known: known })
       });
       if (!response.ok) throw new Error('提交失败');
+
+      // 增加已背诵单词计数
+      wordsReviewedCount++;
+
+      // 检查是否达到5的倍数，达到则显示弹窗
+      if (wordsReviewedCount % 5 === 0) {
+        encouragementModal.show();
+      }
+
       await loadNextWord();
     } catch (error) {
       showError(error.message);
-      // 出错时重置按钮
       resetButtons();
       setAllButtonsDisabled(false);
     } finally {
@@ -295,6 +337,16 @@
 
   backBtn.addEventListener('click', backToCategories);
 
+  // 弹窗按钮事件
+  continueBtn.addEventListener('click', () => {
+    // 继续学习，无需额外操作，模态框关闭后继续当前单词（已加载下一个）
+  });
+
+  breakBtn.addEventListener('click', () => {
+    encouragementModal.hide(); // 隐藏模态框
+    backToCategories(); // 返回分类选择
+  });
+
   // 页面加载
   loadCategories();
 </script>
@@ -317,7 +369,6 @@
     from { opacity: 0; }
     to { opacity: 1; }
   }
-  /* 确保按钮显示/隐藏时布局稳定 */
   #buttonContainer {
     min-height: 70px;
   }
