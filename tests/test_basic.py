@@ -1,6 +1,7 @@
 def test_app_is_created(app):
     """测试 Flask 应用实例是否能正常创建"""
-    assert app.name == 'app'
+    assert app.name == "app"
+
 
 def test_home_page(client):
     """测试首页路由，确保应用能响应请求"""

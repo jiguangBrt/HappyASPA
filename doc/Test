@@ -24,3 +24,31 @@ Execution result: Successfully intercepted. The prompt content cannot be empty. 
 
 3. Test Conclusion
 ✅ The core functions and exception handling have been verified and passed, allowing for the launch.
+
+
+
+Functional Test Report: Listening Practice Module (Difficulty Filter & Video Content)
+1. Basic Information
+
+Test Subject: Jing Lu
+Test Date: 2026-03-19
+Test Environment: Localhost
+
+2. Test Cases and Execution Results
+Scene 1: Video Display Function (Positive Test)
+
+Test content: Load the listening practice page and check whether the added three videos are displayed correctly.
+Execution result: All three videos are successfully displayed in the grid layout. Each video includes title, description, duration, and playback functionality.
+[Passed]
+
+Scene 2: Difficulty Filtering Function (Functional Test)
+
+Test content: Click different difficulty buttons (1–5 stars) to filter exercises.
+Execution result:
+
+By default, all exercises are displayed.
+
+After selecting a specific difficulty, only exercises with the corresponding difficulty are shown.
+
+The selected difficulty button is correctly highlighted.
+[Passed]

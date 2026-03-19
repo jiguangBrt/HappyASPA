@@ -3,41 +3,58 @@ from flask_login import login_required, current_user
 from models import db, ListeningExercise, UserListeningProgress
 from datetime import datetime
 
-listening_bp = Blueprint('listening', __name__, url_prefix='/listening')
+listening_bp = Blueprint("listening", __name__, url_prefix="/listening")
 
-@listening_bp.route('/')
+
+@listening_bp.route("/")
 @login_required
 def index():
-    exercises = ListeningExercise.query.order_by(ListeningExercise.difficulty).all()
-    return render_template('listening/index.html', exercises=exercises)
+    # 1️⃣ 获取URL参数
+    difficulty = request.args.get("difficulty", type=int)
 
-@listening_bp.route('/progress', methods=['POST'])
+    # 2️⃣ 构建查询
+    query = ListeningExercise.query
+
+    # 3️⃣ 如果选择了难度 → 过滤
+    if difficulty is not None:
+        query = query.filter(ListeningExercise.difficulty == difficulty)
+
+    # 4️⃣ 排序 + 查询
+    exercises = query.order_by(ListeningExercise.difficulty).all()
+
+    # 5️⃣ 传给前端（用于高亮）
+    return render_template(
+        "listening/index.html",
+        exercises=exercises,
+        current_difficulty=difficulty
+    )
+
+
+@listening_bp.route("/progress", methods=["POST"])
 @login_required
 def save_progress():
     data = request.get_json()
-    exercise_id = data.get('exercise_id')
-    last_position = data.get('last_position')
-    answers = data.get('answers')
-    two_thirds_reached = data.get('two_thirds_reached', False)
-    completed = data.get('completed', False)
-    score = data.get('score')
-    reset = data.get('reset', False)  # 获取重置标志
+    exercise_id = data.get("exercise_id")
+    last_position = data.get("last_position")
+    answers = data.get("answers")
+    two_thirds_reached = data.get("two_thirds_reached", False)
+    completed = data.get("completed", False)
+    score = data.get("score")
+    reset = data.get("reset", False)  # 获取重置标志
 
     if not exercise_id:
-        return jsonify({'error': 'exercise_id required'}), 400
+        return jsonify({"error": "exercise_id required"}), 400
 
     exercise = ListeningExercise.query.get(exercise_id)
     if not exercise:
-        return jsonify({'error': 'Exercise not found'}), 404
+        return jsonify({"error": "Exercise not found"}), 404
 
     progress = UserListeningProgress.query.filter_by(
-        user_id=current_user.id,
-        exercise_id=exercise_id
+        user_id=current_user.id, exercise_id=exercise_id
     ).first()
     if not progress:
         progress = UserListeningProgress(
-            user_id=current_user.id,
-            exercise_id=exercise_id
+            user_id=current_user.id, exercise_id=exercise_id
         )
         db.session.add(progress)
 
@@ -72,24 +89,30 @@ def save_progress():
 
     progress.last_attempt_at = datetime.utcnow()
     db.session.commit()
-    return jsonify({'success': True})
+    return jsonify({"success": True})
+
 
 # Use to test for visibility
-@listening_bp.route('/progress/<int:exercise_id>', methods=['GET'])
+@listening_bp.route("/progress/<int:exercise_id>", methods=["GET"])
 @login_required
 def get_progress(exercise_id):
     progress = UserListeningProgress.query.filter_by(
-        user_id=current_user.id,
-        exercise_id=exercise_id
+        user_id=current_user.id, exercise_id=exercise_id
     ).first()
     if not progress:
-        return jsonify({'exists': False})
-    return jsonify({
-        'exists': True,
-        'last_position': progress.last_position,
-        'two_thirds_count': progress.two_thirds_count,
-        'answers': progress.answers,
-        'completed': progress.completed,
-        'score': progress.score,
-        'last_attempt_at': progress.last_attempt_at.isoformat() if progress.last_attempt_at else None
-    })
+        return jsonify({"exists": False})
+    return jsonify(
+        {
+            "exists": True,
+            "last_position": progress.last_position,
+            "two_thirds_count": progress.two_thirds_count,
+            "answers": progress.answers,
+            "completed": progress.completed,
+            "score": progress.score,
+            "last_attempt_at": (
+                progress.last_attempt_at.isoformat()
+                if progress.last_attempt_at
+                else None
+            ),
+        }
+    )

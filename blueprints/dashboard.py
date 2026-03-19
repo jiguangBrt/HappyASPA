@@ -16,7 +16,7 @@ from models import (
     UserVocabularyProgress,
 )
 
-dashboard_bp = Blueprint('dashboard', __name__)
+dashboard_bp = Blueprint("dashboard", __name__)
 
 RECOMMENDED_SCHEDULES = {
     "listening": "\u542c\u542c\u529b1\u7bc7",
@@ -166,7 +166,12 @@ def create_schedule_item():
         db.session.commit()
     except OperationalError:
         db.session.rollback()
-        return jsonify({"error": "Schedule table not ready. Please run: flask db upgrade"}), 503
+        return (
+            jsonify(
+                {"error": "Schedule table not ready. Please run: flask db upgrade"}
+            ),
+            503,
+        )
 
     return (
         jsonify(
@@ -191,7 +196,12 @@ def delete_schedule_item(item_id: int):
         ).first()
     except OperationalError:
         db.session.rollback()
-        return jsonify({"error": "Schedule table not ready. Please run: flask db upgrade"}), 503
+        return (
+            jsonify(
+                {"error": "Schedule table not ready. Please run: flask db upgrade"}
+            ),
+            503,
+        )
     if not item:
         return jsonify({"error": "Not found"}), 404
 
