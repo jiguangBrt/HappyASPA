@@ -2,8 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy import func  # <--- 新增：用于统计点赞数
 
-# 👇 修改：引入了新的 ForumLike 和 ForumFavorite 模型
-from models import db, ForumPost, ForumComment, ForumLike, ForumFavorite
+from models import db, ForumPost, ForumComment, ForumLike, ForumFavorite, CommentLike, CommentFavorite
 
 forum_bp = Blueprint('forum', __name__, url_prefix='/forum')
 
@@ -11,14 +10,32 @@ forum_bp = Blueprint('forum', __name__, url_prefix='/forum')
 @forum_bp.route('/')
 @login_required
 def index():
-    # 👇 修改：使用外连接(outerjoin)关联点赞表，并按点赞数降序、创建时间降序排列
-    posts = db.session.query(ForumPost)\
-        .outerjoin(ForumLike, ForumPost.id == ForumLike.post_id)\
-        .group_by(ForumPost.id)\
-        .order_by(func.count(ForumLike.id).desc(), ForumPost.created_at.desc())\
-        .all()
+    tab = request.args.get('tab', 'all')
+    saved_comments = [] # 预设为空列表
 
-    return render_template('forum/index.html', posts=posts)
+    if tab == 'saved':
+        # 查收藏的帖子
+        posts = db.session.query(ForumPost)\
+            .join(ForumFavorite, ForumPost.id == ForumFavorite.post_id)\
+            .filter(ForumFavorite.user_id == current_user.id)\
+            .order_by(ForumFavorite.created_at.desc())\
+            .all()
+        # 查收藏的评论
+        saved_comments = db.session.query(ForumComment)\
+            .join(CommentFavorite, ForumComment.id == CommentFavorite.comment_id)\
+            .filter(CommentFavorite.user_id == current_user.id)\
+            .order_by(CommentFavorite.created_at.desc())\
+            .all()
+    else:
+        # 默认查所有帖子
+        posts = db.session.query(ForumPost)\
+            .outerjoin(ForumLike, ForumPost.id == ForumLike.post_id)\
+            .group_by(ForumPost.id)\
+            .order_by(func.count(ForumLike.id).desc(), ForumPost.created_at.desc())\
+            .all()
+
+    # 把 saved_comments 也传给前端
+    return render_template('forum/index.html', posts=posts, tab=tab, saved_comments=saved_comments)
 
 
 @forum_bp.route('/post/<int:post_id>')
@@ -139,3 +156,40 @@ def favorite_post(post_id):
     db.session.commit()
     
     return redirect(request.referrer or url_for('forum.post_detail', post_id=post.id))
+
+# ─────────────────────────────────────────────
+# 👇 评论的点赞 和 收藏
+# ─────────────────────────────────────────────
+
+@forum_bp.route('/comment/<int:comment_id>/like', methods=['POST'])
+@login_required
+def like_comment(comment_id):
+    comment = ForumComment.query.get_or_404(comment_id)
+    like = CommentLike.query.filter_by(user_id=current_user.id, comment_id=comment.id).first()
+    
+    if like:
+        db.session.delete(like)
+    else:
+        new_like = CommentLike(user_id=current_user.id, comment_id=comment.id)
+        db.session.add(new_like)
+        
+    db.session.commit()
+    # 👇 改成这样：直接返回原页面，浏览器会自动保持在当前滚动位置
+    return redirect(url_for('forum.post_detail', post_id=comment.post_id) + f'#comment-{comment.id}')
+
+
+@forum_bp.route('/comment/<int:comment_id>/favorite', methods=['POST'])
+@login_required
+def favorite_comment(comment_id):
+    comment = ForumComment.query.get_or_404(comment_id)
+    fav = CommentFavorite.query.filter_by(user_id=current_user.id, comment_id=comment.id).first()
+    
+    if fav:
+        db.session.delete(fav)
+    else:
+        new_fav = CommentFavorite(user_id=current_user.id, comment_id=comment.id)
+        db.session.add(new_fav)
+        
+    db.session.commit()
+    # 👇 改成这样：去掉讨厌的锚点
+    return redirect(url_for('forum.post_detail', post_id=comment.post_id) + f'#comment-{comment.id}')

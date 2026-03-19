@@ -70,23 +70,44 @@
 {% if post.comments %}
 <div class="list-group shadow-sm mb-4">
   {% for comment in post.comments %}
-  <div class="list-group-item border-0 border-bottom py-3" id="comment-{{ comment.id }}">
+<div class="list-group-item border-0 border-bottom py-3" id="comment-{{ comment.id }}">
     <div class="d-flex gap-3">
       <div class="rounded-circle bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
            style="width:36px;height:36px;">
         <span class="fw-bold text-secondary small">{{ comment.author.username[0]|upper }}</span>
       </div>
+      
       <div class="w-100"> 
-        <div class="d-flex justify-content-between align-items-center mb-1">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          
           <div class="d-flex align-items-center gap-2">
             <span class="fw-semibold small">{{ comment.author.username }}</span>
             <small class="text-muted">{{ comment.created_at.strftime('%b %d, %H:%M') }}</small>
           </div>
-          <button type="button" class="btn btn-sm btn-link text-muted text-decoration-none p-0 reply-btn"
-                  data-comment-id="{{ comment.id }}"
-                  data-username="{{ comment.author.username }}">
-            <i class="bi bi-reply-fill me-1"></i>Reply
-          </button>
+          
+          <div class="d-flex gap-3 align-items-center">
+            
+            <form action="{{ url_for('forum.like_comment', comment_id=comment.id) }}" method="POST" class="m-0">
+              <button type="submit" class="btn btn-sm p-0 border-0 {% if comment.is_liked_by(current_user) %}text-danger{% else %}text-muted{% endif %} bg-transparent" title="Like">
+                <i class="bi bi-heart{% if comment.is_liked_by(current_user) %}-fill{% endif %}"></i>
+                <span class="small ms-1">{{ comment.like_count }}</span>
+              </button>
+            </form>
+
+            <form action="{{ url_for('forum.favorite_comment', comment_id=comment.id) }}" method="POST" class="m-0">
+              <button type="submit" class="btn btn-sm p-0 border-0 {% if comment.is_favorited_by(current_user) %}text-warning{% else %}text-muted{% endif %} bg-transparent" title="Save">
+                <i class="bi bi-bookmark{% if comment.is_favorited_by(current_user) %}-fill{% endif %}"></i>
+                <span class="small ms-1">{{ comment.favorite_count }}</span>
+              </button>
+            </form>
+
+            <button type="button" class="btn btn-sm btn-link text-muted text-decoration-none p-0 reply-btn"
+                    data-comment-id="{{ comment.id }}"
+                    data-username="{{ comment.author.username }}">
+              <i class="bi bi-reply-fill me-1"></i>Reply
+            </button>
+            
+          </div>
         </div>
 
         {% if comment.parent %}
@@ -146,12 +167,30 @@ function scrollToComment(commentId) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    
+    // ==========================================
+    // 👇 新增：自动检测 URL 锚点并高亮穿梭 👇
+    // ==========================================
+    // 检查 URL 是否包含类似 #comment-123 的锚点
+    if (window.location.hash && window.location.hash.startsWith('#comment-')) {
+        // 提取 ID (例如: "comment-123" -> "123")
+        const commentIdFromHash = window.location.hash.split('-')[1];
+        
+        // 稍微延迟一下执行，确保页面完全渲染，避免滚动位置偏差
+        setTimeout(() => {
+            scrollToComment(commentIdFromHash);
+        }, 100); // 300毫秒是一个理想的“加载感”延迟
+    }
+    // ==========================================
+
+
+    // 👇 下面是你原有的楼中楼回复逻辑，保持不变 👇
     const replyButtons = document.querySelectorAll('.reply-btn');
     const parentIdInput = document.getElementById('parent_id_input');
     const contentTextarea = document.getElementById('comment_content');
     const formTitle = document.getElementById('form-title');
     const cancelReplyBtn = document.getElementById('cancel-reply-btn');
-    const pseudoPrefix = document.getElementById('pseudo-at-prefix'); // 获取灰色前缀
+    const pseudoPrefix = document.getElementById('pseudo-at-prefix');
 
     replyButtons.forEach(btn => {
         btn.addEventListener('click', function() {
@@ -162,10 +201,9 @@ document.addEventListener('DOMContentLoaded', function() {
             formTitle.innerHTML = `<i class="bi bi-reply-all me-1 text-danger"></i>Replying to <span class="text-danger">@${username}</span>`;
             cancelReplyBtn.classList.remove('d-none');
             
-            // 激活不可编辑的灰色前缀，而不是把 @ 塞进输入框
             pseudoPrefix.textContent = '@' + username;
             pseudoPrefix.classList.remove('d-none');
-            contentTextarea.value = ''; // 保持真实的输入内容为空
+            contentTextarea.value = ''; 
             
             contentTextarea.focus();
             document.getElementById('comment-form-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -178,7 +216,6 @@ document.addEventListener('DOMContentLoaded', function() {
         this.classList.add('d-none');
         contentTextarea.value = '';
         
-        // 取消回复时，隐藏并清空灰色前缀
         pseudoPrefix.classList.add('d-none');
         pseudoPrefix.textContent = '';
     });
