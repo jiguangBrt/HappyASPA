@@ -16,126 +16,39 @@
 
 <!-- Overall Guidance -->
 <h5 class="fw-bold mb-3"><i class="bi bi-compass-fill text-primary me-2"></i>Overall Guidance</h5>
-<div class="row g-3 mb-4">
-  {% set guidance_cards = [
-    {
-      'title': 'Use Microsoft Teams',
-      'front': 'Announcements, materials, and group work.',
-      'back': 'Check the class Team daily: announcements, files, and channels. Keep group decisions in the channel/chat so everyone has a record.',
-      'icon': 'bi-people',
-      'color': 'primary'
-    },
-    {
-      'title': 'DIICSU Introduction',
-      'front': 'Course support and weekly workflow.',
-      'back': 'Add your DIICSU overview here (what it is, where to access it, and what students should do each week). This card is designed to be edited by your instructor.',
-      'icon': 'bi-building',
-      'color': 'secondary'
-    },
-    {
-      'title': 'Academic Misconduct',
-      'front': 'What it is and how to avoid it.',
-      'back': "Do your own work, cite sources, and do not reuse others' writing without permission. If unsure, ask the teacher before submitting.",
-      'icon': 'bi-shield-check',
-      'color': 'danger'
-    },
-    {
-      'title': 'Class Focus',
-      'front': 'What to prioritize in this class.',
-      'back': 'Listening and speaking are the core focus. Use the forum to ask questions, and build vocabulary continuously to support both skills.',
-      'icon': 'bi-bullseye',
-      'color': 'success'
-    }
-  ] %}
-  {% for card in guidance_cards %}
-  <div class="col-md-6 col-lg-3">
-    <div class="flip-card flip-card-sm" onclick="this.classList.toggle('flipped')">
-      <div class="flip-card-inner shadow-sm rounded-3">
-        <div class="flip-card-front bg-white rounded-3 border d-flex flex-column justify-content-center align-items-center p-4 text-center">
-          <i class="bi {{ card.icon }} text-{{ card.color }} mb-3" style="font-size: 2rem;"></i>
-          <h6 class="fw-bold mb-2">{{ card.title }}</h6>
-          <p class="text-muted mb-0 small">{{ card.front }}</p>
-          <small class="text-muted mt-3 opacity-50">Click to flip</small>
+<div class="overall-guidance-shell mb-4">
+  <div class="overall-guidance-panel border rounded-4 shadow-sm">
+    <div class="p-3 p-lg-4">
+      <div class="d-flex flex-column flex-lg-row gap-4 align-items-stretch">
+        <div class="flex-grow-1 d-none d-lg-block">
+          <!-- Left area intentionally left blank (you can place your background content/materials here later). -->
         </div>
-        <div class="flip-card-back bg-{{ card.color }} text-white rounded-3 d-flex flex-column justify-content-center align-items-center p-4 text-center">
-          <h6 class="fw-bold mb-2">{{ card.title }}</h6>
-          <p class="mb-0 small">{{ card.back }}</p>
+
+        <div class="overall-guidance-right ms-lg-auto">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="text-muted small">Scroll to view</div>
+          </div>
+
+          <div class="overall-guidance-list">
+            {% for card in overall_guidance_cards %}
+            <a href="{{ url_for('dashboard.guidance_page', card_key=card.key) }}" class="overall-guidance-mini-card text-decoration-none">
+              <div class="card border-0 shadow-sm card-hover">
+                <div class="card-body d-flex align-items-center gap-3 py-3 px-3">
+                  <div class="rounded-3 bg-{{ card.color }} bg-opacity-10 p-2">
+                    <i class="bi {{ card.icon }} text-{{ card.color }}" style="font-size: 1.25rem;"></i>
+                  </div>
+                  <div class="min-w-0">
+                    <div class="fw-bold text-body">{{ card.title }}</div>
+                    <div class="text-muted small text-truncate">{{ card.front }}</div>
+                  </div>
+                </div>
+              </div>
+            </a>
+            {% endfor %}
+          </div>
         </div>
       </div>
     </div>
-  </div>
-  {% endfor %}
-</div>
-
-<!-- ── Quick-Access Feature Buttons ───────────────────────────────────── -->
-<h5 class="fw-bold mb-3"><i class="bi bi-grid-fill text-primary me-2"></i>Practice Modules</h5>
-<div class="row g-3 mb-5">
-  <div class="col-sm-6 col-lg-4">
-    <a href="{{ url_for('listening.index') }}" class="text-decoration-none">
-      <div class="card border-0 shadow-sm h-100 card-hover">
-        <div class="card-body d-flex align-items-center gap-3 p-4">
-          <div class="rounded-3 bg-info bg-opacity-10 p-3">
-            <i class="bi bi-headphones text-info" style="font-size: 1.8rem;"></i>
-          </div>
-          <div>
-            <h6 class="fw-bold mb-1">Listening</h6>
-            <p class="mb-0 text-muted small">Listening in the lecture</p>
-          </div>
-          <i class="bi bi-chevron-right ms-auto text-muted"></i>
-        </div>
-      </div>
-    </a>
-  </div>
-
-  <div class="col-sm-6 col-lg-4">
-    <a href="{{ url_for('speaking.index') }}" class="text-decoration-none">
-      <div class="card border-0 shadow-sm h-100 card-hover">
-        <div class="card-body d-flex align-items-center gap-3 p-4">
-          <div class="rounded-3 bg-primary bg-opacity-10 p-3">
-            <i class="bi bi-mic-fill text-primary" style="font-size: 1.8rem;"></i>
-          </div>
-          <div>
-            <h6 class="fw-bold mb-1">Speaking</h6>
-            <p class="mb-0 text-muted small">Speak to teacher, speak to group members</p>
-          </div>
-          <i class="bi bi-chevron-right ms-auto text-muted"></i>
-        </div>
-      </div>
-    </a>
-  </div>
-
-  <div class="col-sm-6 col-lg-4">
-    <a href="{{ url_for('vocabulary.index') }}" class="text-decoration-none">
-      <div class="card border-0 shadow-sm h-100 card-hover">
-        <div class="card-body d-flex align-items-center gap-3 p-4">
-          <div class="rounded-3 bg-primary bg-opacity-10 p-3">
-            <i class="bi bi-book text-primary" style="font-size: 1.8rem;"></i>
-          </div>
-          <div>
-            <h6 class="fw-bold mb-1">Vocabulary</h6>
-            <p class="mb-0 text-muted small">Build your academic word bank</p>
-          </div>
-          <i class="bi bi-chevron-right ms-auto text-muted"></i>
-        </div>
-      </div>
-    </a>
-  </div>
-
-  <div class="col-sm-6 col-lg-4">
-    <a href="{{ url_for('forum.index') }}" class="text-decoration-none">
-      <div class="card border-0 shadow-sm h-100 card-hover">
-        <div class="card-body d-flex align-items-center gap-3 p-4">
-          <div class="rounded-3 bg-danger bg-opacity-10 p-3">
-            <i class="bi bi-chat-dots text-danger" style="font-size: 1.8rem;"></i>
-          </div>
-          <div>
-            <h6 class="fw-bold mb-1">Forum</h6>
-            <p class="mb-0 text-muted small">Ask, discuss, and collaborate</p>
-          </div>
-          <i class="bi bi-chevron-right ms-auto text-muted"></i>
-        </div>
-      </div>
-    </a>
   </div>
 </div>
 
@@ -240,43 +153,6 @@
   </div>
 </div>
 
-<h5 class="fw-bold mb-3"><i class="bi bi-bookmark-star-fill text-warning me-2"></i>My Favorites</h5>
-{% if favorite_posts %}
-<div class="list-group shadow-sm mb-4">
-  {% for post in favorite_posts %}
-  <a href="{{ url_for('forum.post_detail', post_id=post.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 border-0 border-bottom">
-    <div class="flex-grow-1 min-w-0">
-      <h6 class="mb-1 fw-bold text-truncate">{{ post.title }}</h6>
-      <small class="text-muted"><i class="bi bi-person me-1"></i>{{ post.author.username }} &bull; {{ post.created_at.strftime('%b %d') }}</small>
-    </div>
-    <span class="badge bg-warning text-dark rounded-pill ms-3 flex-shrink-0"><i class="bi bi-bookmark-fill me-1"></i>Saved</span>
-  </a>
-  {% endfor %}
-</div>
-{% else %}
-<div class="alert alert-light border text-center py-4 mb-4">
-  <p class="mb-0 text-muted">You haven't saved any posts yet.</p>
-</div>
-{% endif %}
-
-<h5 class="fw-bold mb-3"><i class="bi bi-heart-fill text-danger me-2"></i>Posts I Liked</h5>
-{% if liked_posts %}
-<div class="list-group shadow-sm mb-4">
-  {% for post in liked_posts %}
-  <a href="{{ url_for('forum.post_detail', post_id=post.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 border-0 border-bottom">
-    <div class="flex-grow-1 min-w-0">
-      <h6 class="mb-1 fw-bold text-truncate">{{ post.title }}</h6>
-      <small class="text-muted"><i class="bi bi-person me-1"></i>{{ post.author.username }} &bull; {{ post.created_at.strftime('%b %d') }}</small>
-    </div>
-    <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill ms-3 flex-shrink-0"><i class="bi bi-heart-fill me-1"></i>Liked</span>
-  </a>
-  {% endfor %}
-</div>
-{% else %}
-<div class="alert alert-light border text-center py-4 mb-4">
-  <p class="mb-0 text-muted">You haven't liked any posts yet.</p>
-</div>
-{% endif %}
 
 {% endblock %}
 
@@ -285,19 +161,22 @@
   .card-hover { transition: transform .15s ease, box-shadow .15s ease; cursor: pointer; }
   .card-hover:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.12) !important; }
 
-  .flip-card { perspective: 1000px; cursor: pointer; }
-  .flip-card-sm { height: 220px; }
-  .flip-card-inner {
-    position: relative; width: 100%; height: 100%;
-    transition: transform 0.6s;
-    transform-style: preserve-3d;
+  .overall-guidance-right { max-width: 520px; }
+  .overall-guidance-panel {
+    background-image: url("/static/pictures/dashboard-background.jpg");
+    background-size: cover;
+    background-position: center;
   }
-  .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
-  .flip-card-front, .flip-card-back {
-    position: absolute; width: 100%; height: 100%;
-    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  .overall-guidance-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 360px;
+    overflow-y: auto;
+    padding-right: 6px;
   }
-  .flip-card-back { transform: rotateY(180deg); }
+  .overall-guidance-list::-webkit-scrollbar { width: 8px; }
+  .overall-guidance-mini-card { flex: 0 0 auto; }
 
   .schedule-calendar td { height: 88px; padding: 6px; cursor: pointer; vertical-align: top; }
   .schedule-calendar td:hover { background: rgba(59,110,191,.08); }

@@ -134,7 +134,11 @@ class ForumPost(db.Model):
         from models import ForumLike
         return ForumLike.query.filter_by(post_id=self.id).count()
 
-
+    @property
+    def favorite_count(self):
+        from models import ForumFavorite
+        return ForumFavorite.query.filter_by(post_id=self.id).count()
+    
 class ForumComment(db.Model):
     __tablename__ = 'forum_comments'
 
@@ -144,16 +148,60 @@ class ForumComment(db.Model):
     content    = db.Column(db.Text,     nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # 👇 新增 1：自引用外键，记录这条评论是回复哪条评论的（允许为空，为空说明是直接回复帖子的主评论）
     parent_id  = db.Column(db.Integer, db.ForeignKey('forum_comments.id'), nullable=True)
 
-    # 👇 新增 2：建立关系。这样你可以很方便地用 comment.parent 找到被回复的评论，或者用 comment.replies 找到它的所有子回复。
     replies    = db.relationship(
         'ForumComment', 
         backref=db.backref('parent', remote_side=[id]), 
         lazy=True, 
         cascade='all, delete-orphan'
     )
+
+    # 👇 新增 1：评论的点赞和收藏关联
+    likes      = db.relationship('CommentLike', backref='comment', lazy=True, cascade='all, delete-orphan')
+    favorites  = db.relationship('CommentFavorite', backref='comment', lazy=True, cascade='all, delete-orphan')
+
+    # 👇 新增 2：判断当前用户是否点赞/收藏了这条评论的辅助方法
+    def is_liked_by(self, user):
+        if not user or not user.is_authenticated:
+            return False
+        from models import CommentLike
+        return CommentLike.query.filter_by(comment_id=self.id, user_id=user.id).first() is not None
+
+    def is_favorited_by(self, user):
+        if not user or not user.is_authenticated:
+            return False
+        from models import CommentFavorite
+        return CommentFavorite.query.filter_by(comment_id=self.id, user_id=user.id).first() is not None
+
+    @property
+    def like_count(self):
+        from models import CommentLike
+        return CommentLike.query.filter_by(comment_id=self.id).count()
+
+    @property
+    def favorite_count(self):
+        from models import CommentFavorite
+        return CommentFavorite.query.filter_by(comment_id=self.id).count()
+
+# 👇 新增 3：评论点赞表
+class CommentLike(db.Model):
+    __tablename__ = 'comment_likes'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    comment_id = db.Column(db.Integer, db.ForeignKey('forum_comments.id'), nullable=False)
+    user_id    = db.Column(db.Integer, db.ForeignKey('users.id'),       nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# 👇 新增 4：评论收藏表
+class CommentFavorite(db.Model):
+    __tablename__ = 'comment_favorites'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    comment_id = db.Column(db.Integer, db.ForeignKey('forum_comments.id'), nullable=False)
+    user_id    = db.Column(db.Integer, db.ForeignKey('users.id'),       nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 class ForumLike(db.Model):
