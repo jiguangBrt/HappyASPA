@@ -48,12 +48,12 @@ class User(UserMixin, db.Model):
 class VocabularyWord(db.Model):
     __tablename__ = 'vocabulary_words'
 
-    id               = db.Column(db.Integer, primary_key=True)
+    id               = db.Column(db.Integer, primary_key=True, autoincrement=False)  # 允许手动插入 id
     word             = db.Column(db.String(100), nullable=False)
     phonetic         = db.Column(db.String(100), nullable=True)
-    definition       = db.Column(db.Text,        nullable=False)
+    definition       = db.Column(db.Text,        nullable=False)   # 存储中文释义
     example_sentence = db.Column(db.Text,        nullable=True)
-    difficulty       = db.Column(db.Integer,     default=1)   # 1–5
+    difficulty       = db.Column(db.Integer,     default=1)        # 1–5
     category         = db.Column(db.String(50),  nullable=True)
     created_at       = db.Column(db.DateTime,    default=datetime.utcnow)
 

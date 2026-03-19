@@ -1,38 +1,21 @@
-import json
-import os
 import random
 from datetime import datetime
 from flask import Blueprint, render_template, jsonify, request
 from flask_login import login_required, current_user
-from models import db, UserVocabularyProgress
+from sqlalchemy import func
+from models import db, UserVocabularyProgress, VocabularyWord
 
 vocabulary_bp = Blueprint('vocabulary', __name__, url_prefix='/vocabulary')
 
-# 加载单词 JSON 文件（新格式：每个单词包含 category 字段）
-WORDS_JSON_PATH = os.path.join(os.path.dirname(__file__), '..', 'words.json')
-with open(WORDS_JSON_PATH, 'r', encoding='utf-8') as f:
-    WORDS = json.load(f)
-
-# 分类显示名称映射
+# 分类显示名称映射（可选，用于前端英文显示）
 CATEGORY_NAMES = {
-    'cs': '计算机科学',
-    'civil': '土木工程',
-    'mech': '机械工程',
-    'math': '应用数学',
-    'traffic': '交通控制',
-    'academic': '学术英语'
+    'cs': 'Computer Science',
+    'civil': 'Civil Engineering',
+    'mech': 'Mechanical Engineering',
+    'math': 'Applied Mathematics',
+    'traffic': 'Traffic Control',
+    'academic': 'Academic English'
 }
-
-# 建立 id -> word 映射
-WORDS_BY_ID = {word['id']: word for word in WORDS}
-
-# 按分类组织单词
-WORDS_BY_CATEGORY = {}
-for word in WORDS:
-    cat = word['category']
-    if cat not in WORDS_BY_CATEGORY:
-        WORDS_BY_CATEGORY[cat] = []
-    WORDS_BY_CATEGORY[cat].append(word)
 
 @vocabulary_bp.route('/')
 @login_required
@@ -42,14 +25,20 @@ def index():
 @vocabulary_bp.route('/api/categories')
 @login_required
 def get_categories():
-    categories = []
-    for cat_id, words in WORDS_BY_CATEGORY.items():
-        categories.append({
-            'id': cat_id,
-            'name': CATEGORY_NAMES.get(cat_id, cat_id),
-            'count': len(words)
+    # 从数据库获取所有分类及其单词数量
+    categories = db.session.query(
+        VocabularyWord.category,
+        func.count(VocabularyWord.id).label('count')
+    ).group_by(VocabularyWord.category).all()
+
+    result = []
+    for cat, count in categories:
+        result.append({
+            'id': cat,
+            'name': CATEGORY_NAMES.get(cat, cat),  # 优先使用英文映射
+            'count': count
         })
-    return jsonify(categories)
+    return jsonify(result)
 
 @vocabulary_bp.route('/api/next')
 @login_required
@@ -58,19 +47,22 @@ def next_word():
     if not category:
         return jsonify({'error': 'Missing category parameter'}), 400
 
-    word_list = WORDS_BY_CATEGORY.get(category)
-    if not word_list:
+    # 从数据库查询该分类的所有单词
+    words = VocabularyWord.query.filter_by(category=category).all()
+    if not words:
         return jsonify({'error': 'Category not found'}), 404
 
-    word = random.choice(word_list)
+    # 随机选择一个单词
+    word = random.choice(words)
+
     progress = UserVocabularyProgress.query.filter_by(
-        user_id=current_user.id, word_id=word['id']
+        user_id=current_user.id, word_id=word.id
     ).first()
 
     return jsonify({
-        'id': word['id'],
-        'word': word['word'],
-        'meaning': word.get('meaning', '暂无释义'),  # 增加这一行，若没有 meaning 字段则返回默认值
+        'id': word.id,
+        'word': word.word,
+        'meaning': word.definition,   # 注意：我们将 meaning 存入了 definition 字段
         'status': progress.status if progress else 'new'
     })
 
@@ -84,8 +76,9 @@ def record_choice():
     if word_id is None or known is None:
         return jsonify({'error': 'Missing word_id or known'}), 400
 
-    # 验证 word_id 是否存在于 JSON 中
-    if word_id not in WORDS_BY_ID:
+    # 验证单词是否存在
+    word = VocabularyWord.query.get(word_id)
+    if not word:
         return jsonify({'error': 'Invalid word_id'}), 400
 
     progress = UserVocabularyProgress.query.filter_by(
@@ -106,7 +99,7 @@ def record_choice():
     if known:
         progress.correct_count += 1
 
-    # 简单状态更新规则（可自定义）
+    # 状态更新规则（可自定义）
     if progress.correct_count >= 5:
         progress.status = 'mastered'
     elif progress.attempts >= 3:
