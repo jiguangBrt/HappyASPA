@@ -9,13 +9,12 @@ import click
 import json
 import os
 from flask.cli import with_appcontext
-from models import db, ListeningExercise, SpeakingExercise, VocabularyWord  # 导入 Word 模型
-
+from models import db, ListeningExercise, SpeakingExercise, VocabularyWord, AcademicScenario
 
 @click.command(name='add-default-data')
 @with_appcontext
 def add_default_data():
-    """向数据库插入或更新默认初始数据（包含单词、听力、口语）"""
+    """向数据库插入或更新默认初始数据（包含单词、听力、口语、学术情景）"""
     print("🚀 开始填充/更新默认数据...")
 
     # ─────────────────────────────────────────────
@@ -32,23 +31,20 @@ def add_default_data():
         added = 0
         updated = 0
         for item in words_data:
-            # 根据 id 查找是否已存在
             word = VocabularyWord.query.get(item['id'])
             if word:
-                # 更新现有记录（如果字段有变化）
                 if (word.word != item['word'] or
-                        word.definition != item['meaning'] or  # 注意：meaning -> definition
+                        word.definition != item['meaning'] or  
                         word.category != item['category']):
                     word.word = item['word']
                     word.definition = item['meaning']
                     word.category = item['category']
                     updated += 1
             else:
-                # 插入新记录
                 word = VocabularyWord(
                     id=item['id'],
                     word=item['word'],
-                    definition=item['meaning'],  # 将 meaning 存入 definition
+                    definition=item['meaning'],  
                     category=item['category']
                 )
                 db.session.add(word)
@@ -57,9 +53,8 @@ def add_default_data():
         print(f"   ✅ 单词导入完成：新增 {added} 条，更新 {updated} 条。")
 
     # ─────────────────────────────────────────────
-    # 2. Listening Exercises（听力练习）
+    # 2. Listening Exercises（听力练习）- 包含了主分支新增的3篇！
     # ─────────────────────────────────────────────
-
     listening_defaults = [
         {
             'title': 'Try Something New for 30 Days',
@@ -306,9 +301,8 @@ def add_default_data():
             db.session.add(exercise)
 
     # ─────────────────────────────────────────────
-    # Speaking Exercises（口语练习）
+    # 3. Speaking Exercises（口语练习 - English Corner）
     # ─────────────────────────────────────────────
-
     speaking_defaults = [
         {
             'title': 'Self Introduction',
@@ -336,6 +330,119 @@ def add_default_data():
             db.session.add(exercise)
 
     # ─────────────────────────────────────────────
+    # 4. Academic Scenarios (学术情景模拟) - 🌟 定制版 🌟
+    # ─────────────────────────────────────────────
+    
+    # [清理步骤] 找出并删除旧的两个话题
+    titles_to_remove = ['Requesting a Deadline Extension', 'Disagreeing with a Classmate']
+    for old_title in titles_to_remove:
+        old_scen = AcademicScenario.query.filter_by(title=old_title).first()
+        if old_scen:
+            db.session.delete(old_scen)
+            print(f"  🗑️ 已自动删除旧版情景：{old_title}")
+    db.session.commit() # 先提交删除，防止名字冲突
+
+    # [新增步骤] 插入 6 个全新定制话题
+    scenario_defaults = [
+        {
+            'title': 'Defending a Code Review',
+            'category': 'Computer Science',
+            'difficulty': 3,
+            'background': 'You submitted a pull request for a new caching module. A senior developer left a comment suggesting your implementation is inefficient and consumes too much memory during peak loads.',
+            'role': 'A junior software engineer explaining algorithmic choices to a senior developer in a team meeting.',
+            'tasks': [
+                'Acknowledge the senior developer\'s concern politely.',
+                'Explain the time-space tradeoff you considered (e.g., faster lookups vs. higher memory).',
+                'Propose a hybrid solution or ask for specific optimization advice.'
+            ],
+            'reference_material': '<strong>PR Comment:</strong> "This HashMap approach will cause memory spikes. Consider using an LRU cache."<br><strong>Your Goal:</strong> Defend your logic without sounding defensive.',
+            'prep_time_seconds': 120
+        },
+        {
+            'title': 'Reporting a Safety Violation',
+            'category': 'Civil Engineering',
+            'difficulty': 3,
+            'background': 'During a bridge construction project, you notice that the current scaffolding setup violates the updated wind resistance safety guidelines.',
+            'role': 'A site engineer raising a critical safety concern to the strict Project Manager.',
+            'tasks': [
+                'Clearly state the specific safety violation.',
+                'Explain the potential risks given the upcoming weather forecast.',
+                'Suggest an immediate structural modification to secure the site.'
+            ],
+            'reference_material': '<strong>Safety Protocol v2.1:</strong> "Scaffolding above 15m must feature double-bracing in high-wind zones (>40km/h)."<br><strong>Weather Forecast:</strong> 50km/h gusts expected tomorrow.',
+            'prep_time_seconds': 120
+        },
+        {
+            'title': 'Explaining a Statistical Anomaly',
+            'category': 'Applied Mathematics',
+            'difficulty': 2,
+            'background': 'In a collaborative research meeting, a biologist questions why you used a non-parametric statistical test instead of a standard ANOVA for their dataset.',
+            'role': 'A statistical consultant explaining mathematical reasoning to a non-math expert.',
+            'tasks': [
+                'Explain what assumptions the dataset violated (e.g., non-normal distribution).',
+                'Describe why the non-parametric test is more reliable for this specific data.',
+                'Assure the biologist of the validity of the final p-value.'
+            ],
+            'reference_material': '<strong>Data Output:</strong> Shapiro-Wilk test indicates significant deviation from normality (p < 0.01). ANOVA is invalid.',
+            'prep_time_seconds': 90
+        },
+        {
+            'title': 'Proposing a Material Substitution',
+            'category': 'Mechanical Engineering',
+            'difficulty': 2,
+            'background': 'The specific aluminum alloy needed for a new engine casing is out of stock. You need to propose using a slightly heavier but stronger titanium alloy to the lead designer.',
+            'role': 'A manufacturing engineer proposing a critical design change.',
+            'tasks': [
+                'Inform the designer of the supply chain issue.',
+                'Propose the titanium alloy as an alternative.',
+                'Briefly compare the thermal and weight differences to justify the change.'
+            ],
+            'reference_material': '<strong>Spec Sheet:</strong> Alloy Al-7075 (Unavailable).<br><strong>Alternative:</strong> Ti-6Al-4V (Available, +15% weight, +40% tensile strength).',
+            'prep_time_seconds': 90
+        },
+        {
+            'title': 'Justifying a Route Diversion',
+            'category': 'Traffic Control',
+            'difficulty': 3,
+            'background': 'A major accident has occurred on Highway 4. You initiated a massive traffic diversion through a residential zone, which has angered local city officials.',
+            'role': 'A traffic control center supervisor explaining the emergency decision to a city council member.',
+            'tasks': [
+                'Politely validate the council member\'s frustration regarding the residential traffic.',
+                'Explain the severity of the highway blockage that forced your hand.',
+                'Outline the temporary nature of the diversion and mitigation steps taken.'
+            ],
+            'reference_material': '<strong>Incident Log:</strong> Multi-vehicle collision at HWY-4 Mile 28. Hazmat spill detected. Estimated clearance time: 4 hours.',
+            'prep_time_seconds': 120
+        },
+        {
+            'title': 'Seeking Assignment Clarification',
+            'category': 'General Topic',
+            'difficulty': 1,
+            'background': 'You received an essay prompt for your elective course, but it is extremely vague about the required formatting, word count, and citation style.',
+            'role': 'A student asking the Teaching Assistant (TA) for clarification during office hours.',
+            'tasks': [
+                'Politely introduce yourself and mention the specific assignment.',
+                'Ask clear questions regarding the word count and citation style.',
+                'Ask if they have a rubric or an example of a past successful paper.'
+            ],
+            'reference_material': '<strong>Syllabus Note:</strong> "Final Essay due Friday. Topic: Modern Ethics." (No other details provided).',
+            'prep_time_seconds': 60
+        }
+    ]
+
+    for data in scenario_defaults:
+        scenario = AcademicScenario.query.filter_by(title=data['title']).first()
+        if scenario:
+            print(f"  🔄 学术情景已存在，正在同步更新：{data['title']}")
+            for key, value in data.items():
+                setattr(scenario, key, value)
+        else:
+            print(f"  ✅ 正在插入新学术情景：{data['title']}")
+            scenario = AcademicScenario(**data)
+            db.session.add(scenario)
+
+
+    # ─────────────────────────────────────────────
     # 提交更改
     # ─────────────────────────────────────────────
     try:
@@ -344,3 +451,6 @@ def add_default_data():
     except Exception as e:
         db.session.rollback()
         print(f"❌ 数据库提交失败，已回滚。错误详情: {str(e)}")
+
+if __name__ == '__main__':
+    add_default_data()
