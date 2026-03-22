@@ -136,6 +136,11 @@ class ForumPost(db.Model):
         from models import ForumLike
         return ForumLike.query.filter_by(post_id=self.id).count()
 
+    @property
+    def favorite_count(self):
+        from models import ForumFavorite
+        return ForumFavorite.query.filter_by(post_id=self.id).count()
+
 
 class ForumComment(db.Model):
     __tablename__ = 'forum_comments'
