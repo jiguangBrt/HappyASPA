@@ -98,8 +98,16 @@
       日程表还没创建好：请先运行 <code>flask --app app:create_app db upgrade</code>。
     </div>
     {% endif %}
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <div class="fw-semibold text-muted small" id="scheduleRangeLabel"></div>
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="schedulePrevMonthBtn" aria-label="Previous month">
+          <span aria-hidden="true">&lt;</span>
+        </button>
+        <div class="fw-semibold text-muted small" id="scheduleRangeLabel"></div>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="scheduleNextMonthBtn" aria-label="Next month">
+          <span aria-hidden="true">&gt;</span>
+        </button>
+      </div>
       <div class="text-muted small">Click a day to add / manage schedules</div>
     </div>
     <div class="table-responsive">
@@ -132,21 +140,26 @@
         <div class="mb-2 text-muted small">Date: <span class="fw-semibold" id="scheduleModalDate"></span></div>
         <div id="existingScheduleList" class="mb-3"></div>
 
-        <div class="mb-2 fw-semibold">Add New</div>
+        <div class="mb-2 fw-semibold">Add Item (Pending)</div>
         <select class="form-select mb-2" id="scheduleKind">
-          <option value="listening">听听力1篇</option>
-          <option value="speaking">使用口语板块</option>
-          <option value="vocabulary">学词汇10个</option>
-          <option value="custom">自定义…</option>
+          <option value="listening">Listening practice</option>
+          <option value="speaking">Speaking practice</option>
+          <option value="vocabulary">Learn 10 words</option>
+          <option value="custom">Custom</option>
         </select>
-        <input type="text" class="form-control d-none" id="scheduleCustomTitle" placeholder="自定义日程内容">
-        <textarea class="form-control mt-2" id="scheduleNotes" rows="2" placeholder="备注（可选）"></textarea>
+        <input type="text" class="form-control d-none" id="scheduleCustomTitle" placeholder="Custom title">
+        <textarea class="form-control mt-2" id="scheduleNotes" rows="2" placeholder="Notes (optional)"></textarea>
+        <div class="d-flex justify-content-end mt-2">
+          <button type="button" class="btn btn-sm btn-outline-primary" id="scheduleAddDraftBtn">
+            <i class="bi bi-plus-lg me-1"></i>Add
+          </button>
+        </div>
         <div class="text-danger small mt-2 d-none" id="scheduleError"></div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-primary" id="scheduleSaveBtn">
-          <i class="bi bi-check-lg me-1"></i>Save
+          <i class="bi bi-check-lg me-1"></i>Save changes
         </button>
       </div>
     </div>
@@ -163,7 +176,7 @@
 
   .overall-guidance-right { max-width: 520px; }
   .overall-guidance-panel {
-    background-image: url("/static/pictures/dashboard-background.jpg");
+    background-image: url("/static/pictures/dashboard-background.png");
     background-size: cover;
     background-position: center;
   }
@@ -178,12 +191,19 @@
   .overall-guidance-list::-webkit-scrollbar { width: 8px; }
   .overall-guidance-mini-card { flex: 0 0 auto; }
 
-  .schedule-calendar td { height: 88px; padding: 6px; cursor: pointer; vertical-align: top; }
+  .schedule-calendar { table-layout: fixed; }
+  .schedule-calendar td { height: 88px; padding: 0; cursor: pointer; vertical-align: top; }
   .schedule-calendar td:hover { background: rgba(59,110,191,.08); }
+  .schedule-calendar td.is-outside { background: rgba(0,0,0,.02); color: #6c757d; }
+  .schedule-calendar td.is-selected { outline: 2px solid rgba(59,110,191,.55); outline-offset: -2px; }
+  .schedule-cell { height: 88px; padding: 6px; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
   .schedule-day { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
   .schedule-day .date { font-weight: 700; font-size: .9rem; }
   .schedule-day .meta { font-size: .75rem; color: #6c757d; }
-  .schedule-badges { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+  .schedule-badges { flex: 1 1 auto; min-height: 0; display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; align-content: flex-start; overflow: hidden; }
+  .schedule-badges .badge { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .schedule-item--deleted { opacity: .6; text-decoration: line-through; }
+  .schedule-item--draft { background: rgba(59,110,191,.06); }
 
   .schedule-reminder {
     position: fixed;
@@ -205,6 +225,8 @@
   const scheduleModal = new bootstrap.Modal(scheduleModalEl);
 
   const scheduleRangeLabel = document.getElementById('scheduleRangeLabel');
+  const schedulePrevMonthBtn = document.getElementById('schedulePrevMonthBtn');
+  const scheduleNextMonthBtn = document.getElementById('scheduleNextMonthBtn');
   const scheduleCalendarBody = document.getElementById('scheduleCalendarBody');
   const scheduleModalDate = document.getElementById('scheduleModalDate');
   const existingScheduleList = document.getElementById('existingScheduleList');
@@ -213,9 +235,14 @@
   const scheduleNotes = document.getElementById('scheduleNotes');
   const scheduleError = document.getElementById('scheduleError');
   const scheduleSaveBtn = document.getElementById('scheduleSaveBtn');
+  const scheduleAddDraftBtn = document.getElementById('scheduleAddDraftBtn');
 
   let selectedDateIso = null;
   const itemsByDate = new Map();
+  let pendingAdds = [];
+  const pendingDeletes = new Set();
+  const initialFocus = new Date(`${calendarStartIso}T00:00:00`);
+  let viewedMonth = new Date(initialFocus.getFullYear(), initialFocus.getMonth(), 1);
 
   function pad2(n) { return String(n).padStart(2, '0'); }
   function toIsoDate(d) {
@@ -230,17 +257,54 @@
     return `${start.getFullYear()}-${pad2(start.getMonth() + 1)}-${pad2(start.getDate())} → ${end.getFullYear()}-${pad2(end.getMonth() + 1)}-${pad2(end.getDate())} (4×7)`;
   }
 
+  function addMonths(d, months) {
+    return new Date(d.getFullYear(), d.getMonth() + months, 1);
+  }
+  function monthLabel(d) {
+    try {
+      return new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }).format(d);
+    } catch (_) {
+      return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+    }
+  }
+  function gridStartForMonth(monthStart) {
+    // Monday-based weeks: Mon=0 ... Sun=6
+    const dow = (monthStart.getDay() + 6) % 7;
+    return addDays(monthStart, -dow);
+  }
+  function inViewedMonth(d) {
+    return d.getFullYear() === viewedMonth.getFullYear() && d.getMonth() === viewedMonth.getMonth();
+  }
+  function isVisibleInGrid(dateIso) {
+    const start = gridStartForMonth(viewedMonth);
+    const end = addDays(start, 41);
+    const d = new Date(`${dateIso}T00:00:00`);
+    return d >= start && d <= end;
+  }
+  function setViewedMonth(nextMonth) {
+    viewedMonth = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1);
+    if (selectedDateIso && !isVisibleInGrid(selectedDateIso)) selectedDateIso = null;
+    renderCalendar();
+  }
+
   function kindBadgeClass(kind) {
     if (kind === 'listening') return 'bg-info text-dark';
     if (kind === 'speaking') return 'bg-primary';
     if (kind === 'vocabulary') return 'bg-success';
     return 'bg-secondary';
   }
+  function kindLabel(kind) {
+    if (kind === 'listening') return 'Listening';
+    if (kind === 'speaking') return 'Speaking';
+    if (kind === 'vocabulary') return 'Vocabulary';
+    if (kind === 'custom') return 'Custom';
+    return kind;
+  }
 
   function recommendedTitle(kind) {
-    if (kind === 'listening') return '听听力1篇';
-    if (kind === 'speaking') return '使用口语板块';
-    if (kind === 'vocabulary') return '学词汇10个';
+    if (kind === 'listening') return 'Listening practice';
+    if (kind === 'speaking') return 'Speaking practice';
+    if (kind === 'vocabulary') return 'Learn 10 words';
     return '';
   }
 
@@ -254,23 +318,28 @@
   }
 
   function renderCalendar() {
-    const start = new Date(`${calendarStartIso}T00:00:00`);
-    const end = addDays(start, 27);
-    scheduleRangeLabel.textContent = formatRange(start, end);
+    scheduleRangeLabel.textContent = monthLabel(viewedMonth);
 
     scheduleCalendarBody.innerHTML = '';
-    for (let week = 0; week < 4; week++) {
+    const start = gridStartForMonth(viewedMonth);
+    for (let week = 0; week < 6; week++) {
       const tr = document.createElement('tr');
       for (let day = 0; day < 7; day++) {
         const d = addDays(start, week * 7 + day);
         const iso = toIsoDate(d);
         const td = document.createElement('td');
         td.dataset.date = iso;
+        if (!inViewedMonth(d)) td.classList.add('is-outside');
+        if (selectedDateIso === iso) td.classList.add('is-selected');
+
+        const cell = document.createElement('div');
+        cell.className = 'schedule-cell';
 
         const dayHeader = document.createElement('div');
         dayHeader.className = 'schedule-day';
-        dayHeader.innerHTML = `<span class="date">${d.getDate()}</span><span class="meta">${itemsByDate.get(iso)?.length ? itemsByDate.get(iso).length + ' item(s)' : ''}</span>`;
-        td.appendChild(dayHeader);
+        const count = (itemsByDate.get(iso)?.length || 0) + (iso === selectedDateIso ? pendingAdds.length : 0);
+        dayHeader.innerHTML = `<span class="date">${d.getDate()}</span><span class="meta">${inViewedMonth(d) && count ? count + ' item(s)' : ''}</span>`;
+        cell.appendChild(dayHeader);
 
         const badges = document.createElement('div');
         badges.className = 'schedule-badges';
@@ -282,7 +351,9 @@
           span.textContent = item.title;
           badges.appendChild(span);
         }
-        td.appendChild(badges);
+        cell.appendChild(badges);
+
+        td.appendChild(cell);
 
         td.addEventListener('click', () => openScheduleModal(iso));
         tr.appendChild(td);
@@ -302,38 +373,75 @@
   }
 
   function renderExistingList(dateIso) {
-    const items = itemsByDate.get(dateIso) || [];
-    if (!items.length) {
-      existingScheduleList.innerHTML = '<div class="text-muted small">No schedules yet.</div>';
+    const existing = itemsByDate.get(dateIso) || [];
+    const drafts = pendingAdds;
+    if (!existing.length && !drafts.length) {
+      existingScheduleList.innerHTML = '<div class="text-muted small">No items for this date.</div>';
       return;
     }
+
     existingScheduleList.innerHTML = `
+      <div class="text-muted small mb-2">Changes are saved only when you click <span class="fw-semibold">Save changes</span>.</div>
       <div class="list-group">
-        ${items.map(item => `
-          <div class="list-group-item d-flex justify-content-between align-items-center gap-2">
-            <div class="min-w-0">
-              <span class="badge rounded-pill ${kindBadgeClass(item.kind)} me-2">${item.kind}</span>
-              <span class="fw-semibold">${item.title}</span>
-              ${item.notes ? `<div class="text-muted small mt-1">${item.notes}</div>` : ''}
+        ${existing.map(item => {
+          const marked = pendingDeletes.has(item.id);
+          return `
+            <div class="list-group-item d-flex justify-content-between align-items-center gap-2 ${marked ? 'schedule-item--deleted' : ''}">
+              <div class="min-w-0">
+                <span class="badge rounded-pill ${kindBadgeClass(item.kind)} me-2">${kindLabel(item.kind)}</span>
+                <span class="fw-semibold">${item.title}</span>
+                ${item.notes ? `<div class="text-muted small mt-1">${item.notes}</div>` : ''}
+                ${marked ? `<div class="text-danger small mt-1">Will be deleted</div>` : ''}
+              </div>
+              <button class="btn btn-sm ${marked ? 'btn-outline-secondary' : 'btn-outline-danger'} flex-shrink-0" data-action="toggle-delete" data-id="${item.id}">
+                ${marked ? 'Undo' : 'Remove'}
+              </button>
             </div>
-            <button class="btn btn-sm btn-outline-danger flex-shrink-0" data-id="${item.id}">
-              <i class="bi bi-trash"></i>
+          `;
+        }).join('')}
+        ${drafts.map(draft => `
+          <div class="list-group-item d-flex justify-content-between align-items-center gap-2 schedule-item--draft">
+            <div class="min-w-0">
+              <span class="badge rounded-pill ${kindBadgeClass(draft.kind)} me-2">${kindLabel(draft.kind)}</span>
+              <span class="badge bg-primary me-2">NEW</span>
+              <span class="fw-semibold">${draft.title}</span>
+              ${draft.notes ? `<div class="text-muted small mt-1">${draft.notes}</div>` : ''}
+            </div>
+            <button class="btn btn-sm btn-outline-danger flex-shrink-0" data-action="remove-draft" data-tmp="${draft.tmp}">
+              Remove
             </button>
           </div>
         `).join('')}
       </div>
     `;
-    existingScheduleList.querySelectorAll('button[data-id]').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
+
+    existingScheduleList.querySelectorAll('button[data-action=\"toggle-delete\"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        await deleteScheduleItem(Number(btn.dataset.id));
+        const id = Number(btn.dataset.id);
+        if (pendingDeletes.has(id)) pendingDeletes.delete(id);
+        else pendingDeletes.add(id);
+        renderExistingList(dateIso);
+        renderCalendar();
+      });
+    });
+    existingScheduleList.querySelectorAll('button[data-action=\"remove-draft\"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const tmp = btn.dataset.tmp;
+        pendingAdds = pendingAdds.filter(d => d.tmp !== tmp);
+        renderExistingList(dateIso);
+        renderCalendar();
       });
     });
   }
 
   function openScheduleModal(dateIso) {
     selectedDateIso = dateIso;
+    pendingAdds = [];
+    pendingDeletes.clear();
     scheduleModalDate.textContent = dateIso;
+    renderCalendar();
     scheduleKind.value = 'listening';
     scheduleCustomTitle.value = '';
     scheduleNotes.value = '';
@@ -344,12 +452,14 @@
       scheduleKind.disabled = true;
       scheduleCustomTitle.disabled = true;
       scheduleNotes.disabled = true;
+      scheduleAddDraftBtn.disabled = true;
       scheduleSaveBtn.disabled = true;
-      setError('日程功能需要先升级数据库：flask --app app:create_app db upgrade');
+      setError('Schedule requires a database upgrade: flask --app app:create_app db upgrade');
     } else {
       scheduleKind.disabled = false;
       scheduleCustomTitle.disabled = false;
       scheduleNotes.disabled = false;
+      scheduleAddDraftBtn.disabled = false;
       scheduleSaveBtn.disabled = false;
     }
     scheduleModal.show();
@@ -366,61 +476,104 @@
     setError('');
   });
 
-  async function createScheduleItem() {
+  function buildDraftFromInputs() {
     const kind = scheduleKind.value;
     const title = kind === 'custom' ? scheduleCustomTitle.value.trim() : recommendedTitle(kind);
     const notes = scheduleNotes.value.trim();
-
-    if (!selectedDateIso) return;
     if (!title) {
       setError('Please enter a title.');
-      return;
+      return null;
     }
-
-    scheduleSaveBtn.disabled = true;
-    setError('');
-    try {
-      const resp = await fetch('/schedule', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scheduled_date: selectedDateIso,
-          kind,
-          title,
-          notes
-        })
-      });
-      const data = await resp.json().catch(() => ({}));
-      if (!resp.ok) {
-        setError(data.error || 'Failed to save.');
-        return;
-      }
-      if (!itemsByDate.has(data.scheduled_date)) itemsByDate.set(data.scheduled_date, []);
-      itemsByDate.get(data.scheduled_date).push(data);
-      renderExistingList(selectedDateIso);
-      renderCalendar();
-      scheduleNotes.value = '';
-      if (kind === 'custom') scheduleCustomTitle.value = '';
-    } finally {
-      scheduleSaveBtn.disabled = false;
-    }
+    return { tmp: `${Date.now()}_${Math.random().toString(16).slice(2)}`, kind, title, notes };
   }
 
-  async function deleteScheduleItem(id) {
+  function addDraft() {
     if (!selectedDateIso) return;
-    const resp = await fetch(`/schedule/${id}`, { method: 'DELETE' });
-    if (!resp.ok) return;
-
-    const items = itemsByDate.get(selectedDateIso) || [];
-    const next = items.filter(it => it.id !== id);
-    if (next.length) itemsByDate.set(selectedDateIso, next);
-    else itemsByDate.delete(selectedDateIso);
-
+    const draft = buildDraftFromInputs();
+    if (!draft) return;
+    pendingAdds.push(draft);
+    setError('');
+    scheduleNotes.value = '';
+    if (scheduleKind.value === 'custom') scheduleCustomTitle.value = '';
     renderExistingList(selectedDateIso);
     renderCalendar();
   }
 
-  scheduleSaveBtn.addEventListener('click', createScheduleItem);
+  async function applyChanges() {
+    if (!selectedDateIso) return;
+    if (!scheduleTableReady) {
+      setError('Schedule requires a database upgrade: flask --app app:create_app db upgrade');
+      return;
+    }
+    if (!pendingAdds.length && !pendingDeletes.size) {
+      scheduleModal.hide();
+      return;
+    }
+
+    scheduleSaveBtn.disabled = true;
+    scheduleAddDraftBtn.disabled = true;
+    scheduleKind.disabled = true;
+    scheduleCustomTitle.disabled = true;
+    scheduleNotes.disabled = true;
+    setError('');
+
+    try {
+      for (const id of Array.from(pendingDeletes)) {
+        const resp = await fetch(`/schedule/${id}`, { method: 'DELETE' });
+        if (!resp.ok) throw new Error('Failed to delete an item.');
+        const items = itemsByDate.get(selectedDateIso) || [];
+        const next = items.filter(it => it.id !== id);
+        if (next.length) itemsByDate.set(selectedDateIso, next);
+        else itemsByDate.delete(selectedDateIso);
+      }
+
+      for (const draft of pendingAdds) {
+        const resp = await fetch('/schedule', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            scheduled_date: selectedDateIso,
+            kind: draft.kind,
+            title: draft.title,
+            notes: draft.notes
+          })
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) throw new Error(data.error || 'Failed to save.');
+        if (!itemsByDate.has(data.scheduled_date)) itemsByDate.set(data.scheduled_date, []);
+        itemsByDate.get(data.scheduled_date).push(data);
+      }
+
+      pendingAdds = [];
+      pendingDeletes.clear();
+      renderExistingList(selectedDateIso);
+      renderCalendar();
+      scheduleModal.hide();
+    } catch (err) {
+      setError(err?.message || 'Failed to save.');
+      renderExistingList(selectedDateIso);
+      renderCalendar();
+    } finally {
+      if (scheduleTableReady) {
+        scheduleAddDraftBtn.disabled = false;
+        scheduleSaveBtn.disabled = false;
+        scheduleKind.disabled = false;
+        scheduleCustomTitle.disabled = false;
+        scheduleNotes.disabled = false;
+      }
+    }
+  }
+
+  scheduleAddDraftBtn.addEventListener('click', addDraft);
+  scheduleSaveBtn.addEventListener('click', applyChanges);
+  scheduleModalEl.addEventListener('hidden.bs.modal', () => {
+    pendingAdds = [];
+    pendingDeletes.clear();
+    setError('');
+    renderCalendar();
+  });
+  schedulePrevMonthBtn?.addEventListener('click', () => setViewedMonth(addMonths(viewedMonth, -1)));
+  scheduleNextMonthBtn?.addEventListener('click', () => setViewedMonth(addMonths(viewedMonth, 1)));
 
   function showTodayReminder() {
     if (!todaySchedule || !todaySchedule.length) return;
@@ -446,6 +599,6 @@
 
   indexItems(scheduleItems);
   renderCalendar();
-  showTodayReminder();
+  showTodayReminder(); 
 </script>
 {% endblock %}
