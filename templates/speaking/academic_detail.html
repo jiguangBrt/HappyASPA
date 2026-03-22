@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Academic Scenario Simulation</title>
+    <title>{{ scenario.title }} - Academic Scenario</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
         body { background-color: #f8f9fa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
         .academic-border { border-left: 4px solid #0d6efd; }
         .reference-box { background-color: #f1f3f5; border: 1px dashed #ced4da; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+        .fast-blink { animation: blink 1s linear infinite; }
     </style>
 </head>
 <body>
@@ -17,7 +19,7 @@
 <div class="container py-5">
     
     <div class="mb-4">
-        <a href="{{ url_for('speaking.index') }}" class="text-decoration-none text-muted">
+        <a href="{{ url_for('speaking.index') }}#academic" class="text-decoration-none text-muted">
             <i class="bi bi-arrow-left me-1"></i>Back to Scenario Library
         </a>
     </div>
@@ -25,16 +27,18 @@
     <div class="d-flex justify-content-between align-items-end mb-4">
         <div>
             <div class="d-flex gap-2 mb-2">
-                <span class="badge bg-primary bg-opacity-10 text-primary">🏛️ Office Hours</span>
-                <span class="badge bg-secondary bg-opacity-10 text-secondary">Negotiation</span>
-                <span class="badge bg-danger bg-opacity-10 text-danger">⭐⭐⭐ Hard</span>
+                <span class="badge bg-primary bg-opacity-10 text-primary"><i class="bi bi-building me-1"></i>{{ scenario.category }}</span>
+                <span class="badge bg-danger bg-opacity-10 text-danger">
+                    {% for _ in range(scenario.difficulty) %}⭐{% endfor %} 
+                    {% if scenario.difficulty == 3 %}Hard{% elif scenario.difficulty == 2 %}Medium{% else %}Easy{% endif %}
+                </span>
             </div>
-            <h2 class="fw-bold mb-1">Requesting a Deadline Extension</h2>
+            <h2 class="fw-bold mb-1">{{ scenario.title }}</h2>
             <p class="text-muted mb-0">Practice formal communication and academic reasoning.</p>
         </div>
         <div class="text-end">
             <span class="text-muted small d-block mb-1">Prep Time Suggestion</span>
-            <span class="fs-5 fw-bold text-dark"><i class="bi bi-stopwatch me-1"></i>2:00 mins</span>
+            <span class="fs-5 fw-bold text-dark"><i class="bi bi-stopwatch me-1"></i>{{ scenario.prep_time_seconds // 60 }}:{{ '%02d' % (scenario.prep_time_seconds % 60) }} mins</span>
         </div>
     </div>
 
@@ -47,71 +51,274 @@
                 <div class="card-body">
                     <div class="mb-4">
                         <h6 class="fw-bold text-secondary text-uppercase" style="font-size: 0.85rem;">Background</h6>
-                        <p class="mb-0">You are taking a difficult Macroeconomics course. The final research paper is due in two days, but the primary dataset you downloaded from the World Bank contains severe missing values for the years 2020-2022, halting your regression analysis.</p>
+                        <p class="mb-0">{{ scenario.background }}</p>
                     </div>
                     <div class="mb-4">
                         <h6 class="fw-bold text-secondary text-uppercase" style="font-size: 0.85rem;">Your Role</h6>
-                        <p class="mb-0">An anxious but polite undergraduate student speaking to Professor Smith during his office hours.</p>
+                        <p class="mb-0">{{ scenario.role }}</p>
                     </div>
                     <div class="mb-2">
                         <h6 class="fw-bold text-secondary text-uppercase" style="font-size: 0.85rem;">Your Task</h6>
                         <ul class="mb-0 text-dark">
-                            <li>Politely explain the specific issue with the dataset.</li>
-                            <li>Explain how this impacts your research methodology.</li>
-                            <li>Formally request a 3-day extension to find an alternative dataset.</li>
+                            {% for task in scenario.tasks %}
+                                <li>{{ task }}</li>
+                            {% endfor %}
                         </ul>
                     </div>
                 </div>
             </div>
 
-            <div class="card shadow-sm border-0">
+            {% if scenario.reference_material %}
+            <div class="card shadow-sm border-0 mb-4">
                 <div class="card-body">
                     <h6 class="fw-bold mb-3"><i class="bi bi-journal-text me-2"></i>Reference Material</h6>
                     <div class="reference-box rounded p-3 text-muted small">
-                        <strong>Dataset Log:</strong> "World_Bank_GDP_2015_2023.csv"<br>
-                        <strong>Error Status:</strong> Null values detected in Columns D-F (Years: 2020, 2021, 2022). <br>
-                        <strong>Note:</strong> You must mention this specific error in your conversation.
+                        {{ scenario.reference_material | safe }}
                     </div>
                 </div>
             </div>
+            {% endif %}
+
+            <div id="history-section" class="mt-5 mb-5 pt-3 border-top">
+                <h5 class="fw-bold mb-4"><i class="bi bi-clock-history me-2"></i>Your Past Recordings</h5>
+                
+                {% if submissions %}
+                    <div class="list-group shadow-sm">
+                        {% for sub in submissions %}
+                        <div class="list-group-item py-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small class="text-muted"><i class="bi bi-calendar-event me-1"></i>{{ sub.submitted_at }}</small>
+                                <span class="badge bg-light text-dark border">Duration: {{ sub.duration }}s</span>
+                            </div>
+                            
+                            <audio controls class="w-100 mb-3" style="height: 40px;">
+                                <source src="{{ url_for('speaking.get_audio', filename=sub.audio_filename) }}" type="audio/webm">
+                            </audio>
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <div class="d-flex flex-wrap gap-2 small">
+                                    <span class="badge {% if sub.score_vocabulary %}bg-success{% else %}bg-secondary{% endif %}">
+                                        Vocab: {{ sub.score_vocabulary or 'Pending' }}
+                                    </span>
+                                    <span class="badge {% if sub.score_logic %}bg-success{% else %}bg-secondary{% endif %}">
+                                        Logic: {{ sub.score_logic or 'Pending' }}
+                                    </span>
+                                    <span class="badge {% if sub.score_politeness %}bg-success{% else %}bg-secondary{% endif %}">
+                                        Politeness: {{ sub.score_politeness or 'Pending' }}
+                                    </span>
+                                </div>
+                                
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteScenarioSubmission({{ sub.id }})" title="Delete my recording">
+                                    <i class="bi bi-trash3"></i> Delete
+                                </button>
+                            </div>
+
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-light border text-center text-muted py-4">
+                        <i class="bi bi-mic-mute fs-3 d-block mb-2"></i>
+                        No past recordings yet. Try your first simulation above!
+                    </div>
+                {% endif %}
+            </div>
+
         </div>
 
         <div class="col-lg-4">
-            <div class="card shadow-sm border-0 mb-4">
+            <div class="card shadow-sm border-0 mb-4 position-sticky" style="top: 2rem;">
                 <div class="card-body text-center py-5">
                     <h5 class="fw-bold mb-4">Your Turn</h5>
                     
-                    <div class="d-flex justify-content-center gap-3 mb-4">
-                        <button class="btn btn-primary rounded-circle" style="width: 60px; height: 60px;">
+                    <div class="d-flex justify-content-center gap-3 mb-3">
+                        <button class="btn btn-primary rounded-circle" id="record-btn" onclick="startRecording()" style="width: 60px; height: 60px;">
                             <i class="bi bi-mic-fill fs-4"></i>
                         </button>
-                        <button class="btn btn-outline-danger rounded-circle" style="width: 60px; height: 60px;" disabled>
+                        <button class="btn btn-outline-danger rounded-circle" id="stop-btn" onclick="stopRecording()" style="width: 60px; height: 60px;" disabled>
                             <i class="bi bi-stop-fill fs-4"></i>
                         </button>
                     </div>
 
-                    <div class="alert alert-light border small text-muted mb-0">
+                    <div id="audio-player-container" class="w-100 mb-3"></div>
+
+                    <div class="alert alert-light border small text-muted mb-0 transition" id="status-alert">
                         Read the briefing carefully before recording.
                     </div>
                     
-                    <button class="btn btn-success w-100 mt-4 disabled">
+                    <a href="#history-section" class="btn btn-outline-primary w-100 mt-4 mb-2">
+                        <i class="bi bi-clock-history me-1"></i>View Past Recordings
+                    </a>
+
+                    <button class="btn btn-success w-100 disabled" id="submit-btn" onclick="submitRecording()">
                         <i class="bi bi-cloud-arrow-up me-2"></i>Submit for AI Review
                     </button>
-                </div>
-            </div>
+                    <button class="btn btn-outline-secondary w-100 mt-2 d-none" id="cancel-btn" onclick="cancelRecording()">
+                        <i class="bi bi-x-circle me-1"></i>Cancel Recording
+                    </button>
 
-            <div class="card shadow-sm border-0 bg-light">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3"><i class="bi bi-robot me-2"></i>AI Academic Evaluation</h6>
-                    <div class="text-center py-4 text-muted">
-                        <i class="bi bi-cpu fs-1 mb-2"></i>
-                        <p class="small mb-0">Submit your recording to receive instant AI scoring on vocabulary, logic, and politeness.</p>
-                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let audioUrl = null;
+    let isCancelling = false;
+
+    // 动态获取当前情景的 ID
+    const scenarioId = '{{ scenario.id }}'; 
+
+    function startRecording() {
+        const recordBtn = document.getElementById('record-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const statusAlert = document.getElementById('status-alert');
+        
+        recordBtn.disabled = true;
+        stopBtn.disabled = false;
+        cancelBtn.classList.remove('d-none');
+        isCancelling = false;
+        audioChunks = [];
+
+        statusAlert.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-record-circle fast-blink me-1"></i>Recording...</span>';
+        statusAlert.className = 'alert alert-danger border border-danger-subtle small mb-0';
+
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = (e) => { audioChunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                    if (isCancelling) {
+                        restoreUI();
+                        return;
+                    }
+
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' });
+                    audioUrl = URL.createObjectURL(audioBlob);
+                    
+                    document.getElementById('audio-player-container').innerHTML = `
+                        <audio controls class="w-100" style="height: 40px;" id="preview-audio">
+                            <source src="${audioUrl}" type="audio/mpeg">
+                        </audio>
+                    `;
+                    
+                    document.getElementById('submit-btn').classList.remove('disabled');
+                    document.getElementById('submit-btn').disabled = false;
+                    
+                    statusAlert.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>Ready to submit.';
+                    statusAlert.className = 'alert alert-success border border-success-subtle small mb-0 text-success';
+                };
+                mediaRecorder.start();
+            })
+            .catch(err => {
+                alert('Microphone access denied: ' + err.message);
+                restoreUI();
+            });
+    }
+
+    function stopRecording() {
+        isCancelling = false;
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+            document.getElementById('record-btn').disabled = false;
+            document.getElementById('stop-btn').disabled = true;
+        }
+    }
+
+    function cancelRecording() {
+        isCancelling = true;
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        } else {
+            restoreUI();
+        }
+    }
+
+    function restoreUI() {
+        audioChunks = [];
+        audioUrl = null;
+        
+        document.getElementById('record-btn').disabled = false;
+        document.getElementById('stop-btn').disabled = true;
+        
+        const submitBtn = document.getElementById('submit-btn');
+        submitBtn.classList.add('disabled');
+        submitBtn.disabled = true;
+        
+        document.getElementById('cancel-btn').classList.add('d-none');
+        document.getElementById('audio-player-container').innerHTML = '';
+        
+        const statusAlert = document.getElementById('status-alert');
+        statusAlert.innerHTML = 'Read the briefing carefully before recording.';
+        statusAlert.className = 'alert alert-light border small text-muted mb-0';
+    }
+
+    function submitRecording() {
+        if (!audioUrl) return alert('No recording found!');
+        const submitBtn = document.getElementById('submit-btn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Uploading...';
+
+        fetch(audioUrl)
+            .then(res => res.blob())
+            .then(blob => {
+                const formData = new FormData();
+                formData.append('audio_file', blob, `scenario_${scenarioId}_${Date.now()}.webm`);
+                formData.append('scenario_id', scenarioId);
+                
+                // 抓取录音时长传给后端
+                const audioEl = document.getElementById('preview-audio');
+                formData.append('duration', audioEl ? audioEl.duration : 0);
+                
+                return fetch('/speaking/upload-scenario-audio', { method: 'POST', body: formData });
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // 🌟 提交成功后直接刷新页面，录音就会出现在下方的历史列表中！
+                    window.location.reload(); 
+                } else {
+                    throw new Error(data.message || 'Server error');
+                }
+            })
+            .catch(err => {
+                alert('❌ Upload failed: ' + err.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-cloud-arrow-up me-2"></i>Submit for AI Review';
+            });
+    }
+
+    // 🌟 NEW: 处理删除学术情景录音的逻辑 🌟
+    function deleteScenarioSubmission(subId) {
+        if (confirm("Are you sure you want to delete this recording? This action cannot be undone.")) {
+            fetch(`/speaking/delete-scenario-submission/${subId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // 删除成功，直接刷新页面
+                    window.location.reload(); 
+                } else {
+                    alert('Failed to delete: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while deleting the recording.');
+            });
+        }
+    }
+</script>
 
 </body>
 </html>

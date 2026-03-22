@@ -162,55 +162,80 @@
   </div>
 
   <div class="tab-pane fade" id="academic" role="tabpanel" aria-labelledby="academic-tab">
-    <style>
-      .scenario-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-      .scenario-card:hover { transform: translateY(-5px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
-      .icon-box { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 12px; }
-    </style>
     
-    <div class="row g-4 mt-1">
-      <div class="col-md-6 col-lg-4">
-          <div class="card border-0 shadow-sm h-100 scenario-card">
-              <div class="card-body p-4">
-                  <div class="d-flex justify-content-between align-items-start mb-3">
-                      <div class="icon-box bg-primary bg-opacity-10 text-primary fs-3">
-                          <i class="bi bi-door-open-fill"></i>
-                      </div>
-                      <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle">⭐⭐⭐ Hard</span>
-                  </div>
-                  <h5 class="fw-bold mb-2">Requesting a Deadline Extension</h5>
-                  <p class="text-muted small mb-3 line-clamp-2">Explain a critical issue with your World Bank dataset and formally negotiate an extension for your Macroeconomics paper.</p>
-                  <div class="d-flex flex-wrap gap-2 mt-auto">
-                      <span class="badge bg-light text-dark border"><i class="bi bi-tag me-1"></i>Negotiation</span>
-                  </div>
-              </div>
-              <div class="card-footer bg-white border-top-0 pt-0 pb-4 px-4">
-                  <a href="{{ url_for('speaking.academic_detail', scenario_id=1) }}" class="btn btn-outline-primary w-100 fw-medium">Start Simulation <i class="bi bi-arrow-right ms-1"></i></a>
-              </div>
-          </div>
-      </div>
-
-      <div class="col-md-6 col-lg-4">
-          <div class="card border-0 shadow-sm h-100 scenario-card">
-              <div class="card-body p-4">
-                  <div class="d-flex justify-content-between align-items-start mb-3">
-                      <div class="icon-box bg-success bg-opacity-10 text-success fs-3">
-                          <i class="bi bi-people-fill"></i>
-                      </div>
-                      <span class="badge bg-warning bg-opacity-10 text-warning border border-warning-subtle text-dark">⭐⭐ Medium</span>
-                  </div>
-                  <h5 class="fw-bold mb-2">Disagreeing with a Classmate</h5>
-                  <p class="text-muted small mb-3">Politely interrupt a Sociology seminar discussion to present counter-evidence regarding technology and unemployment.</p>
-                  <div class="d-flex flex-wrap gap-2 mt-auto">
-                      <span class="badge bg-light text-dark border"><i class="bi bi-tag me-1"></i>Critical Thinking</span>
-                  </div>
-              </div>
-              <div class="card-footer bg-white border-top-0 pt-0 pb-4 px-4">
-                  <a href="{{ url_for('speaking.academic_detail', scenario_id=2) }}" class="btn btn-outline-primary w-100 fw-medium">Start Simulation <i class="bi bi-arrow-right ms-1"></i></a>
-              </div>
-          </div>
-      </div>
+    <div class="d-flex justify-content-center gap-2 mt-2 mb-4 flex-wrap" id="filter-buttons">
+      <button class="btn btn-primary btn-sm rounded-pill px-3 filter-btn" data-filter="all">All Scenarios</button>
+      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="General Topic">General Topic</button>
+      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Computer Science">Computer Science</button>
+      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Civil Engineering">Civil Engineering</button>
+      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Applied Mathematics">Applied Mathematics</button>
+      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Mechanical Engineering">Mechanical Engineering</button>
+      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Traffic Control">Traffic Control</button>
     </div>
+
+    <div class="row g-4" id="scenarios-grid">
+      {% if scenarios %}
+        {% for scenario in scenarios %}
+        
+        {% set cat = scenario.category %}
+        {% if cat == 'Computer Science' %}
+            {% set theme_color = 'primary' %}
+            {% set icon = 'bi-laptop' %}
+        {% elif cat == 'Civil Engineering' %}
+            {% set theme_color = 'warning' %}
+            {% set icon = 'bi-cone-striped' %}
+        {% elif cat == 'Applied Mathematics' %}
+            {% set theme_color = 'info' %}
+            {% set icon = 'bi-calculator' %}
+        {% elif cat == 'Mechanical Engineering' %}
+            {% set theme_color = 'secondary' %}
+            {% set icon = 'bi-gear' %}
+        {% elif cat == 'Traffic Control' %}
+            {% set theme_color = 'danger' %}
+            {% set icon = 'bi-stoplights' %}
+        {% else %}
+            {% set theme_color = 'success' %}
+            {% set icon = 'bi-chat-dots' %}
+        {% endif %}
+
+        <div class="col-md-6 col-lg-4 scenario-wrapper" data-category="{{ cat }}" style="transition: opacity 0.3s ease;">
+            <div class="card border-0 shadow-sm h-100 scenario-card" style="transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="bg-{{ theme_color }} bg-opacity-10 text-{{ theme_color }} d-flex align-items-center justify-content-center rounded" style="width: 48px; height: 48px; font-size: 1.5rem;">
+                            <i class="bi {{ icon }}"></i>
+                        </div>
+                        <span class="badge bg-{% if scenario.difficulty == 3 %}danger{% elif scenario.difficulty == 2 %}warning text-dark{% else %}success{% endif %} bg-opacity-10 text-{% if scenario.difficulty == 3 %}danger{% elif scenario.difficulty == 2 %}dark{% else %}success{% endif %} border border-{% if scenario.difficulty == 3 %}danger{% elif scenario.difficulty == 2 %}warning{% else %}success{% endif %}-subtle">
+                            {% for _ in range(scenario.difficulty) %}⭐{% endfor %}
+                            {% if scenario.difficulty == 3 %}Hard{% elif scenario.difficulty == 2 %}Medium{% else %}Easy{% endif %}
+                        </span>
+                    </div>
+                    
+                    <h5 class="fw-bold mb-2">{{ scenario.title }}</h5>
+                    <p class="text-muted small mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                        {{ scenario.background }}
+                    </p>
+                    
+                    <div class="d-flex flex-wrap gap-2 mt-auto mb-2">
+                        <span class="badge bg-light text-dark border"><i class="bi bi-tag me-1"></i>{{ cat }}</span>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top-0 pt-0 pb-4 px-4">
+                    <a href="{{ url_for('speaking.academic_detail', scenario_id=scenario.id) }}" class="btn btn-outline-{{ theme_color }} w-100 fw-medium">
+                        Start Simulation <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="col-12 text-center py-5">
+            <i class="bi bi-folder-x text-muted" style="font-size: 3rem;"></i>
+            <h5 class="text-muted mt-3">No academic scenarios available yet.</h5>
+        </div>
+      {% endif %}
+    </div>
+
   </div>
   
 </div>
@@ -219,6 +244,7 @@
 {% block scripts %}
 <script>
   document.addEventListener("DOMContentLoaded", function() {
+    // 1. 处理 Tab 的自动跳转
     let hash = window.location.hash; 
     if (hash) {
       let tabButton = document.querySelector(`button[data-bs-target="${hash}"]`);
@@ -226,23 +252,61 @@
         setTimeout(() => { tabButton.click(); }, 50); 
       }
     }
+
+    // 2. 🌟 升级版：丝滑无闪烁的 Academic Scenarios 过滤逻辑 🌟
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const scenarios = document.querySelectorAll('.scenario-wrapper');
+    const grid = document.getElementById('scenarios-grid'); // 获取装卡片的大盒子
+
+    // 给大盒子加上 0.2秒 的淡入淡出动画
+    grid.style.transition = 'opacity 0.2s ease-in-out';
+
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // 切换按钮的蓝色高亮样式
+            filterBtns.forEach(b => {
+                b.classList.remove('btn-primary');
+                b.classList.add('btn-outline-secondary');
+            });
+            this.classList.remove('btn-outline-secondary');
+            this.classList.add('btn-primary');
+
+            const filterValue = this.getAttribute('data-filter');
+
+            // 🌟 魔法开始：先让整个大盒子变透明（淡出）
+            grid.style.opacity = '0';
+
+            // 🌟 等待 200 毫秒（淡出动画结束）后，瞬间完成卡片的显示/隐藏，然后再亮起来
+            setTimeout(() => {
+                scenarios.forEach(scenario => {
+                    // 瞬间重排，不再单独设置透明度
+                    if (filterValue === 'all' || scenario.getAttribute('data-category') === filterValue) {
+                        scenario.style.display = 'block';
+                        scenario.style.opacity = '1'; 
+                    } else {
+                        scenario.style.display = 'none';
+                    }
+                });
+                
+                // 排版完成后，大盒子重新淡入
+                grid.style.opacity = '1';
+            }, 200); 
+        });
+    });
   });
 
   // ----------------------------------------------------
-  // 🌟 NEW: 核心录音逻辑（加入了强大的取消/恢复 UI 功能）
+  // 核心录音逻辑（保留原样）
   // ----------------------------------------------------
   let mediaRecorder = null;
   let audioChunks = {}; 
   let audioUrl = {};    
   let submissionId = {};
 
-  // 记录每个题目的“初始播放器HTML代码”，这样取消时可以完美复原
   let originalAudioHTML = {}; 
-  // 标记当前是否正在执行“取消”操作
   let isCancelling = false;   
 
   function startRecording(exerciseId) {
-    // 第一次点 Record 时，保存一下这道题原来的 UI 状态 (No recording 或者是已存在的音频)
     const playerContainer = document.getElementById(`audio-player-${exerciseId}`);
     if (!originalAudioHTML[exerciseId]) {
        originalAudioHTML[exerciseId] = playerContainer.innerHTML;
@@ -254,8 +318,8 @@
 
     recordBtn.disabled = true;
     stopBtn.disabled = false;
-    cancelBtn.classList.remove('d-none'); // 录音开始时，把 Cancel 按钮露出来
-    isCancelling = false;                 // 重置取消状态
+    cancelBtn.classList.remove('d-none');
+    isCancelling = false;
 
     audioChunks[exerciseId] = [];
 
@@ -266,7 +330,6 @@
         mediaRecorder.onstop = () => {
           stream.getTracks().forEach(track => track.stop());
 
-          // 如果系统检测到你刚才点了 Cancel，就直接退出，不要在页面上生成录音播放器
           if (isCancelling) {
               restoreUI(exerciseId);
               return;
@@ -294,7 +357,7 @@
   }
 
   function stopRecording(exerciseId) {
-    isCancelling = false; // 正常按 Stop，不是取消
+    isCancelling = false;
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
       mediaRecorder.stop();
       document.querySelector(`.record-btn[data-exercise-id="${exerciseId}"]`).disabled = false;
@@ -302,29 +365,24 @@
     }
   }
 
-  // 🌟 NEW: 用户点击 Cancel 执行的函数
   function cancelRecording(exerciseId) {
-    isCancelling = true; // 告诉系统：我要取消
+    isCancelling = true;
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop(); // 还在录音中？立刻停止（会被上面拦截并清空）
+      mediaRecorder.stop(); 
     } else {
-      restoreUI(exerciseId); // 已经录完按了 Stop，直接清空并恢复 UI
+      restoreUI(exerciseId);
     }
   }
 
-  // 🌟 NEW: 用于把一切恢复成原样的魔法函数
   function restoreUI(exerciseId) {
-    // 1. 清空内存里还没保存的临时音频数据
     audioChunks[exerciseId] = [];
     audioUrl[exerciseId] = null;
 
-    // 2. 把按钮全部复位
     document.querySelector(`.record-btn[data-exercise-id="${exerciseId}"]`).disabled = false;
     document.querySelector(`.stop-btn[data-exercise-id="${exerciseId}"]`).disabled = true;
     document.getElementById(`submit-btn-${exerciseId}`).disabled = true;
-    document.getElementById(`cancel-btn-${exerciseId}`).classList.add('d-none'); // 隐藏自己
+    document.getElementById(`cancel-btn-${exerciseId}`).classList.add('d-none');
 
-    // 3. 把播放器这块区域，原封不动地替换回刚进页面时的状态
     if (originalAudioHTML[exerciseId]) {
        document.getElementById(`audio-player-${exerciseId}`).innerHTML = originalAudioHTML[exerciseId];
     }
