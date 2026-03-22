@@ -12,6 +12,7 @@
         .reference-box { background-color: #f1f3f5; border: 1px dashed #ced4da; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
         .fast-blink { animation: blink 1s linear infinite; }
+        .transition { transition: all 0.3s ease; }
     </style>
 </head>
 <body>
@@ -112,7 +113,6 @@
                                     <i class="bi bi-trash3"></i> Delete
                                 </button>
                             </div>
-
                         </div>
                         {% endfor %}
                     </div>
@@ -123,7 +123,6 @@
                     </div>
                 {% endif %}
             </div>
-
         </div>
 
         <div class="col-lg-4">
@@ -150,13 +149,12 @@
                         <i class="bi bi-clock-history me-1"></i>View Past Recordings
                     </a>
 
-                    <button class="btn btn-success w-100 disabled" id="submit-btn" onclick="submitRecording()">
+                    <button class="btn btn-success w-100 disabled" id="submit-btn" onclick="submitRecording()" disabled>
                         <i class="bi bi-cloud-arrow-up me-2"></i>Submit for AI Review
                     </button>
                     <button class="btn btn-outline-secondary w-100 mt-2 d-none" id="cancel-btn" onclick="cancelRecording()">
                         <i class="bi bi-x-circle me-1"></i>Cancel Recording
                     </button>
-
                 </div>
             </div>
         </div>
@@ -169,8 +167,20 @@
     let audioUrl = null;
     let isCancelling = false;
 
-    // 动态获取当前情景的 ID
+    // 🌟 修复变量：精准计时与状态追踪
+    let recordingStartTime = 0;
+    let finalDuration = 0;
+    let hasUnsavedRecording = false;
+
     const scenarioId = '{{ scenario.id }}'; 
+
+    // 🌟 修复 Bug 1: 拦截页面刷新/离开
+    window.addEventListener('beforeunload', function (e) {
+        if (hasUnsavedRecording) {
+            e.preventDefault();
+            e.returnValue = ''; // 触发浏览器默认的警告框
+        }
+    });
 
     function startRecording() {
         const recordBtn = document.getElementById('record-btn');
@@ -190,7 +200,13 @@
         navigator.mediaDevices.getUserMedia({ audio: true })
             .then(stream => {
                 mediaRecorder = new MediaRecorder(stream);
+                
+                mediaRecorder.onstart = () => {
+                    recordingStartTime = Date.now(); // 🌟 记录开始物理时间
+                };
+
                 mediaRecorder.ondataavailable = (e) => { audioChunks.push(e.data); };
+                
                 mediaRecorder.onstop = () => {
                     stream.getTracks().forEach(track => track.stop());
                     
@@ -199,18 +215,26 @@
                         return;
                     }
 
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' });
+                    // 🌟 修复 Bug 2: 手动计算时长，避免 Infinity
+                    finalDuration = ((Date.now() - recordingStartTime) / 1000).toFixed(1);
+
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                     audioUrl = URL.createObjectURL(audioBlob);
                     
                     document.getElementById('audio-player-container').innerHTML = `
                         <audio controls class="w-100" style="height: 40px;" id="preview-audio">
-                            <source src="${audioUrl}" type="audio/mpeg">
+                            <source src="${audioUrl}" type="audio/webm">
                         </audio>
+                        <div class="text-muted small mt-1 text-center">Measured Duration: ${finalDuration}s</div>
                     `;
                     
-                    document.getElementById('submit-btn').classList.remove('disabled');
-                    document.getElementById('submit-btn').disabled = false;
+                    const submitBtn = document.getElementById('submit-btn');
+                    submitBtn.classList.remove('disabled');
+                    submitBtn.disabled = false;
                     
+                    // 标记为有未保存数据
+                    hasUnsavedRecording = true;
+
                     statusAlert.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>Ready to submit.';
                     statusAlert.className = 'alert alert-success border border-success-subtle small mb-0 text-success';
                 };
@@ -232,17 +256,20 @@
     }
 
     function cancelRecording() {
-        isCancelling = true;
-        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-            mediaRecorder.stop();
-        } else {
-            restoreUI();
+        if (confirm("Cancel current recording?")) {
+            isCancelling = true;
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            } else {
+                restoreUI();
+            }
         }
     }
 
     function restoreUI() {
         audioChunks = [];
         audioUrl = null;
+        hasUnsavedRecording = false; // 重置状态
         
         document.getElementById('record-btn').disabled = false;
         document.getElementById('stop-btn').disabled = true;
@@ -261,6 +288,7 @@
 
     function submitRecording() {
         if (!audioUrl) return alert('No recording found!');
+        
         const submitBtn = document.getElementById('submit-btn');
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Uploading...';
@@ -272,16 +300,18 @@
                 formData.append('audio_file', blob, `scenario_${scenarioId}_${Date.now()}.webm`);
                 formData.append('scenario_id', scenarioId);
                 
-                // 抓取录音时长传给后端
-                const audioEl = document.getElementById('preview-audio');
-                formData.append('duration', audioEl ? audioEl.duration : 0);
+                // 🌟 使用手动计算的时长提交
+                formData.append('duration', finalDuration);
                 
-                return fetch('/speaking/upload-scenario-audio', { method: 'POST', body: formData });
+                return fetch('/speaking/upload-scenario-audio', { 
+                    method: 'POST', 
+                    body: formData 
+                });
             })
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
-                    // 🌟 提交成功后直接刷新页面，录音就会出现在下方的历史列表中！
+                    hasUnsavedRecording = false; // 提交成功，解除拦截
                     window.location.reload(); 
                 } else {
                     throw new Error(data.message || 'Server error');
@@ -294,19 +324,15 @@
             });
     }
 
-    // 🌟 NEW: 处理删除学术情景录音的逻辑 🌟
     function deleteScenarioSubmission(subId) {
-        if (confirm("Are you sure you want to delete this recording? This action cannot be undone.")) {
+        if (confirm("Are you sure you want to delete this recording?")) {
             fetch(`/speaking/delete-scenario-submission/${subId}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+                headers: { 'Content-Type': 'application/json' }
             })
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    // 删除成功，直接刷新页面
                     window.location.reload(); 
                 } else {
                     alert('Failed to delete: ' + (data.message || 'Unknown error'));
@@ -314,7 +340,7 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred while deleting the recording.');
+                alert('An error occurred.');
             });
         }
     }

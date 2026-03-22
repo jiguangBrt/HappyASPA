@@ -30,6 +30,7 @@
     border: none;
     border-bottom: 3px solid #0d6efd !important; 
   }
+  .transition { transition: all 0.3s ease; }
 </style>
 
 <ul class="nav custom-underline-tabs mb-4" id="speakingTabs" role="tablist">
@@ -105,10 +106,10 @@
             </a>
 
             <div class="d-flex gap-2 mt-2">
-              <button class="btn btn-primary btn-sm flex-grow-1 record-btn" data-exercise-id="{{ ex.id }}" onclick="startRecording('{{ ex.id }}')">
+              <button class="btn btn-primary btn-sm flex-grow-1 record-btn" data-exercise-id="{{ ex.id }}" id="record-btn-{{ ex.id }}" onclick="startRecording('{{ ex.id }}')">
                 <i class="bi bi-record-circle me-1"></i>Record
               </button>
-              <button class="btn btn-danger btn-sm flex-grow-1 stop-btn" data-exercise-id="{{ ex.id }}" onclick="stopRecording('{{ ex.id }}')" disabled>
+              <button class="btn btn-danger btn-sm flex-grow-1 stop-btn" data-exercise-id="{{ ex.id }}" id="stop-btn-{{ ex.id }}" onclick="stopRecording('{{ ex.id }}')" disabled>
                 <i class="bi bi-stop-circle me-1"></i>Stop
               </button>
             </div>
@@ -256,64 +257,66 @@
     // 2. 🌟 升级版：丝滑无闪烁的 Academic Scenarios 过滤逻辑 🌟
     const filterBtns = document.querySelectorAll('.filter-btn');
     const scenarios = document.querySelectorAll('.scenario-wrapper');
-    const grid = document.getElementById('scenarios-grid'); // 获取装卡片的大盒子
+    const grid = document.getElementById('scenarios-grid'); 
 
-    // 给大盒子加上 0.2秒 的淡入淡出动画
-    grid.style.transition = 'opacity 0.2s ease-in-out';
-
-    filterBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            // 切换按钮的蓝色高亮样式
-            filterBtns.forEach(b => {
-                b.classList.remove('btn-primary');
-                b.classList.add('btn-outline-secondary');
-            });
-            this.classList.remove('btn-outline-secondary');
-            this.classList.add('btn-primary');
-
-            const filterValue = this.getAttribute('data-filter');
-
-            // 🌟 魔法开始：先让整个大盒子变透明（淡出）
-            grid.style.opacity = '0';
-
-            // 🌟 等待 200 毫秒（淡出动画结束）后，瞬间完成卡片的显示/隐藏，然后再亮起来
-            setTimeout(() => {
-                scenarios.forEach(scenario => {
-                    // 瞬间重排，不再单独设置透明度
-                    if (filterValue === 'all' || scenario.getAttribute('data-category') === filterValue) {
-                        scenario.style.display = 'block';
-                        scenario.style.opacity = '1'; 
-                    } else {
-                        scenario.style.display = 'none';
-                    }
-                });
-                
-                // 排版完成后，大盒子重新淡入
-                grid.style.opacity = '1';
-            }, 200); 
-        });
-    });
+    if (grid) {
+      grid.style.transition = 'opacity 0.2s ease-in-out';
+      filterBtns.forEach(btn => {
+          btn.addEventListener('click', function() {
+              filterBtns.forEach(b => {
+                  b.classList.remove('btn-primary');
+                  b.classList.add('btn-outline-secondary');
+              });
+              this.classList.remove('btn-outline-secondary');
+              this.classList.add('btn-primary');
+              const filterValue = this.getAttribute('data-filter');
+              grid.style.opacity = '0';
+              setTimeout(() => {
+                  scenarios.forEach(scenario => {
+                      if (filterValue === 'all' || scenario.getAttribute('data-category') === filterValue) {
+                          scenario.style.display = 'block';
+                          scenario.style.opacity = '1'; 
+                      } else {
+                          scenario.style.display = 'none';
+                      }
+                  });
+                  grid.style.opacity = '1';
+              }, 200); 
+          });
+      });
+    }
   });
 
   // ----------------------------------------------------
-  // 核心录音逻辑（保留原样）
+  // 核心录音逻辑（🌟 已修复刷新丢失与时长问题）
   // ----------------------------------------------------
   let mediaRecorder = null;
   let audioChunks = {}; 
   let audioUrl = {};    
-  let submissionId = {};
-
   let originalAudioHTML = {}; 
-  let isCancelling = false;   
+  let isCancelling = false; 
+
+  // 🌟 核心状态变量
+  let hasUnsavedRecording = false;
+  let recordingStartTimes = {}; 
+  let recordedDurations = {}; 
+
+  // 🌟 修复 Bug 1: 页面刷新拦截器
+  window.addEventListener('beforeunload', function (e) {
+    if (hasUnsavedRecording) {
+        e.preventDefault();
+        e.returnValue = ''; // 触发浏览器默认警告
+    }
+  });
 
   function startRecording(exerciseId) {
     const playerContainer = document.getElementById(`audio-player-${exerciseId}`);
     if (!originalAudioHTML[exerciseId]) {
-       originalAudioHTML[exerciseId] = playerContainer.innerHTML;
+        originalAudioHTML[exerciseId] = playerContainer.innerHTML;
     }
 
-    const recordBtn = document.querySelector(`.record-btn[data-exercise-id="${exerciseId}"]`);
-    const stopBtn = document.querySelector(`.stop-btn[data-exercise-id="${exerciseId}"]`);
+    const recordBtn = document.getElementById(`record-btn-${exerciseId}`);
+    const stopBtn = document.getElementById(`stop-btn-${exerciseId}`);
     const cancelBtn = document.getElementById(`cancel-btn-${exerciseId}`);
 
     recordBtn.disabled = true;
@@ -326,7 +329,16 @@
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(stream => {
         mediaRecorder = new MediaRecorder(stream);
-        mediaRecorder.ondataavailable = (e) => { audioChunks[exerciseId].push(e.data); };
+        
+        // 🌟 修复 Bug 2: 记录精准开始时间
+        mediaRecorder.onstart = () => {
+            recordingStartTimes[exerciseId] = Date.now();
+        };
+
+        mediaRecorder.ondataavailable = (e) => { 
+            if (audioChunks[exerciseId]) audioChunks[exerciseId].push(e.data); 
+        };
+        
         mediaRecorder.onstop = () => {
           stream.getTracks().forEach(track => track.stop());
 
@@ -335,16 +347,27 @@
               return;
           }
 
-          const audioBlob = new Blob(audioChunks[exerciseId], { type: 'audio/mpeg' });
+          // 🌟 手动计算时长，彻底解决 Infinity 报错
+          const duration = ((Date.now() - recordingStartTimes[exerciseId]) / 1000).toFixed(1);
+          recordedDurations[exerciseId] = duration;
+
+          const audioBlob = new Blob(audioChunks[exerciseId], { type: 'audio/webm' });
           audioUrl[exerciseId] = URL.createObjectURL(audioBlob);
+          
           const audioPlayer = document.getElementById(`audio-player-${exerciseId}`);
           audioPlayer.innerHTML = `
+            <div class="alert alert-warning border text-center py-1 small mb-2">
+              <i class="bi bi-pause-circle me-1"></i>Recording ready (${duration}s)
+            </div>
             <audio controls class="w-100" style="height:36px">
-              <source src="${audioUrl[exerciseId]}" type="audio/mpeg">
-              Your browser does not support the audio element.
+              <source src="${audioUrl[exerciseId]}" type="audio/webm">
             </audio>
           `;
+
           document.getElementById(`submit-btn-${exerciseId}`).disabled = false;
+          
+          // 标记全局未保存状态
+          hasUnsavedRecording = true;
         };
         mediaRecorder.start();
       })
@@ -360,26 +383,31 @@
     isCancelling = false;
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
       mediaRecorder.stop();
-      document.querySelector(`.record-btn[data-exercise-id="${exerciseId}"]`).disabled = false;
-      document.querySelector(`.stop-btn[data-exercise-id="${exerciseId}"]`).disabled = true;
+      document.getElementById(`record-btn-${exerciseId}`).disabled = false;
+      document.getElementById(`stop-btn-${exerciseId}`).disabled = true;
     }
   }
 
   function cancelRecording(exerciseId) {
-    isCancelling = true;
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop(); 
-    } else {
-      restoreUI(exerciseId);
+    if (confirm("Discard current recording?")) {
+        isCancelling = true;
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop(); 
+        } else {
+          restoreUI(exerciseId);
+        }
     }
   }
 
   function restoreUI(exerciseId) {
     audioChunks[exerciseId] = [];
     audioUrl[exerciseId] = null;
+    
+    // 检查是否还有其他活跃录音，如果没有则重置拦截状态
+    hasUnsavedRecording = Object.values(audioUrl).some(url => url !== null);
 
-    document.querySelector(`.record-btn[data-exercise-id="${exerciseId}"]`).disabled = false;
-    document.querySelector(`.stop-btn[data-exercise-id="${exerciseId}"]`).disabled = true;
+    document.getElementById(`record-btn-${exerciseId}`).disabled = false;
+    document.getElementById(`stop-btn-${exerciseId}`).disabled = true;
     document.getElementById(`submit-btn-${exerciseId}`).disabled = true;
     document.getElementById(`cancel-btn-${exerciseId}`).classList.add('d-none');
 
@@ -400,13 +428,16 @@
         const formData = new FormData();
         formData.append('audio_file', blob, `recording_${exerciseId}_${Date.now()}.webm`);
         formData.append('exercise_id', exerciseId);
-        const audioEl = document.querySelector(`#audio-player-${exerciseId} audio`);
-        formData.append('duration', audioEl ? audioEl.duration : 0);
+        
+        // 🌟 提交手动计算的精准时长，不再依赖解析不稳定的 audio.duration
+        formData.append('duration', recordedDurations[exerciseId] || 0);
+        
         return fetch('/speaking/upload-audio', { method: 'POST', body: formData });
       })
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success') {
+          hasUnsavedRecording = false; // 提交成功，解除锁定
           alert('✅ Recording submitted successfully!');
           window.location.reload(); 
         } else throw new Error(data.message || 'Upload failed');
