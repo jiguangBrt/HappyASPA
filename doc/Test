@@ -84,3 +84,29 @@ By default, all exercises are displayed.
 
 3. Test Conclusion
 ✅ All core functionalities of the Listening Practice module have been successfully verified. Video display works correctly with all details visible, and the difficulty filtering feature functions as expected. The module demonstrates UI consistency and is stable across pages. It is ready for merging.
+
+--------------------------------------------------------------------------------------
+
+
+Functional Test Report: Listening Progress Records(Resolved the conflict)
+1. Basic Information
+
+Test Subject: Qiyin Huang
+Test Date: 2026-03-22
+Test Environment: Localhost
+
+2. Test Cases and Execution Results
+Scene 1: Video Display Function (Positive Test)
+
+Test content: Create different accounts to do different listening exercises.
+Execution result: The progress of listening practice differs under different accounts, and it can correctly reflect the user's practice progress.
+[Passed]
+
+Scene 2: Fun question progress records
+
+Test content: Choose to continue from the last progress to see the answer results last time.
+Execution result: Choosing to continue from the last progress will retain the previously correct answer records, and the questions that were not answered or answered incorrectly will be asked again.
+[Passed]
+
+3. Test Conclusion
+✅ The listening exercise progress will be recorded correctly, including the video progress and questions answered.
