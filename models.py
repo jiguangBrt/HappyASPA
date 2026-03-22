@@ -146,8 +146,6 @@ class ForumComment(db.Model):
     content    = db.Column(db.Text,     nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-<<<<<<< Updated upstream
-=======
     parent_id  = db.Column(db.Integer, db.ForeignKey('forum_comments.id'), nullable=True)
 
     replies    = db.relationship(
@@ -198,7 +196,6 @@ class CommentFavorite(db.Model):
     user_id    = db.Column(db.Integer, db.ForeignKey('users.id'),       nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
->>>>>>> Stashed changes
 
 class ForumLike(db.Model):
     __tablename__ = 'forum_likes'
@@ -270,7 +267,7 @@ class UserWritingSubmission(db.Model):
     __tablename__ = 'user_writing_submissions'
 
     id           = db.Column(db.Integer, primary_key=True)
-    user_id      = db.Column(db.Integer, db.ForeignKey('users.id'),              nullable=False)
+    user_id      = db.Column(db.Integer, db.ForeignKey('users.id'),               nullable=False)
     exercise_id  = db.Column(db.Integer, db.ForeignKey('writing_exercises.id'),  nullable=False)
     content      = db.Column(db.Text,    nullable=False)
     word_count   = db.Column(db.Integer, nullable=True)
