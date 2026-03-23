@@ -1,3 +1,4 @@
+
 from flask import Blueprint, render_template, request, jsonify, current_app, url_for, redirect, flash
 from flask_login import login_required, current_user
 from models import db, UserActivityLog, SpeakingExercise, UserSpeakingSubmission, User, AcademicScenario, UserScenarioSubmission
@@ -5,13 +6,119 @@ from flask import send_from_directory
 from datetime import datetime, timezone, timedelta
 import os
 import uuid
+# === AI 语音识别与点评依赖 ===
+import requests
+import base64
+from volcenginesdkarkruntime import Ark
+
+
 
 speaking_bp = Blueprint('speaking', __name__, url_prefix='/speaking')
 
 # 工具函数：验证文件扩展名
+# 工具函数：验证文件扩展名
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in current_app.config['ALLOWED_EXTENSIONS']
+
+# ====================== AI 工具函数 ======================
+def file_to_base64(file_path):
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"❌ 文件不存在：{file_path}")
+    with open(file_path, 'rb') as file:
+        file_data = file.read()
+        base64_data = base64.b64encode(file_data).decode('utf-8')
+    return base64_data
+
+def audio_to_text(file_path):
+    recognize_url = "https://openspeech.bytedance.com/api/v3/auc/bigmodel/recognize/flash"
+    appid = "2401097724"  # TODO: 建议改为配置项
+    token = "FRVUrCiYhwku-7ZX66HvB248g8pxkITr"  # TODO: 建议改为配置项
+    print('appid:', appid)
+    print('token:', token)
+    headers = {
+        "X-Api-App-Key": appid,
+        "X-Api-Access-Key": token,
+        "X-Api-Resource-Id": "volc.bigasr.auc_turbo",
+        "X-Api-Request-Id": str(uuid.uuid4()),
+        "X-Api-Sequence": "-1",
+    }
+    try:
+        base64_data = file_to_base64(file_path)
+        request_data = {
+            "user": {"uid": appid},
+            "audio": {"data": base64_data},
+            "request": {"model_name": "bigmodel"}
+        }
+        response = requests.post(
+            recognize_url,
+            json=request_data,
+            headers=headers,
+            timeout=30
+        )
+        response.raise_for_status()
+        code = response.headers.get('X-Api-Status-Code', '')
+        if code != '20000000':
+            raise Exception(f"❌ 识别失败：{response.headers.get('X-Api-Message', '未知错误')}")
+        result_json = response.json()
+        if 'text' in result_json.get('result', {}):
+            pure_text = result_json['result']['text']
+        elif 'utterances' in result_json.get('result', {}):
+            pure_text = ' '.join([utt.get('text', '') for utt in result_json['result']['utterances']])
+        else:
+            pure_text = "⚠️ 未识别到文本内容"
+        return pure_text
+    except Exception as e:
+        return f"❌ 语音识别出错：{str(e)}"
+
+def text_evaluation(text):
+    api_key = "31720b1b-57b7-467d-9517-eab3ab9c1ec1"  # TODO: 建议改为配置项
+    print('api_key:', api_key)
+    if Ark is None:
+        return "❌ 未安装volcenginesdkarkruntime"
+    client = Ark(
+        base_url='https://ark.cn-beijing.volces.com/api/v3',
+        api_key=api_key,
+    )
+    try:
+        response = client.responses.create(
+            model="doubao-seed-2-0-lite-260215",
+            input=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "input_text", "text": '''请作为专业的口语练习教练，从以下维度点评这段口语文本（{话题名称}话题）：
+                                                        1. 基础表达：包含发音感知（从词汇适配性判断）、流畅度、语法准确性；
+                                                        2. 内容表达：包含词汇丰富度、逻辑连贯性、话题贴合度；
+                                                        3. 沟通效果：包含易懂性、互动性（如有）。
+
+                                                        要求：
+                                                        - 每个维度分别说明「优点」和「不足」，语言简洁易懂；
+                                                        - 针对不足给出具体的「改进建议」（如替换词汇、补充逻辑词）；
+                                                        - 最后给出1句整体总结和核心提升方向。用英文回答。'''},
+                        {"type": "input_text", "text": text}
+                    ]
+                }
+            ]
+        )
+        if response.output and len(response.output) > 1:
+            answer = response.output[1].content[0].text
+            return answer
+        else:
+            return "⚠️ 未获取到有效点评内容"
+    except Exception as e:
+        return f"❌ 点评出错：{str(e)}"
+
+def ai_evaluate_audio(audio_path):
+    """
+    综合调用：音频转文字+AI点评
+    返回 {'transcript':..., 'feedback':...}
+    """
+    transcript = audio_to_text(audio_path)
+    if transcript.startswith("❌"):
+        return {'transcript': transcript, 'feedback': transcript}
+    feedback = text_evaluation(transcript)
+    return {'transcript': transcript, 'feedback': feedback}
 
 # 1. 口语练习首页
 @speaking_bp.route('/')
@@ -126,13 +233,19 @@ def upload_audio():
                 duration_seconds=float(duration) if duration else 0.0
             )
             db.session.add(submission)
+            db.session.flush()  # 获取ID
+            # === AI 自动点评 ===
+            exercise = SpeakingExercise.query.get(exercise_id)
+            ai_result = ai_evaluate_audio(filepath)
+            submission.feedback = ai_result.get('feedback', '')
+            # 可选：如需评分，可在 text_evaluation 返回结构中解析分数
             db.session.commit()
-            
             return jsonify({
                 'status': 'success',
-                'message': 'Audio uploaded successfully!',
+                'message': 'Audio uploaded & evaluated!',
                 'submission_id': submission.id,
-                'filename': filename
+                'filename': filename,
+                'feedback': submission.feedback
             }), 200
         else:
             return jsonify({'status': 'error', 'message': 'File type not allowed (only mp3/wav/ogg/webm)'}), 400
@@ -303,12 +416,16 @@ def upload_scenario_audio():
                 duration_seconds=float(duration)
             )
             db.session.add(new_sub)
+            db.session.flush()
+            # === AI 自动点评 ===
+            ai_result = ai_evaluate_audio(filepath)
+            new_sub.overall_feedback = ai_result.get('feedback', '')
             db.session.commit()
-            
             return jsonify({
                 'status': 'success',
-                'message': 'Scenario Audio uploaded successfully!',
-                'filename': filename
+                'message': 'Scenario Audio uploaded & evaluated!',
+                'filename': filename,
+                'feedback': new_sub.overall_feedback
             }), 200
         else:
             return jsonify({'status': 'error', 'message': 'File type not allowed'}), 400
