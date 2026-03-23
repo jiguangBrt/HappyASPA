@@ -9,24 +9,25 @@ listening_bp = Blueprint("listening", __name__, url_prefix="/listening")
 @listening_bp.route("/")
 @login_required
 def index():
-    # 1️⃣ 获取URL参数
+    # 获取URL参数
     difficulty = request.args.get("difficulty", type=int)
 
-    # 2️⃣ 构建查询
+    # 构建查询
     query = ListeningExercise.query
 
-    # 3️⃣ 如果选择了难度 → 过滤
+    # 如果选择了难度 → 过滤
     if difficulty is not None:
         query = query.filter(ListeningExercise.difficulty == difficulty)
 
-    # 4️⃣ 排序 + 查询
+    # 排序 + 查询
     exercises = query.order_by(ListeningExercise.difficulty).all()
 
-    # 5️⃣ 传给前端（用于高亮）
+    # 传递给前端（包含当前用户ID）
     return render_template(
         "listening/index.html",
         exercises=exercises,
-        current_difficulty=difficulty
+        current_difficulty=difficulty,
+        user_id=current_user.id  # 新增：传递用户ID
     )
 
 
@@ -40,7 +41,7 @@ def save_progress():
     two_thirds_reached = data.get("two_thirds_reached", False)
     completed = data.get("completed", False)
     score = data.get("score")
-    reset = data.get("reset", False)  # 获取重置标志
+    reset = data.get("reset", False)
 
     if not exercise_id:
         return jsonify({"error": "exercise_id required"}), 400
@@ -59,23 +60,20 @@ def save_progress():
         db.session.add(progress)
 
     if reset:
-        # 重置：强制设置 last_position = 0 并清空 answers
         progress.last_position = 0
         progress.answers = {}
     else:
-        # 正常更新
         if last_position is not None:
             if progress.last_position is None or last_position > progress.last_position:
                 progress.last_position = last_position
 
         if answers is not None:
-            if not answers:  # 空字典表示清空答案（如重置时）
+            if not answers:
                 progress.answers = {}
             else:
                 if progress.answers is None:
                     progress.answers = answers
                 else:
-                    # 合并新旧答案（新答案覆盖同题号旧答案）
                     merged = {**progress.answers, **answers}
                     progress.answers = merged
 
@@ -92,7 +90,6 @@ def save_progress():
     return jsonify({"success": True})
 
 
-# Use to test for visibility
 @listening_bp.route("/progress/<int:exercise_id>", methods=["GET"])
 @login_required
 def get_progress(exercise_id):
