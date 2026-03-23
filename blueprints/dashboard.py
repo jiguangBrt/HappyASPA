@@ -147,10 +147,13 @@ def index():
         .scalar()
         or 0
     )
-    listening_completed = (
-        db.session.query(func.count(UserListeningProgress.id))
+    listening_lecture_count = (
+        db.session.query(
+            func.coalesce(
+                func.sum(func.coalesce(UserListeningProgress.two_thirds_count, 0)), 0
+            )
+        )
         .filter(UserListeningProgress.user_id == current_user.id)
-        .filter(UserListeningProgress.completed.is_(True))
         .scalar()
         or 0
     )
@@ -184,8 +187,10 @@ def index():
         growth_stats={
             "vocab_mastered": vocab_mastered,
             "vocab_learning": vocab_learning,
-            "listening_completed": listening_completed,
+            "listening_lecture_count": listening_lecture_count,
             "speaking_submissions": speaking_submissions,
+            "english_corner_recordings": english_corner_count,
+            "scenario_participations": academic_scenario_count,
         },
         favorite_posts=favorite_posts,
         liked_posts=liked_posts,

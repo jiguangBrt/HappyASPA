@@ -54,8 +54,8 @@
 
 <!-- ── Recent Activity ─────────────────────────────────────────────────── -->
 <h5 class="fw-bold mb-3"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Personal Growth</h5>
-<div class="row g-3 mb-5">
-  <div class="col-6 col-md-3">
+<div class="personal-growth-scroller mb-5">
+  <div class="personal-growth-card">
     <div class="card border-0 shadow-sm h-100 text-center">
       <div class="card-body py-3">
         <div class="display-6 fw-bold">{{ growth_stats.vocab_mastered }}</div>
@@ -63,7 +63,7 @@
       </div>
     </div>
   </div>
-  <div class="col-6 col-md-3">
+  <div class="personal-growth-card">
     <div class="card border-0 shadow-sm h-100 text-center">
       <div class="card-body py-3">
         <div class="display-6 fw-bold">{{ growth_stats.vocab_learning }}</div>
@@ -71,19 +71,27 @@
       </div>
     </div>
   </div>
-  <div class="col-6 col-md-3">
+  <div class="personal-growth-card">
     <div class="card border-0 shadow-sm h-100 text-center">
       <div class="card-body py-3">
-        <div class="display-6 fw-bold">{{ growth_stats.listening_completed }}</div>
-        <div class="small text-muted">Listening Completed</div>
+        <div class="display-6 fw-bold">{{ growth_stats.listening_lecture_count }}</div>
+        <div class="small text-muted">Lectures Listened</div>
       </div>
     </div>
   </div>
-  <div class="col-6 col-md-3">
+  <div class="personal-growth-card">
     <div class="card border-0 shadow-sm h-100 text-center">
       <div class="card-body py-3">
-        <div class="display-6 fw-bold">{{ growth_stats.speaking_submissions }}</div>
-        <div class="small text-muted">Speaking Submissions</div>
+        <div class="display-6 fw-bold">{{ growth_stats.scenario_participations }}</div>
+        <div class="small text-muted">Scenario Participations</div>
+      </div>
+    </div>
+  </div>
+  <div class="personal-growth-card">
+    <div class="card border-0 shadow-sm h-100 text-center">
+      <div class="card-body py-3">
+        <div class="display-6 fw-bold">{{ growth_stats.english_corner_recordings }}</div>
+        <div class="small text-muted">English Corner Recordings</div>
       </div>
     </div>
   </div>
@@ -190,6 +198,19 @@
   }
   .overall-guidance-list::-webkit-scrollbar { width: 8px; }
   .overall-guidance-mini-card { flex: 0 0 auto; }
+
+  .personal-growth-scroller {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+  }
+  .personal-growth-card { flex: 0 0 220px; }
+  .personal-growth-scroller::-webkit-scrollbar { height: 6px; }
+  .personal-growth-scroller::-webkit-scrollbar-thumb {
+    background: rgba(13,110,253,.35);
+    border-radius: 999px;
+  }
 
   .schedule-calendar { table-layout: fixed; }
   .schedule-calendar td { height: 88px; padding: 0; cursor: pointer; vertical-align: top; }
