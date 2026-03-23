@@ -35,20 +35,97 @@
 
 <ul class="nav custom-underline-tabs mb-4" id="speakingTabs" role="tablist">
   <li class="nav-item" role="presentation">
-    <button class="nav-link active fw-bold fs-5 px-4 py-3" id="standard-tab" data-bs-toggle="tab" data-bs-target="#standard" type="button" role="tab" aria-controls="standard" aria-selected="true">
-      <i class="bi bi-mic me-2"></i>English Corner
+    <button class="nav-link active fw-bold fs-5 px-4 py-3" id="academic-tab" data-bs-toggle="tab" data-bs-target="#academic" type="button" role="tab" aria-controls="academic" aria-selected="true">
+      <i class="bi bi-mortarboard-fill me-2"></i>Academic Scenarios
     </button>
   </li>
   <li class="nav-item" role="presentation">
-    <button class="nav-link fw-bold fs-5 px-4 py-3" id="academic-tab" data-bs-toggle="tab" data-bs-target="#academic" type="button" role="tab" aria-controls="academic" aria-selected="false">
-      <i class="bi bi-mortarboard-fill me-2"></i>Academic Scenarios
+    <button class="nav-link fw-bold fs-5 px-4 py-3" id="standard-tab" data-bs-toggle="tab" data-bs-target="#standard" type="button" role="tab" aria-controls="standard" aria-selected="false">
+      <i class="bi bi-mic me-2"></i>English Corner
     </button>
   </li>
 </ul>
 
 <div class="tab-content" id="speakingTabsContent">
   
-  <div class="tab-pane fade show active" id="standard" role="tabpanel" aria-labelledby="standard-tab">
+  <div class="tab-pane fade show active" id="academic" role="tabpanel" aria-labelledby="academic-tab">
+    
+    <div class="d-flex justify-content-center gap-2 mt-2 mb-4 flex-wrap" id="filter-buttons">
+      <button class="btn btn-primary btn-sm rounded-pill px-3 filter-btn" data-filter="all">All Scenarios</button>
+      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="General Topic">General Topic</button>
+      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Computer Science">Computer Science</button>
+      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Civil Engineering">Civil Engineering</button>
+      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Applied Mathematics">Applied Mathematics</button>
+      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Mechanical Engineering">Mechanical Engineering</button>
+      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Traffic Control">Traffic Control</button>
+    </div>
+
+    <div class="row g-4" id="scenarios-grid">
+      {% if scenarios %}
+        {% for scenario in scenarios %}
+        
+        {% set cat = scenario.category %}
+        {% if cat == 'Computer Science' %}
+            {% set theme_color = 'primary' %}
+            {% set icon = 'bi-laptop' %}
+        {% elif cat == 'Civil Engineering' %}
+            {% set theme_color = 'warning' %}
+            {% set icon = 'bi-cone-striped' %}
+        {% elif cat == 'Applied Mathematics' %}
+            {% set theme_color = 'info' %}
+            {% set icon = 'bi-calculator' %}
+        {% elif cat == 'Mechanical Engineering' %}
+            {% set theme_color = 'secondary' %}
+            {% set icon = 'bi-gear' %}
+        {% elif cat == 'Traffic Control' %}
+            {% set theme_color = 'danger' %}
+            {% set icon = 'bi-stoplights' %}
+        {% else %}
+            {% set theme_color = 'success' %}
+            {% set icon = 'bi-chat-dots' %}
+        {% endif %}
+
+        <div class="col-md-6 col-lg-4 scenario-wrapper" data-category="{{ cat }}" style="transition: opacity 0.3s ease;">
+            <div class="card border-0 shadow-sm h-100 scenario-card" style="transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="bg-{{ theme_color }} bg-opacity-10 text-{{ theme_color }} d-flex align-items-center justify-content-center rounded" style="width: 48px; height: 48px; font-size: 1.5rem;">
+                            <i class="bi {{ icon }}"></i>
+                        </div>
+                        <span class="badge bg-{% if scenario.difficulty == 3 %}danger{% elif scenario.difficulty == 2 %}warning text-dark{% else %}success{% endif %} bg-opacity-10 text-{% if scenario.difficulty == 3 %}danger{% elif scenario.difficulty == 2 %}dark{% else %}success{% endif %} border border-{% if scenario.difficulty == 3 %}danger{% elif scenario.difficulty == 2 %}warning{% else %}success{% endif %}-subtle">
+                            {% for _ in range(scenario.difficulty) %}⭐{% endfor %}
+                            {% if scenario.difficulty == 3 %}Hard{% elif scenario.difficulty == 2 %}Medium{% else %}Easy{% endif %}
+                        </span>
+                    </div>
+                    
+                    <h5 class="fw-bold mb-2">{{ scenario.title }}</h5>
+                    <p class="text-muted small mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                        {{ scenario.background }}
+                    </p>
+                    
+                    <div class="d-flex flex-wrap gap-2 mt-auto mb-2">
+                        <span class="badge bg-light text-dark border"><i class="bi bi-tag me-1"></i>{{ cat }}</span>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top-0 pt-0 pb-4 px-4">
+                    <a href="{{ url_for('speaking.academic_detail', scenario_id=scenario.id) }}" class="btn btn-outline-{{ theme_color }} w-100 fw-medium">
+                        Start Simulation <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="col-12 text-center py-5">
+            <i class="bi bi-folder-x text-muted" style="font-size: 3rem;"></i>
+            <h5 class="text-muted mt-3">No academic scenarios available yet.</h5>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <div class="tab-pane fade" id="standard" role="tabpanel" aria-labelledby="standard-tab">
     
     {% if exercises %}
     <div class="d-flex justify-content-end mb-3">
@@ -161,83 +238,6 @@
     </div>
     {% endif %}
   </div>
-
-  <div class="tab-pane fade" id="academic" role="tabpanel" aria-labelledby="academic-tab">
-    
-    <div class="d-flex justify-content-center gap-2 mt-2 mb-4 flex-wrap" id="filter-buttons">
-      <button class="btn btn-primary btn-sm rounded-pill px-3 filter-btn" data-filter="all">All Scenarios</button>
-      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="General Topic">General Topic</button>
-      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Computer Science">Computer Science</button>
-      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Civil Engineering">Civil Engineering</button>
-      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Applied Mathematics">Applied Mathematics</button>
-      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Mechanical Engineering">Mechanical Engineering</button>
-      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Traffic Control">Traffic Control</button>
-    </div>
-
-    <div class="row g-4" id="scenarios-grid">
-      {% if scenarios %}
-        {% for scenario in scenarios %}
-        
-        {% set cat = scenario.category %}
-        {% if cat == 'Computer Science' %}
-            {% set theme_color = 'primary' %}
-            {% set icon = 'bi-laptop' %}
-        {% elif cat == 'Civil Engineering' %}
-            {% set theme_color = 'warning' %}
-            {% set icon = 'bi-cone-striped' %}
-        {% elif cat == 'Applied Mathematics' %}
-            {% set theme_color = 'info' %}
-            {% set icon = 'bi-calculator' %}
-        {% elif cat == 'Mechanical Engineering' %}
-            {% set theme_color = 'secondary' %}
-            {% set icon = 'bi-gear' %}
-        {% elif cat == 'Traffic Control' %}
-            {% set theme_color = 'danger' %}
-            {% set icon = 'bi-stoplights' %}
-        {% else %}
-            {% set theme_color = 'success' %}
-            {% set icon = 'bi-chat-dots' %}
-        {% endif %}
-
-        <div class="col-md-6 col-lg-4 scenario-wrapper" data-category="{{ cat }}" style="transition: opacity 0.3s ease;">
-            <div class="card border-0 shadow-sm h-100 scenario-card" style="transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="bg-{{ theme_color }} bg-opacity-10 text-{{ theme_color }} d-flex align-items-center justify-content-center rounded" style="width: 48px; height: 48px; font-size: 1.5rem;">
-                            <i class="bi {{ icon }}"></i>
-                        </div>
-                        <span class="badge bg-{% if scenario.difficulty == 3 %}danger{% elif scenario.difficulty == 2 %}warning text-dark{% else %}success{% endif %} bg-opacity-10 text-{% if scenario.difficulty == 3 %}danger{% elif scenario.difficulty == 2 %}dark{% else %}success{% endif %} border border-{% if scenario.difficulty == 3 %}danger{% elif scenario.difficulty == 2 %}warning{% else %}success{% endif %}-subtle">
-                            {% for _ in range(scenario.difficulty) %}⭐{% endfor %}
-                            {% if scenario.difficulty == 3 %}Hard{% elif scenario.difficulty == 2 %}Medium{% else %}Easy{% endif %}
-                        </span>
-                    </div>
-                    
-                    <h5 class="fw-bold mb-2">{{ scenario.title }}</h5>
-                    <p class="text-muted small mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-                        {{ scenario.background }}
-                    </p>
-                    
-                    <div class="d-flex flex-wrap gap-2 mt-auto mb-2">
-                        <span class="badge bg-light text-dark border"><i class="bi bi-tag me-1"></i>{{ cat }}</span>
-                    </div>
-                </div>
-                <div class="card-footer bg-white border-top-0 pt-0 pb-4 px-4">
-                    <a href="{{ url_for('speaking.academic_detail', scenario_id=scenario.id) }}" class="btn btn-outline-{{ theme_color }} w-100 fw-medium">
-                        Start Simulation <i class="bi bi-arrow-right ms-1"></i>
-                    </a>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-      {% else %}
-        <div class="col-12 text-center py-5">
-            <i class="bi bi-folder-x text-muted" style="font-size: 3rem;"></i>
-            <h5 class="text-muted mt-3">No academic scenarios available yet.</h5>
-        </div>
-      {% endif %}
-    </div>
-
-  </div>
   
 </div>
 {% endblock %}
@@ -245,7 +245,7 @@
 {% block scripts %}
 <script>
   document.addEventListener("DOMContentLoaded", function() {
-    // 1. 处理 Tab 的自动跳转
+    // 监听 URL 锚点跳转逻辑
     let hash = window.location.hash; 
     if (hash) {
       let tabButton = document.querySelector(`button[data-bs-target="${hash}"]`);
@@ -254,7 +254,6 @@
       }
     }
 
-    // 2. 🌟 升级版：丝滑无闪烁的 Academic Scenarios 过滤逻辑 🌟
     const filterBtns = document.querySelectorAll('.filter-btn');
     const scenarios = document.querySelectorAll('.scenario-wrapper');
     const grid = document.getElementById('scenarios-grid'); 
@@ -288,7 +287,7 @@
   });
 
   // ----------------------------------------------------
-  // 核心录音逻辑（🌟 已修复刷新丢失与时长问题）
+  // 核心录音逻辑
   // ----------------------------------------------------
   let mediaRecorder = null;
   let audioChunks = {}; 
@@ -296,16 +295,14 @@
   let originalAudioHTML = {}; 
   let isCancelling = false; 
 
-  // 🌟 核心状态变量
   let hasUnsavedRecording = false;
   let recordingStartTimes = {}; 
   let recordedDurations = {}; 
 
-  // 🌟 修复 Bug 1: 页面刷新拦截器
   window.addEventListener('beforeunload', function (e) {
     if (hasUnsavedRecording) {
         e.preventDefault();
-        e.returnValue = ''; // 触发浏览器默认警告
+        e.returnValue = ''; 
     }
   });
 
@@ -330,7 +327,6 @@
       .then(stream => {
         mediaRecorder = new MediaRecorder(stream);
         
-        // 🌟 修复 Bug 2: 记录精准开始时间
         mediaRecorder.onstart = () => {
             recordingStartTimes[exerciseId] = Date.now();
         };
@@ -347,7 +343,6 @@
               return;
           }
 
-          // 🌟 手动计算时长，彻底解决 Infinity 报错
           const duration = ((Date.now() - recordingStartTimes[exerciseId]) / 1000).toFixed(1);
           recordedDurations[exerciseId] = duration;
 
@@ -365,8 +360,6 @@
           `;
 
           document.getElementById(`submit-btn-${exerciseId}`).disabled = false;
-          
-          // 标记全局未保存状态
           hasUnsavedRecording = true;
         };
         mediaRecorder.start();
@@ -403,7 +396,6 @@
     audioChunks[exerciseId] = [];
     audioUrl[exerciseId] = null;
     
-    // 检查是否还有其他活跃录音，如果没有则重置拦截状态
     hasUnsavedRecording = Object.values(audioUrl).some(url => url !== null);
 
     document.getElementById(`record-btn-${exerciseId}`).disabled = false;
@@ -418,6 +410,17 @@
 
   function submitRecording(exerciseId) {
     if (!audioUrl[exerciseId]) return alert('No recording to submit!');
+    
+    // 🌟 核心新增：公开性隐私警告确认框 🌟
+    const isConfirmed = confirm(
+      "⚠⚠⚠Please note: Your recording will be public and can be heard by other users. \n\nIf you do not want it to be heard, you can click 'Cancel' now and discard the recording. \n\nDo you want to proceed with the submission?"
+    );
+    
+    // 如果用户点击了“取消”，直接停止后续的上传流程
+    if (!isConfirmed) {
+      return; 
+    }
+
     const submitBtn = document.getElementById(`submit-btn-${exerciseId}`);
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Submitting...';
@@ -428,8 +431,6 @@
         const formData = new FormData();
         formData.append('audio_file', blob, `recording_${exerciseId}_${Date.now()}.webm`);
         formData.append('exercise_id', exerciseId);
-        
-        // 🌟 提交手动计算的精准时长，不再依赖解析不稳定的 audio.duration
         formData.append('duration', recordedDurations[exerciseId] || 0);
         
         return fetch('/speaking/upload-audio', { method: 'POST', body: formData });
@@ -437,8 +438,11 @@
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success') {
-          hasUnsavedRecording = false; // 提交成功，解除锁定
+          hasUnsavedRecording = false; 
           alert('✅ Recording submitted successfully!');
+          
+          // 🌟 强行打上锚点：即使默认首页是学术情景，刷新后也会乖乖切回 English Corner！
+          window.location.hash = 'standard';
           window.location.reload(); 
         } else throw new Error(data.message || 'Upload failed');
       })
