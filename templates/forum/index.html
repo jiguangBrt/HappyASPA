@@ -25,20 +25,36 @@
   </li>
 </ul>
 
-<div class="mb-4 d-flex gap-2 flex-wrap">
-  <a href="{{ url_for('forum.index', tab=tab) }}" 
-     class="btn btn-sm {% if not current_category %}btn-dark{% else %}btn-outline-dark{% endif %} rounded-pill">
-    All
-  </a>
+<div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
   
-  {% if category_colors %}
-    {% for cat_name, color in category_colors.items() %}
-      <a href="{{ url_for('forum.index', tab=tab, category=cat_name) }}" 
-         class="btn btn-sm {% if current_category == cat_name %}btn-{{ color }}{% else %}btn-outline-{{ color }}{% endif %} rounded-pill">
-        {{ cat_name }}
-      </a>
-    {% endfor %}
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{{ url_for('forum.index', tab=tab, sort_by=sort_by) }}" 
+       class="btn btn-sm {% if not current_category %}btn-dark{% else %}btn-outline-dark{% endif %} rounded-pill">
+      All
+    </a>
+    {% if category_colors %}
+      {% for cat_name, color in category_colors.items() %}
+        <a href="{{ url_for('forum.index', tab=tab, category=cat_name, sort_by=sort_by) }}" 
+           class="btn btn-sm {% if current_category == cat_name %}btn-{{ color }}{% else %}btn-outline-{{ color }}{% endif %} rounded-pill">
+          {{ cat_name }}
+        </a>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+  {% if tab != 'saved' %}
+  <div class="btn-group btn-group-sm flex-shrink-0 shadow-sm" role="group">
+    <a href="{{ url_for('forum.index', tab=tab, category=current_category, sort_by='hot') }}" 
+       class="btn {% if sort_by == 'hot' or not sort_by %}btn-danger{% else %}btn-outline-danger{% endif %}">
+      <i class="bi bi-fire me-1"></i>Hot
+    </a>
+    <a href="{{ url_for('forum.index', tab=tab, category=current_category, sort_by='new') }}" 
+       class="btn {% if sort_by == 'new' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+      <i class="bi bi-clock me-1"></i>New
+    </a>
+  </div>
   {% endif %}
+  
 </div>
 {% if tab != 'saved' %}
   {% if posts %}
