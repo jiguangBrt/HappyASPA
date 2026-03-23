@@ -14,6 +14,7 @@ from models import (
     UserScheduleItem,
     UserSpeakingSubmission,
     UserVocabularyProgress,
+    UserScenarioSubmission,  # 🌟 新增导入这行
 )
 
 dashboard_bp = Blueprint('dashboard', __name__)
@@ -137,12 +138,24 @@ def index():
         .scalar()
         or 0
     )
-    speaking_submissions = (
+    # 1. 统计 English Corner 的录音数量
+    english_corner_count = (
         db.session.query(func.count(UserSpeakingSubmission.id))
         .filter(UserSpeakingSubmission.user_id == current_user.id)
         .scalar()
         or 0
     )
+    
+    # 2. 统计 Academic Scenarios 的录音数量
+    academic_scenario_count = (
+        db.session.query(func.count(UserScenarioSubmission.id))
+        .filter(UserScenarioSubmission.user_id == current_user.id)
+        .scalar()
+        or 0
+    )
+    
+    # 3. 两者相加得出总数
+    speaking_submissions = english_corner_count + academic_scenario_count
 
     return render_template(
         "dashboard.html",

@@ -20,8 +20,9 @@
         <div class="fw-semibold">{{ post.author.username }}</div>
         <small class="text-muted">{{ post.created_at.strftime('%B %d, %Y at %H:%M') }}</small>
       </div>
-      {% if post.category %}
-      <span class="badge bg-danger bg-opacity-10 text-danger ms-auto">{{ post.category }}</span>
+   {% if post.category %}
+      {% set color = category_colors.get(post.category, 'secondary') %}
+      <span class="badge bg-{{ color }} bg-opacity-10 text-{{ color }} ms-auto">{{ post.category }}</span>
       {% endif %}
     </div>
 

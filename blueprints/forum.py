@@ -1,42 +1,91 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy import func  # <--- 新增：用于统计点赞数
-
+from datetime import datetime
 from models import db, ForumPost, ForumComment, ForumLike, ForumFavorite, CommentLike, CommentFavorite
 
 forum_bp = Blueprint('forum', __name__, url_prefix='/forum')
+@forum_bp.context_processor
+def inject_category_colors():
+    return dict(category_colors={
+        'Vocabulary': 'success',   # 绿色
+        'Grammar': 'primary',      # 蓝色
+        'Listening': 'info',       # 青色
+        'Speaking': 'warning',     # 黄色
+        'Writing': 'danger',       # 红色
+        'Reading': 'dark',         # 黑色
+        'General': 'secondary'     # 灰色
+    })
+
+def calculate_hot_score(post):
+    # 基础互动分 (维持不变)
+    base_score = (post.views * 1) + \
+                 (len(post.comments) * 3) + \
+                 (post.like_count * 5) + \
+                 (post.favorite_count * 10)
+
+    now = datetime.utcnow()
+    age_timedelta = now - post.created_at
+    age_hours = age_timedelta.total_seconds() / 3600
+
+    # ==========================================
+    # 👇 算法参数微调区 👇
+    # ==========================================
+    gravity = 1.2  # 调小重力：老帖衰减变慢，优质内容存活更久 (原为1.5)
+    buffer = 10    # 调大缓冲值：新帖不再自带巨大得分倍率 (原为2)
+    
+    # 最终热度分
+    hot_score = base_score / ((age_hours + buffer) ** gravity)
+    return hot_score
 
 
 @forum_bp.route('/')
 @login_required
 def index():
     tab = request.args.get('tab', 'all')
-    saved_comments = [] # 预设为空列表
+    category_filter = request.args.get('category')
+    saved_comments = []
+
+    # 初始化基础查询
+    post_query = db.session.query(ForumPost)
 
     if tab == 'saved':
-        # 查收藏的帖子
-        posts = db.session.query(ForumPost)\
-            .join(ForumFavorite, ForumPost.id == ForumFavorite.post_id)\
+        post_query = post_query.join(ForumFavorite, ForumPost.id == ForumFavorite.post_id)\
             .filter(ForumFavorite.user_id == current_user.id)\
-            .order_by(ForumFavorite.created_at.desc())\
-            .all()
-        # 查收藏的评论
-        saved_comments = db.session.query(ForumComment)\
+            .order_by(ForumFavorite.created_at.desc())
+            
+        comment_query = db.session.query(ForumComment)\
             .join(CommentFavorite, ForumComment.id == CommentFavorite.comment_id)\
-            .filter(CommentFavorite.user_id == current_user.id)\
-            .order_by(CommentFavorite.created_at.desc())\
-            .all()
+            .filter(CommentFavorite.user_id == current_user.id)
+            
+        if category_filter:
+            comment_query = comment_query.join(ForumPost, ForumComment.post_id == ForumPost.id)\
+                .filter(ForumPost.category == category_filter)
+                
+        saved_comments = comment_query.order_by(CommentFavorite.created_at.desc()).all()
+        
     else:
-        # 默认查所有帖子
-        posts = db.session.query(ForumPost)\
-            .outerjoin(ForumLike, ForumPost.id == ForumLike.post_id)\
-            .group_by(ForumPost.id)\
-            .order_by(func.count(ForumLike.id).desc(), ForumPost.created_at.desc())\
-            .all()
+        # 👇 2. 优化：如果不是 Saved tab，我们不需要在 SQL 里进行复杂的 group_by 和 order_by 了，
+        # 因为后续要在 Python 里用热度算法排序。我们直接取出帖子即可。
+        pass 
 
-    # 把 saved_comments 也传给前端
-    return render_template('forum/index.html', posts=posts, tab=tab, saved_comments=saved_comments)
+    # 无论哪个 tab，处理分类过滤
+    if category_filter:
+        post_query = post_query.filter(ForumPost.category == category_filter)
 
+    posts = post_query.all()
+
+    # 👇 3. 核心：在 Python 中应用热度排序 👇
+    # 只对 "All Posts" (非 saved 状态) 应用热度排序
+    if tab != 'saved' and posts:
+        # 使用 sort 方法，依照 calculate_hot_score 的返回值从高到低 (reverse=True) 排序
+        posts.sort(key=calculate_hot_score, reverse=True)
+
+    return render_template('forum/index.html', 
+                           posts=posts, 
+                           tab=tab, 
+                           saved_comments=saved_comments,
+                           current_category=category_filter)
 
 @forum_bp.route('/post/<int:post_id>')
 @login_required
