@@ -14,7 +14,7 @@ from models import (
     UserScheduleItem,
     UserSpeakingSubmission,
     UserVocabularyProgress,
-    UserScenarioSubmission,  # 🌟 新增导入这行
+    UserScenarioSubmission,
 )
 
 dashboard_bp = Blueprint('dashboard', __name__)
@@ -22,43 +22,59 @@ dashboard_bp = Blueprint('dashboard', __name__)
 OVERALL_GUIDANCE_CARDS = [
     {
         "key": "teams",
-        "title": "Use Microsoft Teams",
-        "front": "Announcements, materials, and group work.",
-        "back": "Check the class Team daily: announcements, files, and channels. Keep group decisions in the channel/chat so everyone has a record.",
+        "title": "How to Use Microsoft Teams",
+        "front": "Using Teams for group communication and attending meetings.",
+        "back": "Open Teams every day to check announcements, files, and channels. Keep questions and decisions in the channel/chat so you can find them later.",
         "icon": "bi-people",
         "color": "primary",
     },
     {
         "key": "diicsu",
-        "title": "DIICSU Introduction",
-        "front": "Course support and weekly workflow.",
-        "back": "Add your DIICSU overview here (what it is, where to access it, and what students should do each week). This card is designed to be edited by your instructor.",
+        "title": "DIICSU Before You Start",
+        "front": "What DIICSU is, where to find it, and what to do first.",
+        "back": "Learn the core tools and expectations in DIICSU before Week 1. This app guides your weekly routine so you arrive prepared and confident.",
         "icon": "bi-building",
         "color": "secondary",
     },
     {
         "key": "misconduct",
-        "title": "Academic Misconduct",
-        "front": "What it is and how to avoid it.",
-        "back": "Do your own work, cite sources, and do not reuse others' writing without permission. If unsure, ask the teacher before submitting.",
+        "title": "Academic Integrity",
+        "front": "Avoid common mistakes with sources, AI, and collaboration.",
+        "back": "Write in your own words, cite sources, and don’t reuse others’ writing without permission. If you’re unsure what’s allowed, ask before you submit.",
         "icon": "bi-shield-check",
         "color": "danger",
     },
     {
         "key": "focus",
-        "title": "Class Focus",
-        "front": "What to prioritize in this class.",
-        "back": "Listening and speaking are the core focus. Use the forum to ask questions, and build vocabulary continuously to support both skills.",
+        "title": "What to Focus On in DIICSU",
+        "front": "A simple priority order for faster progress.",
+        "back": "Prioritize listening + speaking every week. Use the forum when you’re stuck, and keep vocabulary practice steady to support both skills.",
         "icon": "bi-bullseye",
         "color": "success",
     },
 ]
 
 RECOMMENDED_SCHEDULES = {
+    "listening": "Listening practice",
+    "speaking": "Speaking practice",
+    "vocabulary": "Learn 10 words",
+}
+
+LEGACY_RECOMMENDED_SCHEDULES_ZH = {
     "listening": "\u542c\u542c\u529b1\u7bc7",
     "speaking": "\u4f7f\u7528\u53e3\u8bed\u677f\u5757",
     "vocabulary": "\u5b66\u8bcd\u6c4710\u4e2a",
 }
+
+
+def normalize_schedule_title(kind: str, title: str) -> str:
+    """Translate legacy built-in schedule titles to English for display."""
+    if not kind or not title:
+        return title
+    legacy = LEGACY_RECOMMENDED_SCHEDULES_ZH.get(kind)
+    if legacy and title.strip() == legacy:
+        return RECOMMENDED_SCHEDULES.get(kind, title)
+    return title
 
 
 @dashboard_bp.route("/")
@@ -89,7 +105,7 @@ def index():
             "id": item.id,
             "scheduled_date": item.scheduled_date.isoformat(),
             "kind": item.kind,
-            "title": item.title,
+            "title": normalize_schedule_title(item.kind, item.title),
             "notes": item.notes or "",
         }
         for item in schedule_items
@@ -162,6 +178,7 @@ def index():
         calendar_start=calendar_start.isoformat(),
         schedule_items=schedule_items_payload,
         today_schedule=today_schedule_payload,
+        today_iso=today.isoformat(),
         schedule_table_ready=schedule_table_ready,
         overall_guidance_cards=OVERALL_GUIDANCE_CARDS,
         growth_stats={
