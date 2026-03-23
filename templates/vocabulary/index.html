@@ -33,7 +33,7 @@
       
       <!-- 释义区域（初始隐藏） -->
       <div id="meaningContainer" style="display: none;" class="mb-3">
-        <div class="text-muted small">中文释义</div>
+        <div class="text-muted small">Chinese Meaning</div>
         <div id="meaningText" class="h3"></div>
       </div>
 
@@ -82,7 +82,7 @@
       <div class="modal-body text-center py-4">
         <i class="bi bi-emoji-smile display-1 text-warning mb-3"></i>
         <h3 class="fw-bold mb-2">Excellent!</h3>
-        <p class="text-muted mb-4">You've reviewed 5 words. Keep up the great work!</p>
+        <p class="text-muted mb-4">You've learned 5 words. Keep up the great work!</p>
         <div class="d-flex justify-content-center gap-3">
           <button class="btn btn-primary px-4" id="continueLearningBtn" data-bs-dismiss="modal">Continue Learning</button>
           <button class="btn btn-outline-secondary px-4" id="takeBreakBtn">Take a break</button>
@@ -176,7 +176,7 @@
           <div class="card-body text-center">
             <i class="bi bi-book fs-1 text-primary mb-3"></i>
             <h6 class="fw-bold">${displayName}</h6>
-            <p class="text-muted small">${cat.count} 个单词</p>
+            <p class="text-muted small">${cat.count} words</p>
           </div>
         </div>
       `;
@@ -245,7 +245,7 @@
   // 显示单词
   function displayWord(word) {
     wordDisplay.innerText = word.word;
-    progressInfo.innerText = `当前状态：${word.status}`;
+    progressInfo.innerText = `current status：${word.status}`;
     currentMeaning = word.meaning || '暂无释义';
   }
 
