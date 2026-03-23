@@ -30,138 +30,25 @@
     border: none;
     border-bottom: 3px solid #0d6efd !important; 
   }
+  .transition { transition: all 0.3s ease; }
 </style>
 
 <ul class="nav custom-underline-tabs mb-4" id="speakingTabs" role="tablist">
   <li class="nav-item" role="presentation">
-    <button class="nav-link active fw-bold fs-5 px-4 py-3" id="standard-tab" data-bs-toggle="tab" data-bs-target="#standard" type="button" role="tab" aria-controls="standard" aria-selected="true">
-      <i class="bi bi-mic me-2"></i>English Corner
+    <button class="nav-link active fw-bold fs-5 px-4 py-3" id="academic-tab" data-bs-toggle="tab" data-bs-target="#academic" type="button" role="tab" aria-controls="academic" aria-selected="true">
+      <i class="bi bi-mortarboard-fill me-2"></i>Academic Scenarios
     </button>
   </li>
   <li class="nav-item" role="presentation">
-    <button class="nav-link fw-bold fs-5 px-4 py-3" id="academic-tab" data-bs-toggle="tab" data-bs-target="#academic" type="button" role="tab" aria-controls="academic" aria-selected="false">
-      <i class="bi bi-mortarboard-fill me-2"></i>Academic Scenarios
+    <button class="nav-link fw-bold fs-5 px-4 py-3" id="standard-tab" data-bs-toggle="tab" data-bs-target="#standard" type="button" role="tab" aria-controls="standard" aria-selected="false">
+      <i class="bi bi-mic me-2"></i>English Corner
     </button>
   </li>
 </ul>
 
 <div class="tab-content" id="speakingTabsContent">
   
-  <div class="tab-pane fade show active" id="standard" role="tabpanel" aria-labelledby="standard-tab">
-    
-    {% if exercises %}
-    <div class="d-flex justify-content-end mb-3">
-        <a href="{{ url_for('speaking.new_exercise') }}" class="btn btn-danger py-2 px-4 shadow-sm">
-            <i class="bi bi-plus-lg me-1"></i>Add New Exercise
-        </a>
-    </div>
-
-    <div class="row g-3">
-      {% for ex in exercises %}
-      <div class="col-md-6 col-lg-4">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-              <h6 class="fw-bold mb-0">{{ ex.title }}</h6>
-              <span class="badge bg-primary bg-opacity-10 text-primary border flex-shrink-0">
-                {% for i in range(ex.difficulty) %}⭐{% endfor %}
-              </span>
-            </div>
-            
-            {% if ex.description %}
-            <p class="text-muted small mb-2">{{ ex.description }}</p>
-            {% endif %}
-            
-            <div class="d-flex align-items-center flex-wrap gap-2 mb-3">
-              {% if ex.category %}
-              <span class="badge bg-primary bg-opacity-10 text-primary">{{ ex.category }}</span>
-              {% endif %}
-              
-              {% if ex.creator %}
-              <small class="text-muted border-start ps-2">
-                <i class="bi bi-person-circle me-1"></i>By {{ ex.creator.username }}
-              </small>
-              {% else %}
-              <small class="text-muted border-start ps-2">
-                <i class="bi bi-robot me-1"></i>System
-              </small>
-              {% endif %}
-            </div>
-
-            <button class="btn btn-outline-primary btn-sm w-100 mb-2"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#prompt-{{ ex.id }}">
-              <i class="bi bi-file-text me-1"></i>Show Speaking Prompt
-            </button>
-            <div class="collapse mt-2" id="prompt-{{ ex.id }}">
-              <div class="bg-light rounded p-3 small" style="max-height:120px;overflow-y:auto;">
-                {% if ex.prompt %}{{ ex.prompt }}{% else %}<em class="text-muted">No prompt available.</em>{% endif %}
-              </div>
-            </div>
-
-            <a href="{{ url_for('speaking.exercise_detail', exercise_id=ex.id) }}" 
-                class="btn btn-outline-dark w-100 mt-2 mb-2">
-                  <i class="bi bi-eye me-1"></i> View Details
-            </a>
-
-            <div class="d-flex gap-2 mt-2">
-              <button class="btn btn-primary btn-sm flex-grow-1 record-btn" data-exercise-id="{{ ex.id }}" onclick="startRecording('{{ ex.id }}')">
-                <i class="bi bi-record-circle me-1"></i>Record
-              </button>
-              <button class="btn btn-danger btn-sm flex-grow-1 stop-btn" data-exercise-id="{{ ex.id }}" onclick="stopRecording('{{ ex.id }}')" disabled>
-                <i class="bi bi-stop-circle me-1"></i>Stop
-              </button>
-            </div>
-            
-            <div class="mt-3" id="audio-player-{{ ex.id }}">
-              {% if ex.id in user_submissions %}
-                <div class="alert alert-success border text-center py-1 small mb-2">
-                  <i class="bi bi-check-circle-fill me-1"></i>Latest submission saved
-                </div>
-                <audio controls class="w-100" style="height:36px">
-                  <source src="{{ url_for('speaking.get_audio', filename=user_submissions[ex.id].audio_filename) }}" type="audio/mpeg">
-                  Your browser does not support the audio element.
-                </audio>
-              {% else %}
-                <div class="alert alert-light border text-center py-2 small text-muted">
-                  <i class="bi bi-mic-mute me-1"></i>No recording yet
-                </div>
-              {% endif %}
-            </div>
-
-            <button class="btn btn-success btn-sm w-100 mt-3" onclick="submitRecording('{{ ex.id }}')" id="submit-btn-{{ ex.id }}" disabled>
-              <i class="bi bi-check-lg me-1"></i>
-              {% if ex.id in user_submissions %}Submit New Recording{% else %}Submit Recording{% endif %}
-            </button>
-
-            <button class="btn btn-outline-secondary btn-sm w-100 mt-2 d-none" onclick="cancelRecording('{{ ex.id }}')" id="cancel-btn-{{ ex.id }}">
-              <i class="bi bi-x-circle me-1"></i>Cancel
-            </button>
-
-            {% if current_user.is_authenticated and current_user.id == ex.creator_id %}
-            <hr class="my-3">
-            <form action="{{ url_for('speaking.delete_exercise', exercise_id=ex.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this speaking topic?');">
-              <button type="submit" class="btn btn-outline-danger btn-sm w-100">
-                <i class="bi bi-trash3 me-1"></i>Delete This Topic
-              </button>
-            </form>
-            {% endif %}
-
-          </div>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="text-center py-5">
-      <i class="bi bi-mic text-muted" style="font-size: 4rem;"></i>
-      <h5 class="mt-3 text-muted">No speaking exercises yet.</h5>
-      <a href="{{ url_for('speaking.new_exercise') }}" class="btn btn-primary mt-3">Add New Exercise</a>
-    </div>
-    {% endif %}
-  </div>
-
-  <div class="tab-pane fade" id="academic" role="tabpanel" aria-labelledby="academic-tab">
+  <div class="tab-pane fade show active" id="academic" role="tabpanel" aria-labelledby="academic-tab">
     
     <div class="d-flex justify-content-center gap-2 mt-2 mb-4 flex-wrap" id="filter-buttons">
       <button class="btn btn-primary btn-sm rounded-pill px-3 filter-btn" data-filter="all">All Scenarios</button>
@@ -237,6 +124,120 @@
     </div>
 
   </div>
+
+  <div class="tab-pane fade" id="standard" role="tabpanel" aria-labelledby="standard-tab">
+    
+    {% if exercises %}
+    <div class="d-flex justify-content-end mb-3">
+        <a href="{{ url_for('speaking.new_exercise') }}" class="btn btn-danger py-2 px-4 shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i>Add New Exercise
+        </a>
+    </div>
+
+    <div class="row g-3">
+      {% for ex in exercises %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <h6 class="fw-bold mb-0">{{ ex.title }}</h6>
+              <span class="badge bg-primary bg-opacity-10 text-primary border flex-shrink-0">
+                {% for i in range(ex.difficulty) %}⭐{% endfor %}
+              </span>
+            </div>
+            
+            {% if ex.description %}
+            <p class="text-muted small mb-2">{{ ex.description }}</p>
+            {% endif %}
+            
+            <div class="d-flex align-items-center flex-wrap gap-2 mb-3">
+              {% if ex.category %}
+              <span class="badge bg-primary bg-opacity-10 text-primary">{{ ex.category }}</span>
+              {% endif %}
+              
+              {% if ex.creator %}
+              <small class="text-muted border-start ps-2">
+                <i class="bi bi-person-circle me-1"></i>By {{ ex.creator.username }}
+              </small>
+              {% else %}
+              <small class="text-muted border-start ps-2">
+                <i class="bi bi-robot me-1"></i>System
+              </small>
+              {% endif %}
+            </div>
+
+            <button class="btn btn-outline-primary btn-sm w-100 mb-2"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#prompt-{{ ex.id }}">
+              <i class="bi bi-file-text me-1"></i>Show Speaking Prompt
+            </button>
+            <div class="collapse mt-2" id="prompt-{{ ex.id }}">
+              <div class="bg-light rounded p-3 small" style="max-height:120px;overflow-y:auto;">
+                {% if ex.prompt %}{{ ex.prompt }}{% else %}<em class="text-muted">No prompt available.</em>{% endif %}
+              </div>
+            </div>
+
+            <a href="{{ url_for('speaking.exercise_detail', exercise_id=ex.id) }}" 
+                class="btn btn-outline-dark w-100 mt-2 mb-2">
+                  <i class="bi bi-eye me-1"></i> View Details
+            </a>
+
+            <div class="d-flex gap-2 mt-2">
+              <button class="btn btn-primary btn-sm flex-grow-1 record-btn" data-exercise-id="{{ ex.id }}" id="record-btn-{{ ex.id }}" onclick="startRecording('{{ ex.id }}')">
+                <i class="bi bi-record-circle me-1"></i>Record
+              </button>
+              <button class="btn btn-danger btn-sm flex-grow-1 stop-btn" data-exercise-id="{{ ex.id }}" id="stop-btn-{{ ex.id }}" onclick="stopRecording('{{ ex.id }}')" disabled>
+                <i class="bi bi-stop-circle me-1"></i>Stop
+              </button>
+            </div>
+            
+            <div class="mt-3" id="audio-player-{{ ex.id }}">
+              {% if ex.id in user_submissions %}
+                <div class="alert alert-success border text-center py-1 small mb-2">
+                  <i class="bi bi-check-circle-fill me-1"></i>Latest submission saved
+                </div>
+                <audio controls class="w-100" style="height:36px">
+                  <source src="{{ url_for('speaking.get_audio', filename=user_submissions[ex.id].audio_filename) }}" type="audio/mpeg">
+                  Your browser does not support the audio element.
+                </audio>
+              {% else %}
+                <div class="alert alert-light border text-center py-2 small text-muted">
+                  <i class="bi bi-mic-mute me-1"></i>No recording yet
+                </div>
+              {% endif %}
+            </div>
+
+            <button class="btn btn-success btn-sm w-100 mt-3" onclick="submitRecording('{{ ex.id }}')" id="submit-btn-{{ ex.id }}" disabled>
+              <i class="bi bi-check-lg me-1"></i>
+              {% if ex.id in user_submissions %}Submit New Recording{% else %}Submit Recording{% endif %}
+            </button>
+
+            <button class="btn btn-outline-secondary btn-sm w-100 mt-2 d-none" onclick="cancelRecording('{{ ex.id }}')" id="cancel-btn-{{ ex.id }}">
+              <i class="bi bi-x-circle me-1"></i>Cancel
+            </button>
+
+            {% if current_user.is_authenticated and current_user.id == ex.creator_id %}
+            <hr class="my-3">
+            <form action="{{ url_for('speaking.delete_exercise', exercise_id=ex.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this speaking topic?');">
+              <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                <i class="bi bi-trash3 me-1"></i>Delete This Topic
+              </button>
+            </form>
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      <i class="bi bi-mic text-muted" style="font-size: 4rem;"></i>
+      <h5 class="mt-3 text-muted">No speaking exercises yet.</h5>
+      <a href="{{ url_for('speaking.new_exercise') }}" class="btn btn-primary mt-3">Add New Exercise</a>
+    </div>
+    {% endif %}
+  </div>
   
 </div>
 {% endblock %}
@@ -244,7 +245,7 @@
 {% block scripts %}
 <script>
   document.addEventListener("DOMContentLoaded", function() {
-    // 1. 处理 Tab 的自动跳转
+    // 监听 URL 锚点跳转逻辑
     let hash = window.location.hash; 
     if (hash) {
       let tabButton = document.querySelector(`button[data-bs-target="${hash}"]`);
@@ -253,67 +254,66 @@
       }
     }
 
-    // 2. 🌟 升级版：丝滑无闪烁的 Academic Scenarios 过滤逻辑 🌟
     const filterBtns = document.querySelectorAll('.filter-btn');
     const scenarios = document.querySelectorAll('.scenario-wrapper');
-    const grid = document.getElementById('scenarios-grid'); // 获取装卡片的大盒子
+    const grid = document.getElementById('scenarios-grid'); 
 
-    // 给大盒子加上 0.2秒 的淡入淡出动画
-    grid.style.transition = 'opacity 0.2s ease-in-out';
-
-    filterBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            // 切换按钮的蓝色高亮样式
-            filterBtns.forEach(b => {
-                b.classList.remove('btn-primary');
-                b.classList.add('btn-outline-secondary');
-            });
-            this.classList.remove('btn-outline-secondary');
-            this.classList.add('btn-primary');
-
-            const filterValue = this.getAttribute('data-filter');
-
-            // 🌟 魔法开始：先让整个大盒子变透明（淡出）
-            grid.style.opacity = '0';
-
-            // 🌟 等待 200 毫秒（淡出动画结束）后，瞬间完成卡片的显示/隐藏，然后再亮起来
-            setTimeout(() => {
-                scenarios.forEach(scenario => {
-                    // 瞬间重排，不再单独设置透明度
-                    if (filterValue === 'all' || scenario.getAttribute('data-category') === filterValue) {
-                        scenario.style.display = 'block';
-                        scenario.style.opacity = '1'; 
-                    } else {
-                        scenario.style.display = 'none';
-                    }
-                });
-                
-                // 排版完成后，大盒子重新淡入
-                grid.style.opacity = '1';
-            }, 200); 
-        });
-    });
+    if (grid) {
+      grid.style.transition = 'opacity 0.2s ease-in-out';
+      filterBtns.forEach(btn => {
+          btn.addEventListener('click', function() {
+              filterBtns.forEach(b => {
+                  b.classList.remove('btn-primary');
+                  b.classList.add('btn-outline-secondary');
+              });
+              this.classList.remove('btn-outline-secondary');
+              this.classList.add('btn-primary');
+              const filterValue = this.getAttribute('data-filter');
+              grid.style.opacity = '0';
+              setTimeout(() => {
+                  scenarios.forEach(scenario => {
+                      if (filterValue === 'all' || scenario.getAttribute('data-category') === filterValue) {
+                          scenario.style.display = 'block';
+                          scenario.style.opacity = '1'; 
+                      } else {
+                          scenario.style.display = 'none';
+                      }
+                  });
+                  grid.style.opacity = '1';
+              }, 200); 
+          });
+      });
+    }
   });
 
   // ----------------------------------------------------
-  // 核心录音逻辑（保留原样）
+  // 核心录音逻辑
   // ----------------------------------------------------
   let mediaRecorder = null;
   let audioChunks = {}; 
   let audioUrl = {};    
-  let submissionId = {};
-
   let originalAudioHTML = {}; 
-  let isCancelling = false;   
+  let isCancelling = false; 
+
+  let hasUnsavedRecording = false;
+  let recordingStartTimes = {}; 
+  let recordedDurations = {}; 
+
+  window.addEventListener('beforeunload', function (e) {
+    if (hasUnsavedRecording) {
+        e.preventDefault();
+        e.returnValue = ''; 
+    }
+  });
 
   function startRecording(exerciseId) {
     const playerContainer = document.getElementById(`audio-player-${exerciseId}`);
     if (!originalAudioHTML[exerciseId]) {
-       originalAudioHTML[exerciseId] = playerContainer.innerHTML;
+        originalAudioHTML[exerciseId] = playerContainer.innerHTML;
     }
 
-    const recordBtn = document.querySelector(`.record-btn[data-exercise-id="${exerciseId}"]`);
-    const stopBtn = document.querySelector(`.stop-btn[data-exercise-id="${exerciseId}"]`);
+    const recordBtn = document.getElementById(`record-btn-${exerciseId}`);
+    const stopBtn = document.getElementById(`stop-btn-${exerciseId}`);
     const cancelBtn = document.getElementById(`cancel-btn-${exerciseId}`);
 
     recordBtn.disabled = true;
@@ -326,7 +326,15 @@
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(stream => {
         mediaRecorder = new MediaRecorder(stream);
-        mediaRecorder.ondataavailable = (e) => { audioChunks[exerciseId].push(e.data); };
+        
+        mediaRecorder.onstart = () => {
+            recordingStartTimes[exerciseId] = Date.now();
+        };
+
+        mediaRecorder.ondataavailable = (e) => { 
+            if (audioChunks[exerciseId]) audioChunks[exerciseId].push(e.data); 
+        };
+        
         mediaRecorder.onstop = () => {
           stream.getTracks().forEach(track => track.stop());
 
@@ -335,16 +343,24 @@
               return;
           }
 
-          const audioBlob = new Blob(audioChunks[exerciseId], { type: 'audio/mpeg' });
+          const duration = ((Date.now() - recordingStartTimes[exerciseId]) / 1000).toFixed(1);
+          recordedDurations[exerciseId] = duration;
+
+          const audioBlob = new Blob(audioChunks[exerciseId], { type: 'audio/webm' });
           audioUrl[exerciseId] = URL.createObjectURL(audioBlob);
+          
           const audioPlayer = document.getElementById(`audio-player-${exerciseId}`);
           audioPlayer.innerHTML = `
+            <div class="alert alert-warning border text-center py-1 small mb-2">
+              <i class="bi bi-pause-circle me-1"></i>Recording ready (${duration}s)
+            </div>
             <audio controls class="w-100" style="height:36px">
-              <source src="${audioUrl[exerciseId]}" type="audio/mpeg">
-              Your browser does not support the audio element.
+              <source src="${audioUrl[exerciseId]}" type="audio/webm">
             </audio>
           `;
+
           document.getElementById(`submit-btn-${exerciseId}`).disabled = false;
+          hasUnsavedRecording = true;
         };
         mediaRecorder.start();
       })
@@ -360,26 +376,30 @@
     isCancelling = false;
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
       mediaRecorder.stop();
-      document.querySelector(`.record-btn[data-exercise-id="${exerciseId}"]`).disabled = false;
-      document.querySelector(`.stop-btn[data-exercise-id="${exerciseId}"]`).disabled = true;
+      document.getElementById(`record-btn-${exerciseId}`).disabled = false;
+      document.getElementById(`stop-btn-${exerciseId}`).disabled = true;
     }
   }
 
   function cancelRecording(exerciseId) {
-    isCancelling = true;
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop(); 
-    } else {
-      restoreUI(exerciseId);
+    if (confirm("Discard current recording?")) {
+        isCancelling = true;
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop(); 
+        } else {
+          restoreUI(exerciseId);
+        }
     }
   }
 
   function restoreUI(exerciseId) {
     audioChunks[exerciseId] = [];
     audioUrl[exerciseId] = null;
+    
+    hasUnsavedRecording = Object.values(audioUrl).some(url => url !== null);
 
-    document.querySelector(`.record-btn[data-exercise-id="${exerciseId}"]`).disabled = false;
-    document.querySelector(`.stop-btn[data-exercise-id="${exerciseId}"]`).disabled = true;
+    document.getElementById(`record-btn-${exerciseId}`).disabled = false;
+    document.getElementById(`stop-btn-${exerciseId}`).disabled = true;
     document.getElementById(`submit-btn-${exerciseId}`).disabled = true;
     document.getElementById(`cancel-btn-${exerciseId}`).classList.add('d-none');
 
@@ -390,6 +410,17 @@
 
   function submitRecording(exerciseId) {
     if (!audioUrl[exerciseId]) return alert('No recording to submit!');
+    
+    // 🌟 核心新增：公开性隐私警告确认框 🌟
+    const isConfirmed = confirm(
+      "⚠⚠⚠Please note: Your recording will be public and can be heard by other users. \n\nIf you do not want it to be heard, you can click 'Cancel' now and discard the recording. \n\nDo you want to proceed with the submission?"
+    );
+    
+    // 如果用户点击了“取消”，直接停止后续的上传流程
+    if (!isConfirmed) {
+      return; 
+    }
+
     const submitBtn = document.getElementById(`submit-btn-${exerciseId}`);
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Submitting...';
@@ -400,14 +431,18 @@
         const formData = new FormData();
         formData.append('audio_file', blob, `recording_${exerciseId}_${Date.now()}.webm`);
         formData.append('exercise_id', exerciseId);
-        const audioEl = document.querySelector(`#audio-player-${exerciseId} audio`);
-        formData.append('duration', audioEl ? audioEl.duration : 0);
+        formData.append('duration', recordedDurations[exerciseId] || 0);
+        
         return fetch('/speaking/upload-audio', { method: 'POST', body: formData });
       })
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success') {
+          hasUnsavedRecording = false; 
           alert('✅ Recording submitted successfully!');
+          
+          // 🌟 强行打上锚点：即使默认首页是学术情景，刷新后也会乖乖切回 English Corner！
+          window.location.hash = 'standard';
           window.location.reload(); 
         } else throw new Error(data.message || 'Upload failed');
       })

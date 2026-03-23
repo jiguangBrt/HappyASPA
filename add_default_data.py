@@ -369,7 +369,7 @@ def add_default_data():
                 'Explain the time-space tradeoff you considered (e.g., faster lookups vs. higher memory).',
                 'Propose a hybrid solution or ask for specific optimization advice.'
             ],
-            'reference_material': '<strong>PR Comment:</strong> "This HashMap approach will cause memory spikes. Consider using an LRU cache."<br><strong>Your Goal:</strong> Defend your logic without sounding defensive.',
+            'reference_material': '<strong>💡 Speaking Tip:</strong> Start by acknowledging the feedback constructively (e.g., "Thanks for the review. I agree memory is a concern..."). Then, pivot to your rationale ("However, I prioritized lookup speed because..."). End by showing you are open to compromise.',
             'prep_time_seconds': 120
         },
         {
@@ -383,7 +383,7 @@ def add_default_data():
                 'Explain the potential risks given the upcoming weather forecast.',
                 'Suggest an immediate structural modification to secure the site.'
             ],
-            'reference_material': '<strong>Safety Protocol v2.1:</strong> "Scaffolding above 15m must feature double-bracing in high-wind zones (>40km/h)."<br><strong>Weather Forecast:</strong> 50km/h gusts expected tomorrow.',
+            'reference_material': '<strong>💡 Speaking Tip:</strong> Keep your tone urgent but professional. Use objective facts rather than opinions (e.g., "The current setup violates OSHA guidelines under tomorrow\'s wind conditions"). Don\'t just report the problem; propose a clear, immediate action.',
             'prep_time_seconds': 120
         },
         {
@@ -397,7 +397,7 @@ def add_default_data():
                 'Describe why the non-parametric test is more reliable for this specific data.',
                 'Assure the biologist of the validity of the final p-value.'
             ],
-            'reference_material': '<strong>Data Output:</strong> Shapiro-Wilk test indicates significant deviation from normality (p < 0.01). ANOVA is invalid.',
+            'reference_material': '<strong>💡 Speaking Tip:</strong> Avoid overly dense mathematical jargon. Bridge the gap by explaining <em>why</em> the standard test failed (the data wasn\'t normally distributed) and reassure your colleague that your alternative method is robust and standard practice.',
             'prep_time_seconds': 90
         },
         {
@@ -411,7 +411,7 @@ def add_default_data():
                 'Propose the titanium alloy as an alternative.',
                 'Briefly compare the thermal and weight differences to justify the change.'
             ],
-            'reference_material': '<strong>Spec Sheet:</strong> Alloy Al-7075 (Unavailable).<br><strong>Alternative:</strong> Ti-6Al-4V (Available, +15% weight, +40% tensile strength).',
+            'reference_material': '<strong>💡 Speaking Tip:</strong> Deliver the bad news (out of stock) quickly, and immediately follow up with your solution. Highlight the silver lining—emphasize how the titanium alloy\'s superior thermal strength makes up for its heavier weight.',
             'prep_time_seconds': 90
         },
         {
@@ -425,7 +425,7 @@ def add_default_data():
                 'Explain the severity of the highway blockage that forced your hand.',
                 'Outline the temporary nature of the diversion and mitigation steps taken.'
             ],
-            'reference_material': '<strong>Incident Log:</strong> Multi-vehicle collision at HWY-4 Mile 28. Hazmat spill detected. Estimated clearance time: 4 hours.',
+            'reference_material': '<strong>💡 Speaking Tip:</strong> Empathy first. Validate their frustration ("I completely understand why the residents are upset"). Then, firmly explain the emergency (hazmat spill) that forced the decision, emphasizing that public safety was the priority.',
             'prep_time_seconds': 120
         },
         {
@@ -439,7 +439,7 @@ def add_default_data():
                 'Ask clear questions regarding the word count and citation style.',
                 'Ask if they have a rubric or an example of a past successful paper.'
             ],
-            'reference_material': '<strong>Syllabus Note:</strong> "Final Essay due Friday. Topic: Modern Ethics." (No other details provided).',
+            'reference_material': '<strong>💡 Speaking Tip:</strong> Be respectful of the TA\'s time. Instead of saying "I don\'t know what to do," show that you\'ve read the syllabus and ask highly specific questions (e.g., "Could you clarify if we should use APA or MLA format?").',
             'prep_time_seconds': 60
         }
     ]
