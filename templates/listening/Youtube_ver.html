@@ -1,0 +1,650 @@
+{% extends 'base.html' %}
+{% block title %}Listening Practice{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h3 class="fw-bold mb-0"><i class="bi bi-headphones text-info me-2"></i>Listening Practice</h3>
+    <p class="text-muted mb-0 mt-1">Sharpen your academic listening with lectures and discussions.</p>
+  </div>
+  <span class="badge bg-info text-dark fs-6">{{ exercises|length }} exercises</span>
+</div>
+
+{% if exercises %}
+<div class="row g-3">
+  {% for ex in exercises %}
+  <div class="col-md-6 col-lg-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <h6 class="fw-bold mb-0">{{ ex.title }}</h6>
+          <span class="badge bg-info bg-opacity-10 text-info border flex-shrink-0">
+            {% for i in range(ex.difficulty) %}⭐{% endfor %}
+          </span>
+        </div>
+        {% if ex.description %}
+        <p class="text-muted small mb-2">{{ ex.description }}</p>
+        {% endif %}
+        <div class="d-flex align-items-center gap-2 mb-3">
+          {% if ex.category %}
+          <span class="badge bg-info bg-opacity-10 text-info">{{ ex.category }}</span>
+          {% endif %}
+          {% if ex.duration_seconds %}
+          <small class="text-muted">
+            <i class="bi bi-clock me-1"></i>
+            {{ (ex.duration_seconds // 60) }}m {{ (ex.duration_seconds % 60) }}s
+          </small>
+          {% endif %}
+        </div>
+
+        <!-- YouTube 播放器容器 -->
+        {% if ex.youtube_id %}
+        <div class="video-wrapper" style="position: relative; display: block; width: 100%;"
+          data-wrapper-id="{{ ex.id }}">
+          <!-- YouTube 播放器将插入到此 div 中 -->
+          <div id="youtube-player-{{ ex.id }}" class="youtube-player" data-exercise-id="{{ ex.id }}"
+            data-questions='{{ ex.questions | tojson | safe }}' data-youtube-id="{{ ex.youtube_id }}"></div>
+          <!-- 弹窗 -->
+          <div class="video-popup" style="display: none; left: 20px; top: 20px;">
+            <div class="popup-content"></div>
+            <div class="popup-timer text-end mt-2">
+              <span class="timer-seconds">30</span>s
+            </div>
+          </div>
+        </div>
+
+        <!-- 动态按钮容器 -->
+        <div class="progress-buttons d-flex gap-2 mt-2" data-exercise-id="{{ ex.id }}"></div>
+        {% endif %}
+
+        <!-- 原文折叠按钮 -->
+        <div class="card-footer bg-transparent border-top-0 pt-0 pb-3 px-3 mt-2">
+          <button class="btn btn-outline-info btn-sm w-100" data-bs-toggle="collapse"
+            data-bs-target="#transcript-{{ ex.id }}">
+            <i class="bi bi-file-text me-1"></i>Show Transcript
+          </button>
+          <div class="collapse mt-2" id="transcript-{{ ex.id }}">
+            <div class="bg-light rounded p-3 small" style="max-height:160px;overflow-y:auto;">
+              {% if ex.transcript %}{{ ex.transcript }}{% else %}<em class="text-muted">No transcript available.</em>{%
+              endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% with exercise_id=ex.id %}
+      {% include 'listening/debug_panel.html' %}
+      {% endwith %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+  <i class="bi bi-headphones text-muted" style="font-size: 4rem;"></i>
+  <h5 class="mt-3 text-muted">No listening exercises yet.</h5>
+  <p class="text-muted">Audio content will be added by your instructor.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- 加载 YouTube IFrame API -->
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // 存储每个视频的进度数据
+    const progressMap = new Map(); // key: exerciseId, value: { triggered: Set, answers: Map, lastTime: number }
+    // 存储 YouTube 播放器实例
+    const youtubePlayers = {};
+    // 存储每个播放器的轮询定时器
+    const trackingIntervals = {};
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // 从 localStorage 初始化
+    document.querySelectorAll('.video-wrapper').forEach(wrapper => {
+      const playerDiv = wrapper.querySelector('.youtube-player');
+      if (!playerDiv) return;
+      const exerciseId = playerDiv.dataset.exerciseId;
+      let prog = { triggered: new Set(), answers: new Map(), lastTime: 0 };
+      const saved = localStorage.getItem(`listening_progress_${exerciseId}`);
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          prog.triggered = new Set(data.triggered || []);
+          // 确保答案键为字符串
+          prog.answers = new Map(Object.entries(data.answers || {}).map(([k, v]) => [String(k), v]));
+          prog.lastTime = data.lastTime || 0;
+        } catch (e) {
+          console.warn('Failed to parse localStorage', e);
+        }
+      }
+      progressMap.set(exerciseId, prog);
+    });
+
+    // 从服务器获取进度（略，可根据需要实现）
+
+    function saveProgress(exerciseId) {
+      const prog = progressMap.get(exerciseId);
+      if (!prog) return;
+      const data = {
+        triggered: Array.from(prog.triggered),
+        answers: Object.fromEntries(prog.answers),
+        lastTime: prog.lastTime || 0
+      };
+      localStorage.setItem(`listening_progress_${exerciseId}`, JSON.stringify(data));
+      // 可选：发送到服务器
+    }
+
+    function sendProgressToServer(exerciseId, data) {
+      // 实现同原有逻辑
+    }
+
+    function renderButtons() {
+      progressMap.forEach((prog, exerciseId) => {
+        if (prog.lastTime === 0 && prog.triggered.size === 0) {
+          localStorage.removeItem(`listening_progress_${exerciseId}`);
+          progressMap.delete(exerciseId);
+        }
+      });
+
+      document.querySelectorAll('.progress-buttons').forEach(btnContainer => {
+        const exerciseId = btnContainer.dataset.exerciseId;
+        let prog = progressMap.get(exerciseId);
+        if (!prog) {
+          prog = { triggered: new Set(), answers: new Map(), lastTime: 0 };
+          progressMap.set(exerciseId, prog);
+        }
+
+        const hasProgress = prog.triggered.size > 0 || prog.lastTime > 0;
+        btnContainer.innerHTML = '';
+
+        if (hasProgress) {
+          const displaySeconds = prog.lastTime > 0 ? prog.lastTime : 1;
+          const resumeText = `⏵ Continue from last progress ${formatTime(displaySeconds)}`;
+
+          const resumeBtn = document.createElement('button');
+          resumeBtn.className = 'btn btn-sm btn-info flex-grow-1';
+          resumeBtn.textContent = resumeText;
+          resumeBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            startExercise(exerciseId, 'resume');
+          });
+
+          const restartBtn = document.createElement('button');
+          restartBtn.className = 'btn btn-sm btn-outline-secondary';
+          restartBtn.textContent = '↺ Reset Exercise';
+          restartBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            startExercise(exerciseId, 'restart');
+          });
+
+          btnContainer.appendChild(resumeBtn);
+          btnContainer.appendChild(restartBtn);
+        } else {
+          const startBtn = document.createElement('button');
+          startBtn.className = 'btn btn-sm btn-success w-100';
+          startBtn.textContent = '进入练习';
+          startBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            startExercise(exerciseId, 'start');
+          });
+          btnContainer.appendChild(startBtn);
+        }
+      });
+    }
+
+    function startExercise(exerciseId, mode) {
+      const wrapper = document.querySelector(`.video-wrapper[data-wrapper-id="${exerciseId}"]`);
+      if (!wrapper) return;
+      const player = youtubePlayers[exerciseId];
+      if (!player) return;
+      const prog = progressMap.get(exerciseId);
+      if (!prog) return;
+
+      if (mode === 'restart') {
+        prog.triggered.clear();
+        prog.answers.clear();
+        prog.lastTime = 0;
+        saveProgress(exerciseId);
+        player.seekTo(0);
+        // 重置服务器进度（可选）
+      } else if (mode === 'resume') {
+        player.seekTo(prog.lastTime || 0);
+      } else { // start
+        player.seekTo(0);
+      }
+
+      // 请求全屏：让 wrapper 全屏
+      if (wrapper.requestFullscreen) {
+        wrapper.requestFullscreen();
+      } else if (wrapper.webkitRequestFullscreen) {
+        wrapper.webkitRequestFullscreen();
+      } else if (wrapper.msRequestFullscreen) {
+        wrapper.msRequestFullscreen();
+      } else {
+        alert('您的浏览器不支持全屏 API');
+      }
+
+      player.playVideo();
+    }
+
+    renderButtons();
+
+    // 定义 YouTube API 就绪回调
+    window.onYouTubeIframeAPIReady = function () {
+      // 初始化所有播放器
+      document.querySelectorAll('.youtube-player').forEach(playerDiv => {
+        const exerciseId = playerDiv.dataset.exerciseId;
+        const youtubeId = playerDiv.dataset.youtubeId;
+        const questions = JSON.parse(playerDiv.dataset.questions || '[]');
+        const wrapper = playerDiv.closest('.video-wrapper');
+        const popup = wrapper.querySelector('.video-popup');
+
+        // 创建播放器
+        const player = new YT.Player(playerDiv.id, {
+          height: '100%',
+          width: '100%',
+          videoId: youtubeId,
+          playerVars: {
+            'playsinline': 1,
+            'enablejsapi': 1,
+            'rel': 0,
+            'modestbranding': 1,
+            'controls': 1,
+            'fs': 1,        // 允许全屏
+          },
+          events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange
+          }
+        });
+
+        youtubePlayers[exerciseId] = player;
+        wrapper.questions = questions;
+        wrapper._popupTimer = null;
+        wrapper.hasSentTwoThirds = false;
+
+        function onPlayerReady(event) {
+          // 可以恢复进度，但已经在 startExercise 中处理
+        }
+
+        function onPlayerStateChange(event) {
+          if (event.data == YT.PlayerState.PLAYING) {
+            startTracking(exerciseId);
+          } else if (event.data == YT.PlayerState.PAUSED || event.data == YT.PlayerState.ENDED) {
+            stopTracking(exerciseId);
+          }
+        }
+
+        function startTracking(exId) {
+          if (trackingIntervals[exId]) clearInterval(trackingIntervals[exId]);
+          trackingIntervals[exId] = setInterval(() => {
+            const player = youtubePlayers[exId];
+            if (!player) return;
+            // 只有全屏时才记录进度
+            if (!document.fullscreenElement || !wrapper.contains(document.fullscreenElement)) return;
+
+            const currentTime = player.getCurrentTime();
+            const prog = progressMap.get(exId);
+            if (!prog) return;
+
+            // 记录进度（每10秒）
+            if (currentTime - (prog.lastSaveTime || 0) > 10) {
+              prog.lastTime = currentTime;
+              prog.lastSaveTime = currentTime;
+              saveProgress(exId);
+              updateResumeButtonTime(exId, currentTime);
+            }
+
+            // 检查2/3标记
+            const duration = player.getDuration();
+            if (duration && currentTime >= duration * 2 / 3 && !wrapper.hasSentTwoThirds) {
+              wrapper.hasSentTwoThirds = true;
+              // 发送2/3标记
+            }
+
+            // 检查问题触发
+            questions.forEach((q, idx) => {
+              if (Math.abs(currentTime - q.time) < 0.5) {
+                showQuestionPopup(q, idx, wrapper, player, exId);
+              }
+            });
+          }, 500); // 每500ms检查一次
+        }
+
+        function stopTracking(exId) {
+          if (trackingIntervals[exId]) {
+            clearInterval(trackingIntervals[exId]);
+            delete trackingIntervals[exId];
+          }
+        }
+      });
+    };
+
+    function updateResumeButtonTime(exerciseId, time) {
+      const btnContainer = document.querySelector(`.progress-buttons[data-exercise-id="${exerciseId}"]`);
+      if (btnContainer) {
+        const resumeBtn = btnContainer.querySelector('.btn-info');
+        if (resumeBtn && resumeBtn.textContent.includes('Continue from last progress')) {
+          resumeBtn.textContent = `⏵ Continue from last progress ${formatTime(time)}`;
+        }
+      }
+    }
+
+    function showQuestionPopup(question, idx, wrapper, player, exerciseId) {
+      if (wrapper._popupTimer) {
+        clearInterval(wrapper._popupTimer);
+        wrapper._popupTimer = null;
+      }
+
+      document.querySelectorAll('.video-popup').forEach(p => p.style.display = 'none');
+
+      const prog = progressMap.get(exerciseId);
+      if (!prog) return;
+      const hasAnswered = prog.answers.has(String(idx));
+      const popup = wrapper.querySelector('.video-popup');
+      popup.style.display = 'block';
+      const contentDiv = popup.querySelector('.popup-content');
+
+      let optionsHtml = '';
+      if (question.options && Array.isArray(question.options)) {
+        optionsHtml = question.options.map((opt, i) => {
+          let extraClass = '';
+          if (hasAnswered) {
+            const selectedIdx = prog.answers.get(String(idx));
+            if (i === selectedIdx) {
+              extraClass = i === question.answer ? 'correct-selected' : 'wrong-selected';
+            }
+          }
+          return `<div class="option-item ${extraClass}" data-opt-index="${i}" ${hasAnswered ? 'data-disabled="true"' : ''}>${opt}</div>`;
+        }).join('');
+      }
+
+      const questionHtml = `
+        <div style="font-weight: bold; margin-bottom: 8px;">${question.question}</div>
+        <div class="options-container">${optionsHtml}</div>
+        <div class="feedback mt-2" style="font-size: 0.85rem; min-height: 20px;"></div>
+      `;
+      contentDiv.innerHTML = questionHtml;
+
+      if (hasAnswered) {
+        const selectedIdx = prog.answers.get(String(idx));
+        const isCorrect = (Number(selectedIdx) === Number(question.answer));
+        const feedbackDiv = contentDiv.querySelector('.feedback');
+        if (isCorrect) {
+          feedbackDiv.innerHTML = '✅ Correct! (上次作答)';
+          feedbackDiv.style.color = '#28a745';
+        } else {
+          feedbackDiv.innerHTML = `❌ Wrong. 正确答案是: ${question.options[question.answer]}`;
+          feedbackDiv.style.color = '#dc3545';
+        }
+        wrapper._popupTimer = setInterval(() => {
+          clearInterval(wrapper._popupTimer);
+          wrapper._popupTimer = null;
+          popup.style.display = 'none';
+        }, 5000);
+        contentDiv.querySelectorAll('.option-item').forEach(optDiv => {
+          optDiv.style.pointerEvents = 'none';
+        });
+      } else {
+        contentDiv.querySelectorAll('.option-item').forEach(optDiv => {
+          optDiv.addEventListener('click', function (e) {
+            const selectedIdx = parseInt(this.dataset.optIndex);
+            const isCorrect = (selectedIdx === question.answer);
+            const feedbackDiv = contentDiv.querySelector('.feedback');
+
+            if (isCorrect) {
+              prog.answers.set(String(idx), selectedIdx);
+              prog.triggered.add(idx);
+              saveProgress(exerciseId);
+
+              const currentTime = player.getCurrentTime();
+              // 可选发送到服务器
+              // 如果所有题目已答，发送完成
+              if (prog.triggered.size === wrapper.questions.length) {
+                let correctCount = 0;
+                wrapper.questions.forEach((q, i) => {
+                  if (prog.answers.get(String(i)) === q.answer) correctCount++;
+                });
+                const score = (correctCount / wrapper.questions.length) * 100;
+                // 发送完成
+              }
+
+              feedbackDiv.innerHTML = '✅ Correct!';
+              feedbackDiv.style.color = '#28a745';
+              setTimeout(() => {
+                popup.style.display = 'none';
+              }, 2000);
+            } else {
+              feedbackDiv.innerHTML = '❌ Try again.';
+              feedbackDiv.style.color = '#dc3545';
+              // 答错不保存
+            }
+          });
+        });
+
+        let secondsLeft = 30;
+        const timerSpan = popup.querySelector('.timer-seconds');
+        timerSpan.textContent = secondsLeft;
+        wrapper._popupTimer = setInterval(() => {
+          secondsLeft -= 1;
+          timerSpan.textContent = secondsLeft;
+          if (secondsLeft <= 0) {
+            clearInterval(wrapper._popupTimer);
+            wrapper._popupTimer = null;
+            popup.style.display = 'none';
+          }
+        }, 1000);
+      }
+    }
+
+    // 全屏变化处理
+    function handleFullscreenChange() {
+      if (!document.fullscreenElement) {
+        // 退出全屏，停止所有播放器的进度记录（已经在轮询中通过条件停止）
+        // 但需要关闭弹窗
+        document.querySelectorAll('.video-wrapper').forEach(wrapper => {
+          const popup = wrapper.querySelector('.video-popup');
+          if (popup.style.display === 'block') {
+            popup.style.display = 'none';
+            if (wrapper._popupTimer) {
+              clearInterval(wrapper._popupTimer);
+              wrapper._popupTimer = null;
+            }
+          }
+          // 更新按钮显示
+          const video = wrapper.querySelector('.youtube-player');
+          if (video) {
+            const exerciseId = video.dataset.exerciseId;
+            const prog = progressMap.get(exerciseId);
+            if (prog) {
+              // 不更新 lastTime，因为退出全屏时不记录
+              renderButtons(); // 刷新按钮
+            }
+          }
+        });
+      }
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    // 页面关闭前保存进度
+    window.addEventListener('beforeunload', function () {
+      document.querySelectorAll('.video-wrapper').forEach(wrapper => {
+        const playerDiv = wrapper.querySelector('.youtube-player');
+        if (!playerDiv) return;
+        const exerciseId = playerDiv.dataset.exerciseId;
+        const prog = progressMap.get(exerciseId);
+        if (!prog) return;
+        // 保存最后时间（如果正在播放，但无法获取当前时间，因为beforeunload时可能无法异步）
+        // 这里直接从progressMap中取 lastTime
+        // 发送beacon
+        const data = {
+          exercise_id: exerciseId,
+          last_position: prog.lastTime,
+          answers: Object.fromEntries(prog.answers),
+          two_thirds_reached: wrapper.hasSentTwoThirds || false,
+          completed: (prog.triggered.size === wrapper.questions?.length) || false,
+          score: null
+        };
+        const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+        navigator.sendBeacon('/listening/progress', blob);
+      });
+    });
+
+    // 点击其他区域关闭弹窗
+    document.addEventListener('click', function (e) {
+      if (e.target.closest('.video-wrapper')) return;
+      if (!e.target.closest('.video-popup')) {
+        document.querySelectorAll('.video-popup').forEach(popup => {
+          if (popup.style.display === 'block') {
+            popup.style.display = 'none';
+          }
+        });
+      }
+    });
+  });
+</script>
+
+<style>
+  /* 原有样式保持不变，但需要调整 YouTube 播放器容器 */
+  .youtube-player {
+    width: 100%;
+    height: 0;
+    padding-bottom: 56.25%; /* 16:9 比例 */
+    position: relative;
+  }
+  .youtube-player iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .video-player {
+    max-height: 300px;
+    width: 100%;
+    object-fit: contain;
+  }
+
+  .video-wrapper:fullscreen {
+    width: 100vw !important;
+    height: 100vh !important;
+    background: black;
+  }
+
+  .video-wrapper:fullscreen .youtube-player {
+    height: 100%;
+    padding-bottom: 0;
+  }
+
+  .video-wrapper:fullscreen .youtube-player iframe {
+    height: 100%;
+  }
+
+  /* 其他样式不变 */
+  .video-wrapper:-webkit-full-screen {
+    width: 100vw !important;
+    height: 100vh !important;
+  }
+
+  .video-wrapper:-webkit-full-screen .youtube-player {
+    height: 100%;
+    padding-bottom: 0;
+  }
+
+  /* 省略其他厂商前缀，保持与之前一致 */
+
+  video::-webkit-media-controls-fullscreen-button {
+    display: none !important;
+  }
+
+  /* 弹窗样式保持不变 */
+  .video-popup {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    border-radius: 12px;
+    padding: 16px;
+    width: 400px;
+    z-index: 30;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(4px);
+    border-left: 4px solid #17a2b8;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  .video-popup .popup-content>div:first-child {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #f0f0f0;
+  }
+
+  .video-popup .options-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .video-popup .option-item {
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+    box-sizing: border-box;
+    text-align: left;
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    font-size: 0.85rem;
+    line-height: 1.3;
+  }
+
+  .video-popup .option-item.correct-selected {
+    background: rgba(40, 167, 69, 0.3);
+    border-left: 3px solid #28a745;
+  }
+
+  .video-popup .option-item.wrong-selected {
+    background: rgba(220, 53, 69, 0.3);
+    border-left: 3px solid #dc3545;
+  }
+
+  .video-popup .option-item:hover {
+    background: rgba(23, 162, 184, 0.3) !important;
+  }
+
+  .video-popup .popup-timer {
+    font-size: 0.7rem;
+    opacity: 0.7;
+    margin-top: 8px;
+    text-align: right;
+  }
+
+  .video-popup .feedback {
+    font-size: 0.85rem;
+    margin-top: 8px;
+  }
+
+  .progress-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  .progress-buttons .btn {
+    font-size: 0.9rem;
+  }
+</style>
+{% endblock %}

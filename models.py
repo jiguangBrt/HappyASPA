@@ -251,6 +251,11 @@ class UserListeningProgress(db.Model):
     attempts        = db.Column(db.Integer, default=0)
     last_attempt_at = db.Column(db.DateTime, nullable=True)
 
+    # new colomn：to store user listening practise progress
+    last_position   = db.Column(db.Float, nullable=True)           # current play position
+    two_thirds_count = db.Column(db.Integer, default=0)           # count of finishing exercises (Which reachs 2/3 progress of the whole exercise)
+    answers         = db.Column(db.JSON, nullable=True)           # record of answer result
+    
 # ─────────────────────────────────────────────
 # Writing
 # ─────────────────────────────────────────────
