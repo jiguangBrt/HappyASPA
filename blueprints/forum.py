@@ -44,6 +44,8 @@ def calculate_hot_score(post):
 def index():
     tab = request.args.get('tab', 'all')
     category_filter = request.args.get('category')
+    # 👇 新增 1：获取前端传来的排序方式，默认设为 'hot'
+    sort_by = request.args.get('sort_by', 'hot') 
     saved_comments = []
 
     # 初始化基础查询
@@ -65,8 +67,6 @@ def index():
         saved_comments = comment_query.order_by(CommentFavorite.created_at.desc()).all()
         
     else:
-        # 👇 2. 优化：如果不是 Saved tab，我们不需要在 SQL 里进行复杂的 group_by 和 order_by 了，
-        # 因为后续要在 Python 里用热度算法排序。我们直接取出帖子即可。
         pass 
 
     # 无论哪个 tab，处理分类过滤
@@ -75,17 +75,22 @@ def index():
 
     posts = post_query.all()
 
-    # 👇 3. 核心：在 Python 中应用热度排序 👇
-    # 只对 "All Posts" (非 saved 状态) 应用热度排序
+    # 👇 新增 2：根据 sort_by 进行不同的排序 👇
     if tab != 'saved' and posts:
-        # 使用 sort 方法，依照 calculate_hot_score 的返回值从高到低 (reverse=True) 排序
-        posts.sort(key=calculate_hot_score, reverse=True)
+        if sort_by == 'new':
+            # 按时间倒序（最新的在前面）
+            posts.sort(key=lambda p: p.created_at, reverse=True)
+        else:
+            # 默认：按我们写好的热度算法排序
+            posts.sort(key=calculate_hot_score, reverse=True)
 
+    # 👇 新增 3：把 sort_by 传给前端模板
     return render_template('forum/index.html', 
                            posts=posts, 
                            tab=tab, 
                            saved_comments=saved_comments,
-                           current_category=category_filter)
+                           current_category=category_filter,
+                           sort_by=sort_by)
 
 @forum_bp.route('/post/<int:post_id>')
 @login_required
@@ -242,3 +247,25 @@ def favorite_comment(comment_id):
     db.session.commit()
     # 👇 改成这样：去掉讨厌的锚点
     return redirect(url_for('forum.post_detail', post_id=comment.post_id) + f'#comment-{comment.id}')
+
+# ─────────────────────────────────────────────
+# 👇 帖子的删除
+# ─────────────────────────────────────────────
+
+@forum_bp.route('/post/<int:post_id>/delete', methods=['POST'])
+@login_required
+def delete_post(post_id):
+    post = ForumPost.query.get_or_404(post_id)
+    
+    # 安全拦截：只有作者本人才能删除
+    if post.user_id != current_user.id:
+        flash('You can only delete your own posts.', 'danger')
+        return redirect(url_for('forum.post_detail', post_id=post.id))
+    
+    # 因为 models 里设置了 cascade='all, delete-orphan'
+    # 这里直接删 post 就能自动清空该帖子的所有评论、点赞和收藏！
+    db.session.delete(post)
+    db.session.commit()
+    
+    flash('Post deleted successfully.', 'success')
+    return redirect(url_for('forum.index'))
