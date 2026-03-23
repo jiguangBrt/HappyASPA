@@ -9,13 +9,27 @@ import click
 import json
 import os
 from flask.cli import with_appcontext
-from models import db, ListeningExercise, SpeakingExercise, VocabularyWord, AcademicScenario
-
+# 👇 确保导入了 ForumLike 和 ForumFavorite
+from models import db, ListeningExercise, SpeakingExercise, VocabularyWord, AcademicScenario, User, ForumPost, ForumComment, ForumLike, ForumFavorite
 @click.command(name='add-default-data')
 @with_appcontext
 def add_default_data():
     """向数据库插入或更新默认初始数据（包含单词、听力、口语、学术情景）"""
     print("🚀 开始填充/更新默认数据...")
+
+# ─────────────────────────────────────────────
+    # 0. 创建系统默认导师账号 (用于发布论坛干货)
+    # ─────────────────────────────────────────────
+    tutor_user = User.query.filter_by(username='HappyASPA_Tutor').first()
+    if not tutor_user:
+        tutor_user = User(
+            username='HappyASPA_Tutor',
+            email='tutor@happyaspa.com'
+        )
+        tutor_user.set_password('happyaspa2026') # 默认密码
+        db.session.add(tutor_user)
+        db.session.commit() # 先提交以获取 tutor_user.id
+        print("  👤 已创建系统默认导师账号: HappyASPA_Tutor")
 
     # ─────────────────────────────────────────────
     # 1. 导入单词数据
@@ -440,6 +454,151 @@ def add_default_data():
             print(f"  ✅ 正在插入新学术情景：{data['title']}")
             scenario = AcademicScenario(**data)
             db.session.add(scenario)
+
+
+  # ─────────────────────────────────────────────
+    # 5. Forum Posts & Comments (🌟 论坛干货数据 + 互动数据 🌟)
+    # ─────────────────────────────────────────────
+    # [新增] 创建 5 个"群演"学生账号，用来给帖子点赞和收藏
+    dummy_users = []
+    for i in range(1, 6):
+        username = f'HappyStudent_{i}'
+        u = User.query.filter_by(username=username).first()
+        if not u:
+            u = User(username=username, email=f'student{i}@happyaspa.com')
+            u.set_password('123456')
+            db.session.add(u)
+            db.session.flush() # 刷新获取 ID
+        dummy_users.append(u)
+
+# 👇 [核心修复]：每次运行前，先清理掉官方导师之前发的旧帖子，强行重新洗牌
+    old_posts = ForumPost.query.filter_by(user_id=tutor_user.id).all()
+    for p in old_posts:
+        db.session.delete(p)
+    db.session.commit()
+    # 👆 修复结束
+    
+    forum_defaults = [
+        {
+            'title': 'Effective ways to memorize GRE/IELTS vocabulary?',
+            'content': 'I\'ve been using flashcards, but I keep forgetting words after a week. It feels like I\'m stuck in a loop. Any tips on long-term retention?',
+            'category': 'Vocabulary',
+            'views': 152,
+            'likes': 4,       # 设定点赞数
+            'favorites': 3,   # 设定收藏数
+            'comments': [
+                'Spaced repetition is key! Also, try learning the etymology (roots, prefixes, suffixes) of the words.',
+                'Try creating bizarre or funny mental images for the words you struggle with.'
+            ]
+        },
+        {
+            'title': 'When to use Present Perfect vs. Past Simple?',
+            'content': 'I always get confused between "I have done" and "I did". Can someone explain the rule of thumb clearly?',
+            'category': 'Grammar',
+            'views': 230,
+            'likes': 5,
+            'favorites': 5,
+            'comments': [
+                'Here is the golden rule: Use Past Simple for finished actions in a finished time period. Use Present Perfect for actions that happened at an unspecified time before now.',
+                'A quick tip: If you use words like "yesterday", you MUST use Past Simple.'
+            ]
+        },
+        {
+            'title': 'How to catch "connected speech" in fast English?',
+            'content': 'When native speakers talk fast, words blend together and I completely lose track of the sentence. How can I practice?',
+            'category': 'Listening',
+            'views': 188,
+            'likes': 3,
+            'favorites': 2,
+            'comments': [
+                'Start by studying connected speech rules like assimilation, elision, and linking. A great exercise is "shadowing".',
+                'Don\'t try to hear every single word! Focus on the stressed words (usually nouns, verbs, adjectives).'
+            ]
+        },
+        {
+            'title': 'Overcoming the fear of speaking with native speakers',
+            'content': 'I know the grammar and vocabulary, but my mind goes blank and my heart races when I actually have to speak. How do you build confidence?',
+            'category': 'Speaking',
+            'views': 305,
+            'likes': 5,
+            'favorites': 4,
+            'comments': [
+                'It\'s totally normal! Try to reframe your mindset: native speakers don\'t judge your grammar; they just want to communicate.',
+                'Accept that making mistakes is a crucial part of the process.'
+            ]
+        },
+        {
+            'title': 'Structuring an IELTS/TOEFL Task 2 Essay',
+            'content': 'Does anyone have a reliable template or structure for agree/disagree essays? I always run out of time.',
+            'category': 'Writing',
+            'views': 275,
+            'likes': 4,
+            'favorites': 5,
+            'comments': [
+                'A solid 4-paragraph structure works best: 1) Introduction. 2) Body 1. 3) Body 2. 4) Conclusion. Keep your topic sentences crystal clear!'
+            ]
+        },
+        {
+            'title': 'Skimming vs. Scanning: When to use which?',
+            'content': 'I always run out of time on academic reading tests. I try to read every word. How do I effectively balance skimming and scanning?',
+            'category': 'Reading',
+            'views': 140,
+            'likes': 2,
+            'favorites': 1,
+            'comments': [
+                'Skimming is for getting the "gist" or main idea. Scanning is for finding specific facts without reading the whole text.'
+            ]
+        },
+        {
+            'title': 'Best Pomodoro intervals for language study?',
+            'content': 'Do you guys prefer 25/5 or 50/10 intervals for studying languages? I feel like 25 minutes is too short to get into the zone.',
+            'category': 'General',
+            'views': 95,
+            'likes': 1,
+            'favorites': 0,
+            'comments': [
+                'For intense cognitive tasks like reading academic papers, 50/10 allows for deep work. But for repetitive tasks like vocabulary, 25/5 is perfect.'
+            ]
+        }
+    ]
+
+    print("💬 正在导入论坛精华内容 (包含点赞和收藏互动)...")
+    for data in forum_defaults:
+        post = ForumPost.query.filter_by(title=data['title']).first()
+        if not post:
+            # 1. 创建帖子
+            new_post = ForumPost(
+                title=data['title'],
+                content=data['content'],
+                category=data['category'],
+                user_id=tutor_user.id,
+                views=data['views']
+            )
+            db.session.add(new_post)
+            db.session.flush() # 刷新以获取 new_post.id
+            
+            # 2. 创建评论
+            for comment_text in data['comments']:
+                new_comment = ForumComment(
+                    post_id=new_post.id,
+                    user_id=tutor_user.id,
+                    content=comment_text
+                )
+                db.session.add(new_comment)
+            
+            # 3. [新增] 让群演进行点赞
+            for i in range(data['likes']):
+                if i < len(dummy_users):
+                    db.session.add(ForumLike(post_id=new_post.id, user_id=dummy_users[i].id))
+                    
+            # 4. [新增] 让群演进行收藏
+            for i in range(data['favorites']):
+                if i < len(dummy_users):
+                    db.session.add(ForumFavorite(post_id=new_post.id, user_id=dummy_users[i].id))
+                    
+            print(f"  ✅ 已发布干货贴：{data['category']} - {data['title'][:20]}... (获赞:{data['likes']}, 收藏:{data['favorites']})")
+        else:
+             print(f"  ⏭️ 帖子已存在，跳过：{data['title'][:20]}...")
 
 
     # ─────────────────────────────────────────────
