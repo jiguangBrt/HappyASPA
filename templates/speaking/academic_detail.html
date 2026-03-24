@@ -97,18 +97,11 @@
                             </audio>
                             
                             <div class="d-flex justify-content-between align-items-center mt-2">
-                                <div class="d-flex flex-wrap gap-2 small">
-                                    <span class="badge {% if sub.score_vocabulary %}bg-success{% else %}bg-secondary{% endif %}">
-                                        Vocab: {{ sub.score_vocabulary or 'Pending' }}
-                                    </span>
-                                    <span class="badge {% if sub.score_logic %}bg-success{% else %}bg-secondary{% endif %}">
-                                        Logic: {{ sub.score_logic or 'Pending' }}
-                                    </span>
-                                    <span class="badge {% if sub.score_politeness %}bg-success{% else %}bg-secondary{% endif %}">
-                                        Politeness: {{ sub.score_politeness or 'Pending' }}
-                                    </span>
+                                <div class="small text-muted" style="max-width: 80%;">
+                                    <i class="bi bi-robot me-1"></i>
+                                    <span class="fw-semibold">AI点评：</span>
+                                    <span>{{ sub.overall_feedback or 'AI feedback pending...' }}</span>
                                 </div>
-                                
                                 <button class="btn btn-sm btn-outline-danger" onclick="deleteScenarioSubmission({{ sub.id }})" title="Delete my recording">
                                     <i class="bi bi-trash3"></i> Delete
                                 </button>
