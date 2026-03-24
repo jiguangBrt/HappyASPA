@@ -44,6 +44,11 @@
       <i class="bi bi-mic me-2"></i>English Corner
     </button>
   </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link fw-bold fs-5 px-4 py-3" id="practice-tab" data-bs-toggle="tab" data-bs-target="#practice" type="button" role="tab" aria-controls="practice" aria-selected="false">
+      <i class="bi bi-earbuds me-2"></i>Practice
+    </button>
+  </li>
 </ul>
 
 <div class="tab-content" id="speakingTabsContent">
@@ -238,6 +243,67 @@
     </div>
     {% endif %}
   </div>
+
+  <div class="tab-pane fade" id="practice" role="tabpanel" aria-labelledby="practice-tab">
+    
+    <div class="d-flex justify-content-between align-items-center mt-2 mb-4">
+        <h5 class="fw-bold text-dark mb-0">Featured Practice</h5>
+        <span class="text-muted small">Choose a topic, then select your target accent inside.</span>
+    </div>
+
+    <div class="row g-4">
+      
+      <div class="col-md-6 col-lg-4">
+        <div class="card border-0 shadow-sm h-100" style="transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <h5 class="fw-bold mb-0">Ordering Coffee in a Café</h5>
+              <div class="d-flex gap-1" title="Supports US, UK, and AUS accents">
+                <span class="badge bg-light text-dark border border-secondary border-opacity-25 fs-6 px-1">🇺🇸</span>
+                <span class="badge bg-light text-dark border border-secondary border-opacity-25 fs-6 px-1">🇬🇧</span>
+                <span class="badge bg-light text-dark border border-secondary border-opacity-25 fs-6 px-1">🇦🇺</span>
+              </div>
+            </div>
+            <p class="text-muted small mb-3">Practice standard daily communication. Choose your preferred accent inside to master the local pronunciation.</p>
+            <div class="d-flex gap-3 text-muted small mt-auto">
+              <span><i class="bi bi-clock me-1"></i>~0:45</span>
+              <span><i class="bi bi-text-paragraph me-1"></i>68 words</span>
+            </div>
+          </div>
+          <div class="card-footer bg-white border-top-0 pt-0 pb-4 px-4">
+            <button class="btn btn-outline-primary w-100 fw-medium rounded-pill">
+              <i class="bi bi-play-circle me-1"></i> Select Accent & Start
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="card border-0 shadow-sm h-100" style="transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <h5 class="fw-bold mb-0">Tech Startup Pitch</h5>
+              <div class="d-flex gap-1" title="Supports US and UK accents">
+                <span class="badge bg-light text-dark border border-secondary border-opacity-25 fs-6 px-1">🇺🇸</span>
+                <span class="badge bg-light text-dark border border-secondary border-opacity-25 fs-6 px-1">🇬🇧</span>
+              </div>
+            </div>
+            <p class="text-muted small mb-3">Master the energetic, fast-paced business pitch style. Great for practicing emphasis and pauses.</p>
+            <div class="d-flex gap-3 text-muted small mt-auto">
+              <span><i class="bi bi-clock me-1"></i>~1:12</span>
+              <span><i class="bi bi-text-paragraph me-1"></i>120 words</span>
+            </div>
+          </div>
+          <div class="card-footer bg-white border-top-0 pt-0 pb-4 px-4">
+            <button class="btn btn-outline-primary w-100 fw-medium rounded-pill">
+              <i class="bi bi-play-circle me-1"></i> Select Accent & Start
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
   
 </div>
 {% endblock %}
@@ -245,7 +311,7 @@
 {% block scripts %}
 <script>
   document.addEventListener("DOMContentLoaded", function() {
-    // 监听 URL 锚点跳转逻辑
+    // 监听 URL 锚点跳转逻辑 (完美支持 #practice 的记忆跳转)
     let hash = window.location.hash; 
     if (hash) {
       let tabButton = document.querySelector(`button[data-bs-target="${hash}"]`);
@@ -287,7 +353,7 @@
   });
 
   // ----------------------------------------------------
-  // 核心录音逻辑
+  // 核心录音逻辑 (保留了完整的 English Corner 逻辑)
   // ----------------------------------------------------
   let mediaRecorder = null;
   let audioChunks = {}; 
@@ -411,12 +477,11 @@
   function submitRecording(exerciseId) {
     if (!audioUrl[exerciseId]) return alert('No recording to submit!');
     
-    // 🌟 核心新增：公开性隐私警告确认框 🌟
+    // 🌟 隐私警告确认框 🌟
     const isConfirmed = confirm(
       "⚠⚠⚠Please note: Your recording will be public and can be heard by other users. \n\nIf you do not want it to be heard, you can click 'Cancel' now and discard the recording. \n\nDo you want to proceed with the submission?"
     );
     
-    // 如果用户点击了“取消”，直接停止后续的上传流程
     if (!isConfirmed) {
       return; 
     }
@@ -441,7 +506,6 @@
           hasUnsavedRecording = false; 
           alert('✅ Recording submitted successfully!');
           
-          // 🌟 强行打上锚点：即使默认首页是学术情景，刷新后也会乖乖切回 English Corner！
           window.location.hash = 'standard';
           window.location.reload(); 
         } else throw new Error(data.message || 'Upload failed');
