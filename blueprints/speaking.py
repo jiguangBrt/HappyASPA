@@ -86,10 +86,10 @@ def audio_to_text(tos_public_url):
             "enable_itn": True,
             # 你要的核心功能全部开启
             "show_utterances": True,
-            # "show_additions": True,
+            "show_additions": True,
             "enable_emotion_detection": True,
-             "enable_gender_detection": True,
-            # "enable_smooth": True
+            "enable_gender_detection": True,
+            "enable_smooth": True
         }
     }
 
