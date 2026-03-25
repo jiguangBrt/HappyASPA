@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, jsonify, current_app, url_for, redirect, flash
 from flask_login import login_required, current_user
-# 👇 🌟 新增导入了 ShadowingExercise 和 ShadowingAudio
-from models import db, UserActivityLog, SpeakingExercise, UserSpeakingSubmission, User, AcademicScenario, UserScenarioSubmission, ShadowingExercise, ShadowingAudio
+# 👇 🌟 新增导入了 UserShadowingRecord
+from models import db, UserActivityLog, SpeakingExercise, UserSpeakingSubmission, User, AcademicScenario, UserScenarioSubmission, ShadowingExercise, ShadowingAudio, UserShadowingRecord
+from werkzeug.utils import secure_filename # 👈 🌟 引入用于生成安全文件名的工具
 from flask import send_from_directory
 from datetime import datetime, timezone, timedelta
 import os
@@ -135,14 +136,14 @@ def index():
     # 查出 Academic Scenarios 的数据
     scenarios = AcademicScenario.query.order_by(AcademicScenario.created_at.desc()).all()
     
-    # 👇 🌟 NEW: 查出所有跟读练习的数据！
+    # 查出所有跟读练习的数据
     shadowing_practices = ShadowingExercise.query.order_by(ShadowingExercise.id.asc()).all()
     
     return render_template('speaking/index.html', 
                            exercises=exercises, 
                            user_submissions=user_submissions_dict,
                            scenarios=scenarios,
-                           shadowing_practices=shadowing_practices) # 👈 别忘了传给前端
+                           shadowing_practices=shadowing_practices)
 
 # 2. 新建口语练习（GET 展示表单 / POST 创建）
 @speaking_bp.route('/new', methods=['GET', 'POST'])
@@ -167,7 +168,7 @@ def new_exercise():
                 prompt=prompt,
                 difficulty=difficulty,
                 category=category or None,
-                creator_id=current_user.id  # 绑定创建者
+                creator_id=current_user.id
             )
             db.session.add(exercise)
             db.session.flush()
@@ -180,18 +181,22 @@ def new_exercise():
             
     return render_template('speaking/new_exercise.html')
 
-# 3. 提供音频文件访问 (支持普通口语和学术情景两张表)
+# 3. 提供音频文件访问 (支持普通口语、学术情景、跟读练习三张表)
 @speaking_bp.route('/audio/<filename>')
 @login_required
 def get_audio(filename):
     # 先在普通口语表里找
     submission = UserSpeakingSubmission.query.filter_by(audio_filename=filename).first()
     
-    # 如果没找到，再去新的学术情景表里找
+    # 如果没找到，再去学术情景表里找
     if not submission:
         submission = UserScenarioSubmission.query.filter_by(audio_filename=filename).first()
         
-    # 如果两张表里都没有，说明有人在乱猜文件名，拒绝访问
+    # 🌟 NEW: 如果还没找到，去跟读练习表里找
+    if not submission:
+        submission = UserShadowingRecord.query.filter_by(audio_path=filename).first()
+        
+    # 如果三张表里都没有，说明有人在乱猜文件名，拒绝访问
     if not submission:
         return "Access denied", 403
         
@@ -213,7 +218,6 @@ def upload_audio():
         if file.filename == '':
             return jsonify({'status': 'error', 'message': 'No selected file'}), 400
         
-        # 文件大小限制（50MB）
         MAX_FILE_SIZE = 50 * 1024 * 1024
         if file.content_length and file.content_length > MAX_FILE_SIZE:
             return jsonify({'status': 'error', 'message': 'File too large (max 50MB)'}), 413
@@ -235,12 +239,13 @@ def upload_audio():
                 duration_seconds=float(duration) if duration else 0.0
             )
             db.session.add(submission)
-            db.session.flush()  # 获取ID
+            db.session.flush()
+            
             # === AI 自动点评 ===
             exercise = SpeakingExercise.query.get(exercise_id)
             ai_result = ai_evaluate_audio(filepath)
             submission.feedback = ai_result.get('feedback', '')
-            # 可选：如需评分，可在 text_evaluation 返回结构中解析分数
+            
             db.session.commit()
             return jsonify({
                 'status': 'success',
@@ -454,17 +459,13 @@ def delete_scenario_submission(sub_id):
 # 🎙️ NEW: 沉浸式跟读练习 (Shadowing Practice)
 # ==========================================
 
-# 12. 沉浸式跟读练习舱 (Practice Detail) - 🌟 真实数据库版 🌟
+# 12. 沉浸式跟读练习舱 (Practice Detail) - 包含历史记录
 @speaking_bp.route('/practice/<int:practice_id>')
 @login_required
 def practice_detail(practice_id):
-    # 1. 从数据库中查出对应的练习
     practice = ShadowingExercise.query.get_or_404(practice_id)
-    
-    # 2. 把关联的音频数据转换成前端需要的字典格式 {'us': 'url', 'gb': 'url'}
     audio_dict = {audio.accent_code: audio.audio_url for audio in practice.audios}
     
-    # 3. 构造一个和前端模板完美匹配的字典
     practice_data = {
         'id': practice.id,
         'title': practice.title,
@@ -473,4 +474,103 @@ def practice_detail(practice_id):
         'audio': audio_dict
     }
     
-    return render_template('speaking/practice_detail.html', practice=practice_data)
+    # 🌟 NEW: 查询该用户在此题目的录音历史
+    records = UserShadowingRecord.query.filter_by(
+        user_id=current_user.id, 
+        exercise_id=practice_id
+    ).order_by(UserShadowingRecord.attempt_number.desc()).all()
+    
+    # 格式化给前端渲染
+    history_list = []
+    for r in records:
+        local_time = r.created_at.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+        history_list.append({
+            'id': r.id,
+            'attempt': r.attempt_number,
+            'audio_url': url_for('speaking.get_audio', filename=r.audio_path), # 走刚才修改过的 get_audio 路由
+            'created_at': local_time.strftime("%H:%M:%S")
+        })
+    
+    return render_template('speaking/practice_detail.html', practice=practice_data, history=history_list)
+
+# 13. 🌟 NEW: 上传跟读录音接口
+@speaking_bp.route('/practice/<int:practice_id>/upload_record', methods=['POST'])
+@login_required
+def upload_shadowing_record(practice_id):
+    try:
+        # 1. 检查文件是否存在
+        if 'audio' not in request.files:
+            return jsonify({'success': False, 'message': '没有找到音频文件'}), 400
+        
+        file = request.files['audio']
+        if file.filename == '':
+            return jsonify({'success': False, 'message': '未选择文件'}), 400
+            
+        if file and allowed_file(file.filename):
+            # 2. 生成安全文件名并保存
+            ext = file.filename.rsplit('.', 1)[1].lower()
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"user_{current_user.id}_shadow_{practice_id}_{timestamp}.{ext}"
+            
+            filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+            os.makedirs(current_app.config['UPLOAD_FOLDER'], exist_ok=True)
+            file.save(filepath)
+            
+            # 3. 计算这次是第几次尝试
+            last_record = UserShadowingRecord.query.filter_by(
+                user_id=current_user.id, 
+                exercise_id=practice_id
+            ).order_by(UserShadowingRecord.attempt_number.desc()).first()
+            
+            next_attempt = (last_record.attempt_number + 1) if last_record else 1
+            
+            # 4. 写入数据库
+            new_record = UserShadowingRecord(
+                user_id=current_user.id,
+                exercise_id=practice_id,
+                audio_path=filename, # 只存文件名，回放走 get_audio 路由
+                attempt_number=next_attempt
+            )
+            db.session.add(new_record)
+            db.session.commit()
+            
+            # 5. 返回给前端渲染
+            local_time = new_record.created_at.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+            
+            return jsonify({
+                'success': True,
+                'message': '录音保存成功！',
+                'audio_url': url_for('speaking.get_audio', filename=filename),
+                'attempt': next_attempt,
+                'created_at': local_time.strftime("%H:%M:%S"),
+                'record_id': new_record.id
+            })
+        else:
+            return jsonify({'success': False, 'message': '文件类型不被允许'}), 400
+            
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Upload shadowing record error: {str(e)}")
+        return jsonify({'success': False, 'message': '服务器处理失败'}), 500
+
+# 14. 🌟 NEW: 删除某条跟读录音记录接口
+@speaking_bp.route('/delete-shadowing-record/<int:record_id>', methods=['POST'])
+@login_required
+def delete_shadowing_record(record_id):
+    record = UserShadowingRecord.query.filter_by(id=record_id, user_id=current_user.id).first()
+    if not record:
+        return jsonify({'success': False, 'message': '未找到记录或无权限删除'}), 404
+        
+    # 删除物理文件
+    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], record.audio_path)
+    if os.path.exists(filepath):
+        try:
+            os.remove(filepath)
+        except Exception as e:
+            current_app.logger.error(f"Error deleting shadowing file {filepath}: {str(e)}")
+            
+    # 删除数据库记录
+    db.session.delete(record)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': '记录已删除'})
