@@ -22,7 +22,7 @@
           <div class="mb-4" id="guideBadgeContainer">
             {% if current_user.is_guide_qualified %}
               <span class="badge" style="background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%); color: #fff; padding: 0.4rem 0.8rem; border-radius: 50rem; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(255, 140, 0, 0.4);">
-                <i class="bi bi-patch-check-fill"></i> Expert in Certification of the Guidance Area
+                <i class="bi bi-patch-check-fill"></i> Expert 
               </span>
             {% else %}
               <span class="badge bg-secondary opacity-50"><i class="bi bi-lock-fill"></i> The guidance area has not been unlocked yet.</span>
@@ -53,13 +53,13 @@
         </div>
         
         <div class="card-body p-4">
-          <form id="proficiencyForm">
+        <form id="proficiencyForm">
             <div class="row g-3">
               <div class="col-md-6">
-                <label class="form-label fw-semibold">College Entrance Examination English (Max 150)</label>
+                <label class="form-label fw-semibold">College Entrance Examination English(Max 150)</label>
                 <div class="input-group">
                   <span class="input-group-text bg-light"><i class="bi bi-journal-text"></i></span>
-                  <input type="number" step="0.5" class="form-control" id="gaokao" value="{{ current_user.gaokao_score or '' }}" placeholder="For example: 138">
+                  <input type="number" step="0.5" min="0" max="150" class="form-control" id="gaokao" value="{{ current_user.gaokao_score or '' }}" placeholder="For example: 138">
                 </div>
               </div>
               
@@ -67,7 +67,7 @@
                 <label class="form-label fw-semibold">IELTS (Max 9.0)</label>
                 <div class="input-group">
                   <span class="input-group-text bg-light"><i class="bi bi-globe"></i></span>
-                  <input type="number" step="0.5" class="form-control" id="ielts" value="{{ current_user.ielts_score or '' }}" placeholder="For example: 7.5">
+                  <input type="number" step="0.5" min="0" max="9" class="form-control" id="ielts" value="{{ current_user.ielts_score or '' }}" placeholder="For example: 7.5">
                 </div>
               </div>
 
@@ -75,7 +75,7 @@
                 <label class="form-label fw-semibold">TOEFL (Max 120)</label>
                 <div class="input-group">
                   <span class="input-group-text bg-light"><i class="bi bi-building"></i></span>
-                  <input type="number" class="form-control" id="toefl" value="{{ current_user.toefl_score or '' }}" placeholder="For example: 105">
+                  <input type="number" min="0" max="120" class="form-control" id="toefl" value="{{ current_user.toefl_score or '' }}" placeholder="For example: 105">
                 </div>
               </div>
 
@@ -83,12 +83,19 @@
                 <label class="form-label fw-semibold">GRE (Max 340)</label>
                 <div class="input-group">
                   <span class="input-group-text bg-light"><i class="bi bi-mortarboard"></i></span>
-                  <input type="number" class="form-control" id="gre" value="{{ current_user.gre_score or '' }}" placeholder="For example: 325">
+                  <input type="number" min="0" max="340" class="form-control" id="gre" value="{{ current_user.gre_score or '' }}" placeholder="For example: 325">
                 </div>
               </div>
             </div>
 
-            <div class="mt-4 text-end">
+            <div class="form-check mt-4 mb-2 border border-danger border-opacity-25 p-3 rounded bg-danger bg-opacity-10">
+              <input class="form-check-input ms-1" type="checkbox" id="honorPledge" required>
+              <label class="form-check-label text-danger fw-semibold small ms-2" for="honorPledge">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i> I hereby guarantee that the above academic achievements are genuine and valid. I am aware that forging academic records to obtain the "guidance zone" privilege will result in permanent account suspension upon verification.
+              </label>
+            </div>
+
+            <div class="mt-3 text-end">
               <button type="submit" class="btn btn-primary px-4" id="submitProficiencyBtn">
                 <i class="bi bi-cloud-arrow-up me-1"></i> Save & Certify
               </button>

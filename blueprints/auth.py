@@ -142,26 +142,45 @@ def daily_checkin():
 
 
 # ==========================================
-# 🎓 NEW: 英语成绩认证与权限判定 API
+# 🎓 NEW: 英语成绩认证与权限判定 API (安全增强版)
 # ==========================================
 @auth_bp.route('/proficiency', methods=['POST'])
 @login_required
 def update_english_proficiency():
-    # 兼容 JSON 提交或普通表单提交
     data = request.get_json() or request.form
     
-    gaokao = data.get('gaokao_score')
-    ielts = data.get('ielts_score')
-    toefl = data.get('toefl_score')
-    gre = data.get('gre_score')
+    try:
+        # 1. 安全提取与转换（防报错处理：如果传了空字符串则视为 None）
+        gaokao_val = data.get('gaokao_score')
+        ielts_val = data.get('ielts_score')
+        toefl_val = data.get('toefl_score')
+        gre_val = data.get('gre_score')
+
+        gaokao = float(gaokao_val) if gaokao_val and str(gaokao_val).strip() else None
+        ielts = float(ielts_val) if ielts_val and str(ielts_val).strip() else None
+        toefl = int(toefl_val) if toefl_val and str(toefl_val).strip() else None
+        gre = int(gre_val) if gre_val and str(gre_val).strip() else None
+        
+        # 2. 🧱 核心防呆拦截：不能填负数，也不能超过满分！
+        if gaokao is not None and (gaokao < 0 or gaokao > 150):
+            return jsonify({"status": "error", "message": "高考成绩必须在 0 - 150 之间！"}), 400
+        if ielts is not None and (ielts < 0 or ielts > 9):
+            return jsonify({"status": "error", "message": "雅思成绩必须在 0 - 9.0 之间！"}), 400
+        if toefl is not None and (toefl < 0 or toefl > 120):
+            return jsonify({"status": "error", "message": "托福成绩必须在 0 - 120 之间！"}), 400
+        if gre is not None and (gre < 0 or gre > 340):
+            return jsonify({"status": "error", "message": "GRE成绩必须在 0 - 340 之间！"}), 400
+
+    except ValueError:
+        return jsonify({"status": "error", "message": "检测到非法输入，请输入有效的数字！"}), 400
+
+    # 3. 更新数据库字段
+    current_user.gaokao_score = gaokao
+    current_user.ielts_score = ielts
+    current_user.toefl_score = toefl
+    current_user.gre_score = gre
     
-    # 更新数据库字段 (如果有传值的话)
-    if gaokao: current_user.gaokao_score = float(gaokao)
-    if ielts: current_user.ielts_score = float(ielts)
-    if toefl: current_user.toefl_score = int(toefl)
-    if gre: current_user.gre_score = int(gre)
-    
-    # 核心判定逻辑 (Guard Thresholds)
+    # 4. 核心判定逻辑 (Guard Thresholds)
     is_qualified = False
     if current_user.gaokao_score and current_user.gaokao_score > 135:
         is_qualified = True
