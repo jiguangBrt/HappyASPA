@@ -1,6 +1,6 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
-from datetime import datetime
+from datetime import datetime, date
 from models import db, User
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -105,3 +105,91 @@ def change_password():
         db.session.commit()
         flash('Password changed successfully!', 'success')
     return redirect(request.referrer or url_for('dashboard.index'))
+
+# ==========================================
+# 💰 NEW: 每日签到 API
+# ==========================================
+@auth_bp.route('/checkin', methods=['POST'])
+@login_required
+def daily_checkin():
+    today = date.today()
+    
+    # 判断今天是否已经签到过
+    if current_user.last_checkin_date == today:
+        return jsonify({
+            "status": "error",
+            "message": "You have already checked in today!",
+            "coins": current_user.coins
+        }), 400
+        
+    # 执行签到逻辑：更新日期，金币 +1
+    if current_user.coins is None:
+        current_user.coins = 0  # 👈 新增这句兜底代码，防止旧账号报错
+        
+    current_user.last_checkin_date = today
+    current_user.coins += 1
+    
+    try:
+        db.session.commit()
+        return jsonify({
+            "status": "success",
+            "message": "Sign-in successful! Gold coins +1",
+            "coins": current_user.coins
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": "Database save failed"}), 500
+
+
+# ==========================================
+# 🎓 NEW: 英语成绩认证与权限判定 API
+# ==========================================
+@auth_bp.route('/proficiency', methods=['POST'])
+@login_required
+def update_english_proficiency():
+    # 兼容 JSON 提交或普通表单提交
+    data = request.get_json() or request.form
+    
+    gaokao = data.get('gaokao_score')
+    ielts = data.get('ielts_score')
+    toefl = data.get('toefl_score')
+    gre = data.get('gre_score')
+    
+    # 更新数据库字段 (如果有传值的话)
+    if gaokao: current_user.gaokao_score = float(gaokao)
+    if ielts: current_user.ielts_score = float(ielts)
+    if toefl: current_user.toefl_score = int(toefl)
+    if gre: current_user.gre_score = int(gre)
+    
+    # 核心判定逻辑 (Guard Thresholds)
+    is_qualified = False
+    if current_user.gaokao_score and current_user.gaokao_score > 135:
+        is_qualified = True
+    elif current_user.ielts_score and current_user.ielts_score > 7.0:
+        is_qualified = True
+    elif current_user.toefl_score and current_user.toefl_score >= 100:
+        is_qualified = True
+    elif current_user.gre_score and current_user.gre_score >= 320:
+        is_qualified = True
+        
+    # 更新认证状态
+    current_user.is_guide_qualified = is_qualified
+    
+    try:
+        db.session.commit()
+        return jsonify({
+            "status": "success",
+            "message": "成绩认证更新成功！",
+            "is_guide_qualified": current_user.is_guide_qualified
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": "数据库保存失败"}), 500
+    
+    # ==========================================
+# 🏠 NEW: 个人中心页面路由
+# ==========================================
+@auth_bp.route('/profile')
+@login_required
+def profile():
+    return render_template('auth/profile.html')
