@@ -33,7 +33,7 @@ class User(UserMixin, db.Model):
     created_flashcards  = db.relationship('Flashcard', backref='creator', lazy=True)
     schedule_items      = db.relationship('UserScheduleItem',       backref='user',   lazy=True)
     
-    # 👇 NEW: 关联用户的学术情景录音提交
+    # 关联用户的学术情景录音提交
     scenario_submissions = db.relationship('UserScenarioSubmission', backref='user', lazy=True)
 
     def set_password(self, password):
@@ -151,7 +151,6 @@ class ForumComment(db.Model):
     content    = db.Column(db.Text,     nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # 👇 保留的高级功能：楼中楼
     parent_id  = db.Column(db.Integer, db.ForeignKey('forum_comments.id'), nullable=True)
 
     replies    = db.relationship(
@@ -251,7 +250,6 @@ class UserListeningProgress(db.Model):
     attempts        = db.Column(db.Integer, default=0)
     last_attempt_at = db.Column(db.DateTime, nullable=True)
 
-    # new colomn：to store user listening practise progress
     last_position   = db.Column(db.Float, nullable=True)           # current play position
     two_thirds_count = db.Column(db.Integer, default=0)           # count of finishing exercises (Which reachs 2/3 progress of the whole exercise)
     answers         = db.Column(db.JSON, nullable=True)           # record of answer result
@@ -318,7 +316,7 @@ class UserSpeakingSubmission(db.Model):
 
 
 # ==========================================
-# 🎓 NEW: Academic Scenarios (学术情景模拟)
+# 🎓 Academic Scenarios (学术情景模拟)
 # ==========================================
 class AcademicScenario(db.Model):
     __tablename__ = 'academic_scenarios'
@@ -355,6 +353,30 @@ class UserScenarioSubmission(db.Model):
     score_logic = db.Column(db.Float, nullable=True)
     score_politeness = db.Column(db.Float, nullable=True)
     overall_feedback = db.Column(db.Text, nullable=True)
+
+
+# ==========================================
+# 🎙️ NEW: 跟读练习模型 (Shadowing Practice)
+# ==========================================
+class ShadowingExercise(db.Model):
+    __tablename__ = 'shadowing_exercises'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(150), nullable=False)
+    focus = db.Column(db.Text, nullable=False)
+    text = db.Column(db.Text, nullable=False)
+    duration_str = db.Column(db.String(20)) # e.g., "~0:30"
+    word_count = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # 一对多关系：一个练习包含多种口音的音频
+    audios = db.relationship('ShadowingAudio', backref='exercise', lazy=True, cascade='all, delete-orphan')
+
+class ShadowingAudio(db.Model):
+    __tablename__ = 'shadowing_audios'
+    id = db.Column(db.Integer, primary_key=True)
+    exercise_id = db.Column(db.Integer, db.ForeignKey('shadowing_exercises.id'), nullable=False)
+    accent_code = db.Column(db.String(10), nullable=False) # 'us', 'gb', 'au'
+    audio_url = db.Column(db.String(255), nullable=False)  # '/static/audio/shadowing/...'
 
 
 # ─────────────────────────────────────────────

@@ -247,60 +247,47 @@
   <div class="tab-pane fade" id="practice" role="tabpanel" aria-labelledby="practice-tab">
     
     <div class="d-flex justify-content-between align-items-center mt-2 mb-4">
-        <h5 class="fw-bold text-dark mb-0">Featured Practice</h5>
-        <span class="text-muted small">Choose a topic, then select your target accent inside.</span>
+        <h5 class="fw-bold text-dark mb-0">Shadowing Practice</h5>
+        <span class="text-muted small">Choose a scenario, then select your target accent inside to practice.</span>
     </div>
 
     <div class="row g-4">
       
-      <div class="col-md-6 col-lg-4">
-        <div class="card border-0 shadow-sm h-100" style="transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
-          <div class="card-body p-4">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-              <h5 class="fw-bold mb-0">Ordering Coffee in a Café</h5>
-              <div class="d-flex gap-1" title="Supports US, UK, and AUS accents">
-                <span class="badge bg-light text-dark border border-secondary border-opacity-25 fs-6 px-1">🇺🇸</span>
-                <span class="badge bg-light text-dark border border-secondary border-opacity-25 fs-6 px-1">🇬🇧</span>
-                <span class="badge bg-light text-dark border border-secondary border-opacity-25 fs-6 px-1">🇦🇺</span>
+      {% if shadowing_practices %}
+        {% for practice in shadowing_practices %}
+        <div class="col-md-6">
+          <div class="card border-0 shadow-sm h-100" style="transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
+            <div class="card-body p-4">
+              <div class="d-flex justify-content-between align-items-start mb-3">
+                <h5 class="fw-bold mb-0">{{ practice.title }}</h5>
+                <div class="d-flex gap-1" title="Supported accents">
+                  {% for audio in practice.audios %}
+                    {% if audio.accent_code == 'us' %}<span class="badge bg-light text-dark border border-secondary border-opacity-25 fs-6 px-1">🇺🇸</span>{% endif %}
+                    {% if audio.accent_code == 'gb' %}<span class="badge bg-light text-dark border border-secondary border-opacity-25 fs-6 px-1">🇬🇧</span>{% endif %}
+                    {% if audio.accent_code == 'au' %}<span class="badge bg-light text-dark border border-secondary border-opacity-25 fs-6 px-1">🇦🇺</span>{% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+              <p class="text-muted small mb-3"><strong>Focus:</strong> {{ practice.focus }}</p>
+              <div class="d-flex gap-3 text-muted small mt-auto">
+                <span><i class="bi bi-clock me-1"></i>{{ practice.duration_str }}</span>
+                <span><i class="bi bi-text-paragraph me-1"></i>{{ practice.word_count }} words</span>
               </div>
             </div>
-            <p class="text-muted small mb-3">Practice standard daily communication. Choose your preferred accent inside to master the local pronunciation.</p>
-            <div class="d-flex gap-3 text-muted small mt-auto">
-              <span><i class="bi bi-clock me-1"></i>~0:45</span>
-              <span><i class="bi bi-text-paragraph me-1"></i>68 words</span>
+            <div class="card-footer bg-white border-top-0 pt-0 pb-4 px-4">
+              <a href="{{ url_for('speaking.practice_detail', practice_id=practice.id) }}" class="btn btn-outline-primary w-100 fw-medium rounded-pill">
+                <i class="bi bi-play-circle me-1"></i> Select Accent & Start
+              </a>
             </div>
-          </div>
-          <div class="card-footer bg-white border-top-0 pt-0 pb-4 px-4">
-            <button class="btn btn-outline-primary w-100 fw-medium rounded-pill">
-              <i class="bi bi-play-circle me-1"></i> Select Accent & Start
-            </button>
           </div>
         </div>
-      </div>
-
-      <div class="col-md-6 col-lg-4">
-        <div class="card border-0 shadow-sm h-100" style="transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
-          <div class="card-body p-4">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-              <h5 class="fw-bold mb-0">Tech Startup Pitch</h5>
-              <div class="d-flex gap-1" title="Supports US and UK accents">
-                <span class="badge bg-light text-dark border border-secondary border-opacity-25 fs-6 px-1">🇺🇸</span>
-                <span class="badge bg-light text-dark border border-secondary border-opacity-25 fs-6 px-1">🇬🇧</span>
-              </div>
-            </div>
-            <p class="text-muted small mb-3">Master the energetic, fast-paced business pitch style. Great for practicing emphasis and pauses.</p>
-            <div class="d-flex gap-3 text-muted small mt-auto">
-              <span><i class="bi bi-clock me-1"></i>~1:12</span>
-              <span><i class="bi bi-text-paragraph me-1"></i>120 words</span>
-            </div>
-          </div>
-          <div class="card-footer bg-white border-top-0 pt-0 pb-4 px-4">
-            <button class="btn btn-outline-primary w-100 fw-medium rounded-pill">
-              <i class="bi bi-play-circle me-1"></i> Select Accent & Start
-            </button>
-          </div>
+        {% endfor %}
+      {% else %}
+        <div class="col-12 text-center py-5">
+            <i class="bi bi-earbuds text-muted" style="font-size: 3rem;"></i>
+            <h5 class="text-muted mt-3">No shadowing practices available yet.</h5>
         </div>
-      </div>
+      {% endif %}
 
     </div>
   </div>

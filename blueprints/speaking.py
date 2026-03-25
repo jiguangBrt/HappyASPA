@@ -1,7 +1,7 @@
-
 from flask import Blueprint, render_template, request, jsonify, current_app, url_for, redirect, flash
 from flask_login import login_required, current_user
-from models import db, UserActivityLog, SpeakingExercise, UserSpeakingSubmission, User, AcademicScenario, UserScenarioSubmission
+# 👇 🌟 新增导入了 ShadowingExercise 和 ShadowingAudio
+from models import db, UserActivityLog, SpeakingExercise, UserSpeakingSubmission, User, AcademicScenario, UserScenarioSubmission, ShadowingExercise, ShadowingAudio
 from flask import send_from_directory
 from datetime import datetime, timezone, timedelta
 import os
@@ -11,11 +11,8 @@ import requests
 import base64
 from volcenginesdkarkruntime import Ark
 
-
-
 speaking_bp = Blueprint('speaking', __name__, url_prefix='/speaking')
 
-# 工具函数：验证文件扩展名
 # 工具函数：验证文件扩展名
 def allowed_file(filename):
     return '.' in filename and \
@@ -135,13 +132,17 @@ def index():
     raw_submissions = UserSpeakingSubmission.query.filter_by(user_id=current_user.id).all()
     user_submissions_dict = {sub.exercise_id: sub for sub in raw_submissions}
     
-    # 🌟 NEW: 查出 Academic Scenarios 的数据！
+    # 查出 Academic Scenarios 的数据
     scenarios = AcademicScenario.query.order_by(AcademicScenario.created_at.desc()).all()
+    
+    # 👇 🌟 NEW: 查出所有跟读练习的数据！
+    shadowing_practices = ShadowingExercise.query.order_by(ShadowingExercise.id.asc()).all()
     
     return render_template('speaking/index.html', 
                            exercises=exercises, 
                            user_submissions=user_submissions_dict,
-                           scenarios=scenarios) # 🌟 别忘了把 scenarios 传给前端
+                           scenarios=scenarios,
+                           shadowing_practices=shadowing_practices) # 👈 别忘了传给前端
 
 # 2. 新建口语练习（GET 展示表单 / POST 创建）
 @speaking_bp.route('/new', methods=['GET', 'POST'])
@@ -179,7 +180,7 @@ def new_exercise():
             
     return render_template('speaking/new_exercise.html')
 
-# 3. 提供音频文件访问 (升级版：支持普通口语和学术情景两张表)
+# 3. 提供音频文件访问 (支持普通口语和学术情景两张表)
 @speaking_bp.route('/audio/<filename>')
 @login_required
 def get_audio(filename):
@@ -339,33 +340,27 @@ def delete_exercise(exercise_id):
         return redirect(url_for('speaking.index'))
 
 # ==========================================
-# 🎓 NEW: 学术情景模拟 (Academic Scenarios) 专属路由
+# 🎓 学术情景模拟 (Academic Scenarios) 专属路由
 # ==========================================
 
 # 8. 学术情景库（列表页）
 @speaking_bp.route('/academic-scenarios')
 @login_required
 def academic_index():
-    # 从数据库获取所有情景，按创建时间倒序排列
     scenarios = AcademicScenario.query.order_by(AcademicScenario.created_at.desc()).all()
-    
-    # 把查出来的数据传给前端模板
     return render_template('speaking/academic_index.html', scenarios=scenarios)
 
 # 9. 学术情景模拟室（动态读取数据库）
 @speaking_bp.route('/academic-scenarios/<int:scenario_id>')
 @login_required
 def academic_detail(scenario_id):
-    # 1. 查询真实的情景题目数据
     scenario = AcademicScenario.query.get_or_404(scenario_id)
     
-    # 2. 查询当前用户在这个题目下的所有历史录音
     submissions = UserScenarioSubmission.query.filter_by(
         user_id=current_user.id, 
         scenario_id=scenario_id
     ).order_by(UserScenarioSubmission.submitted_at.desc()).all()
     
-    # 3. 格式化提交记录的时间
     submission_list = []
     for sub in submissions:
         utc_time = sub.submitted_at       
@@ -383,7 +378,7 @@ def academic_detail(scenario_id):
         
     return render_template('speaking/academic_detail.html', scenario=scenario, submissions=submission_list)
 
-# 10. 上传学术情景录音接口 (真实写入数据库版)
+# 10. 上传学术情景录音接口
 @speaking_bp.route('/upload-scenario-audio', methods=['POST'])
 @login_required
 def upload_scenario_audio():
@@ -406,10 +401,8 @@ def upload_scenario_audio():
             filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
             os.makedirs(current_app.config['UPLOAD_FOLDER'], exist_ok=True)
             
-            # 1. 保存物理文件
             file.save(filepath)
             
-            # 2. 🌟 写入数据库！
             new_sub = UserScenarioSubmission(
                 user_id=current_user.id,
                 scenario_id=scenario_id,
@@ -440,13 +433,11 @@ def upload_scenario_audio():
 @speaking_bp.route('/delete-scenario-submission/<int:sub_id>', methods=['POST'])
 @login_required
 def delete_scenario_submission(sub_id):
-    # 确保只能删除当前登录用户自己的录音
     submission = UserScenarioSubmission.query.filter_by(id=sub_id, user_id=current_user.id).first()
     
     if not submission:
         return jsonify({'status': 'error', 'message': 'Submission not found or unauthorized'}), 404
     
-    # 1. 从硬盘上删除物理音频文件
     filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], submission.audio_filename)
     if os.path.exists(filepath):
         try:
@@ -454,8 +445,32 @@ def delete_scenario_submission(sub_id):
         except Exception as e:
             current_app.logger.error(f"Error deleting file {filepath}: {str(e)}")
     
-    # 2. 从数据库中删除记录
     db.session.delete(submission)
     db.session.commit()
     
     return jsonify({'status': 'success', 'message': 'Scenario submission deleted'}), 200
+
+# ==========================================
+# 🎙️ NEW: 沉浸式跟读练习 (Shadowing Practice)
+# ==========================================
+
+# 12. 沉浸式跟读练习舱 (Practice Detail) - 🌟 真实数据库版 🌟
+@speaking_bp.route('/practice/<int:practice_id>')
+@login_required
+def practice_detail(practice_id):
+    # 1. 从数据库中查出对应的练习
+    practice = ShadowingExercise.query.get_or_404(practice_id)
+    
+    # 2. 把关联的音频数据转换成前端需要的字典格式 {'us': 'url', 'gb': 'url'}
+    audio_dict = {audio.accent_code: audio.audio_url for audio in practice.audios}
+    
+    # 3. 构造一个和前端模板完美匹配的字典
+    practice_data = {
+        'id': practice.id,
+        'title': practice.title,
+        'focus': practice.focus,
+        'text': practice.text,
+        'audio': audio_dict
+    }
+    
+    return render_template('speaking/practice_detail.html', practice=practice_data)

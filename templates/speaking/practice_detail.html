@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Practice - {{ practice.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    <div class="mb-4">
+        <a href="{{ url_for('speaking.index') }}#practice" class="text-decoration-none text-muted fw-medium hover-primary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Practice Hall
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            
+            <div class="text-center mb-5">
+                <span class="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-2 rounded-pill">Shadowing Practice</span>
+                <h2 class="fw-bold mb-3">{{ practice.title }}</h2>
+                <p class="text-muted px-md-5">{{ practice.focus }}</p>
+            </div>
+
+            <div class="d-flex justify-content-center mb-4">
+                <div class="btn-group shadow-sm rounded-pill" role="group" aria-label="Accent selection">
+                    <input type="radio" class="btn-check" name="accent" id="accent-us" autocomplete="off" checked onchange="changeAccent('us')">
+                    <label class="btn btn-outline-primary px-4 py-2" for="accent-us" style="border-top-left-radius: 50rem; border-bottom-left-radius: 50rem;">
+                        🇺🇸 American
+                    </label>
+
+                    <input type="radio" class="btn-check" name="accent" id="accent-gb" autocomplete="off" onchange="changeAccent('gb')">
+                    <label class="btn btn-outline-primary px-4 py-2" for="accent-gb">
+                        🇬🇧 British
+                    </label>
+
+                    <input type="radio" class="btn-check" name="accent" id="accent-au" autocomplete="off" onchange="changeAccent('au')">
+                    <label class="btn btn-outline-primary px-4 py-2" for="accent-au" style="border-top-right-radius: 50rem; border-bottom-right-radius: 50rem;">
+                        🇦🇺 Australian
+                    </label>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4 p-md-5 text-center">
+                    <h6 class="text-muted fw-bold mb-4"><i class="bi bi-headphones me-2"></i>Listen to the Native Speaker</h6>
+                    
+                    <audio id="native-audio" controls class="w-100 shadow-sm rounded-pill mb-3" style="height: 50px;">
+                        <source src="{{ practice.audio.us }}" type="audio/mpeg" id="audio-source">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-5" style="background-color: #f8f9fa;">
+                <div class="card-body p-4 p-md-5 text-center">
+                    <p class="fs-3 fw-medium mb-0 text-dark" style="line-height: 1.6; letter-spacing: 0.5px;">
+                        {{ practice.text }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="text-center pb-5">
+                <hr class="mb-5 text-muted">
+                <h5 class="fw-bold mb-3">Ready to try?</h5>
+                <button class="btn btn-danger btn-lg rounded-pill px-5 shadow-sm">
+                    <i class="bi bi-mic-fill me-2"></i> Record Your Voice
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script id="audio-data" type="application/json">
+    {{ practice.audio | tojson | safe }}
+</script>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const player = document.getElementById('native-audio');
+    const audioData = JSON.parse(document.getElementById('audio-data').textContent);
+
+    // 切换口音逻辑
+    function changeAccent(accentCode) {
+        // 记录当前是否在播放
+        const isPlaying = !player.paused;
+        
+        // 更改音频源
+        player.src = audioData[accentCode];
+
+        // 重新加载并保持原来的播放状态
+        player.load();
+        if (isPlaying) {
+            player.play();
+        }
+    }
+</script>
+{% endblock %}
