@@ -1,111 +1,357 @@
-{% extends "base.html" %}
-
-{% block title %}{{ exercise.title }} - Speaking Practice{% endblock %}
+{% extends 'base.html' %}
+{% block title %}English Corner - {{ exercise.title }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{{ url_for('speaking.index') }}#standard">English Corner</a></li>
-            <li class="breadcrumb-item active" aria-current="page">{{ exercise.title }}</li>
-        </ol>
-    </nav>
+<style>
+    /* 自定义样式：提升高级感 */
+    .prompt-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        position: relative;
+        overflow: hidden;
+    }
+    .prompt-quote-bg {
+        position: absolute;
+        top: -20px;
+        left: -10px;
+        font-size: 8rem;
+        color: rgba(13, 110, 253, 0.05); /* Bootstrap primary color with low opacity */
+        z-index: 0;
+        transform: rotate(-10deg);
+    }
+    .prompt-content {
+        position: relative;
+        z-index: 1;
+    }
+    .record-console {
+        background: #ffffff;
+        border-top: 3px solid #0d6efd;
+    }
+    .feed-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid rgba(0,0,0,0.04) !important;
+    }
+    .feed-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.08) !important;
+    }
+    .ai-btn-glow {
+        box-shadow: 0 0 10px rgba(13, 110, 253, 0.3);
+        transition: all 0.3s;
+    }
+    .ai-btn-glow:hover {
+        box-shadow: 0 0 15px rgba(13, 110, 253, 0.5);
+        transform: scale(1.02);
+    }
+    /* 美化原生 audio 播放器 */
+    audio {
+        outline: none;
+        border-radius: 50rem;
+    }
+    audio::-webkit-media-controls-panel {
+        background-color: #f1f3f5;
+    }
+</style>
 
-    <div class="card mb-5 shadow-sm">
-        <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">
-                <i class="bi bi-mic-fill me-2"></i>{{ exercise.title }}
-                <span class="badge bg-light text-primary ms-2">Difficulty: {{ exercise.difficulty }}</span>
-                <span class="badge subject-tag ms-1" data-subject-tag data-subject="{{ exercise.category }}">{{ exercise.category }}</span>
-            </h4>
-        </div>
-        <div class="card-body">
-            <h5 class="card-title">Speaking Prompt</h5>
-            <p class="card-text lead">{{ exercise.prompt }}</p>
-            <p class="text-muted">Created at: {{ exercise.created_at.strftime('%Y-%m-%d') }}</p>
-        </div>
+<div class="container py-4">
+    <div class="mb-4">
+        <a href="{{ url_for('speaking.index') }}#standard" class="text-decoration-none text-muted fw-medium transition-hover">
+            <i class="bi bi-arrow-left me-1"></i> Back to English Corner
+        </a>
     </div>
 
-    <div class="card shadow-sm">
-        <div class="card-header bg-dark text-white">
-            <h5 class="mb-0">
-                <i class="bi bi-record-circle me-2"></i>All Recordings ({{ submissions|length }})
-            </h5>
-        </div>
-        <div class="card-body">
-            {% if submissions %}
-                <div class="list-group">
-                    {% for sub in submissions %}
-                        <div class="list-group-item list-group-item-action mb-2 rounded">
-                            <div class="d-flex w-100 justify-content-between align-items-center">
-                                <h6 class="mb-1">
-                                    <i class="bi bi-person-circle me-1"></i> {{ sub.username }}
-                                </h6>
-                                <small class="text-muted">{{ sub.submitted_at }}</small>
-                            </div>
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            
+            <div class="text-center mb-4">
+                <div class="d-inline-flex align-items-center bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-pill mb-3 small fw-semibold">
+                    <i class="bi bi-tag-fill me-2"></i>
+                    Level {{ exercise.difficulty }} <span class="mx-2">|</span> {{ exercise.category or 'General' }}
+                </div>
+                <h1 class="fw-bold mb-2 text-dark">{{ exercise.title }}</h1>
+                <p class="text-muted small mb-0"><i class="bi bi-calendar3 me-1"></i> Posted on {{ exercise.created_at.strftime('%b %d, %Y') }}</p>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 prompt-card mb-5">
+                <i class="bi bi-quote prompt-quote-bg"></i>
+                <div class="card-body p-4 p-md-5 text-center prompt-content">
+                    <p class="fs-4 fw-medium text-dark mb-0" style="line-height: 1.7; letter-spacing: 0.5px;">
+                        {{ exercise.prompt }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 record-console p-4 p-md-5 text-center mb-5">
+                <h5 class="fw-bold mb-2 text-dark">Your Turn to Speak</h5>
+                <p class="text-muted small mb-4">Share your thoughts clearly and confidently.</p>
+                
+                <div>
+                    <button id="record-btn" class="btn btn-danger btn-lg rounded-pill px-5 py-3 shadow" onclick="toggleRecording()" style="transition: all 0.3s;">
+                        <i id="record-icon" class="bi bi-mic-fill me-2 fs-5"></i> 
+                        <span id="record-text" class="fw-bold fs-5">Start Recording</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="history-section" class="text-start">
+                <div class="d-flex align-items-center justify-content-between mb-4 px-2">
+                    <h4 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-people-fill me-2 text-primary"></i>Community Responses
+                    </h4>
+                    <span class="badge bg-dark rounded-pill fs-6 px-3" id="attempt-counter">{{ submissions|length }}</span>
+                </div>
+                
+                <div id="history-list" class="d-flex flex-column gap-4 pb-5">
+                    {% if submissions %}
+                        {% for sub in submissions %}
+                        <div class="card shadow-sm rounded-4 bg-white p-4 feed-card animate__animated animate__fadeIn" id="record-card-{{ sub.id }}">
                             
-                            <div class="mt-2">
-                                <audio controls class="w-100" style="height: 40px;">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary bg-gradient text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-3 shadow-sm" style="width: 45px; height: 45px; font-size: 1.3rem;">
+                                        {{ sub.username[0]|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark fs-6">{{ sub.username }}</div>
+                                        <div class="text-muted" style="font-size: 0.8rem;"><i class="bi bi-clock me-1"></i>{{ sub.submitted_at }}</div>
+                                    </div>
+                                </div>
+                                {% if current_user.is_authenticated and current_user.username == sub.username %}
+                                <button onclick="deleteSubmission({{ sub.id }})" class="btn btn-light btn-sm rounded-circle text-danger shadow-sm border" title="Delete my recording" style="width: 32px; height: 32px;">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+
+                            <div class="bg-light p-3 rounded-4 mb-3">
+                                <audio controls class="w-100 shadow-sm" style="height: 40px;">
                                     <source src="{{ url_for('speaking.get_audio', filename=sub.audio_filename) }}" type="audio/webm">
-                                    Your browser does not support the audio element.
                                 </audio>
                             </div>
-                            
-                            <div class="mt-2 d-flex justify-content-between align-items-center">
-                                <small class="text-muted">Duration: {{ sub.duration }}s</small>
-                                <div class="small text-muted" style="max-width: 80%;">
-                                    <i class="bi bi-robot me-1"></i>
-                                    <span class="fw-semibold">AI点评：</span>
-                                    <span>{{ sub.feedback or 'AI feedback pending...' }}</span>
+
+                            <div class="d-flex justify-content-end align-items-center" id="action-area-{{ sub.id }}">
+                                {% if sub.feedback and sub.feedback != 'No feedback yet' %}
+                                    <a href="{{ url_for('speaking.analysis_detail', sub_id=sub.id) }}" class="btn btn-outline-primary btn-sm rounded-pill px-4 fw-medium border-2">
+                                        <i class="bi bi-file-earmark-text-fill me-1"></i> View AI Analysis
+                                    </a>
+                                {% else %}
                                     {% if current_user.is_authenticated and current_user.username == sub.username %}
-                                    <button class="btn btn-sm btn-outline-danger ms-3" onclick="deleteSubmission({{ sub.id }})" title="Delete my recording">
-                                        <i class="bi bi-trash3"></i> Delete
+                                    <button class="btn btn-primary btn-sm rounded-pill px-4 fw-medium ai-btn-glow" onclick="requestAIAnalysis({{ sub.id }}, this)">
+                                        <i class="bi bi-stars me-1"></i> Get AI Feedback
                                     </button>
+                                    {% else %}
+                                    <span class="badge bg-light text-muted border px-3 py-2 rounded-pill fw-normal">
+                                        <i class="bi bi-dash-circle me-1"></i>No AI Analysis yet
+                                    </span>
                                     {% endif %}
-                                </div>
+                                {% endif %}
                             </div>
+
                         </div>
-                    {% endfor %}
+                        {% endfor %}
+                    {% else %}
+                        <div id="no-recordings-msg" class="text-center py-5 bg-white rounded-4 shadow-sm border">
+                            <i class="bi bi-mic-mute text-muted mb-3 d-block opacity-25" style="font-size: 4rem;"></i>
+                            <h5 class="fw-bold text-dark">It's quiet here...</h5>
+                            <p class="text-muted mb-0">Be the first to share your thoughts on this topic!</p>
+                        </div>
+                    {% endif %}
                 </div>
-            {% else %}
-                <div class="alert alert-light border text-center py-4">
-                    <i class="bi bi-mic-mute me-2 fs-4"></i>
-                    <span class="fs-5 text-muted">No recordings for this exercise yet. Be the first to submit!</span>
-                </div>
-            {% endif %}
+            </div>
+
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
 <script>
-  // 🌟 处理删除录音的异步请求逻辑 🌟
-  function deleteSubmission(subId) {
-    // 1. 弹出防误触确认框
-    if (confirm("Are you sure you want to delete this recording? This action cannot be undone.")) {
-      
-      // 2. 发送 POST 请求到后端已有的删除接口
-      fetch(`/speaking/delete-submission/${subId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.status === 'success') {
-          // 3. 删除成功，刷新页面以更新列表
-          window.location.reload(); 
+    let mediaRecorder;       
+    let audioChunks = [];    
+    let isRecording = false; 
+    let audioStream;         
+
+    const recordBtn = document.getElementById('record-btn');
+    const recordIcon = document.getElementById('record-icon');
+    const recordText = document.getElementById('record-text');
+    const historyList = document.getElementById('history-list');
+    const attemptCounter = document.getElementById('attempt-counter');
+    const noRecordingsMsg = document.getElementById('no-recordings-msg');
+    
+    const currentUsername = "{{ current_user.username if current_user.is_authenticated else 'Guest' }}";
+
+    async function toggleRecording() {
+        if (!isRecording) {
+            await startRecording();
         } else {
-          alert('Failed to delete: ' + (data.message || 'Unknown error'));
+            stopRecording();
         }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred while deleting the recording.');
-      });
     }
-  }
+
+    async function startRecording() {
+        // 🌟 新增：录音前的公开隐私提示
+        const isConfirmed = confirm("⚠️⚠️⚠️ Please note: Your recording will be public and can be heard by all users in the community.\n\nClick 'OK' to start recording, or 'Cancel' to abort.");
+        
+        // 如果用户点击了取消，直接退出函数，不进行后续的麦克风请求和录音
+        if (!isConfirmed) {
+            return; 
+        }
+
+        try {
+            // 只有用户同意后，才会请求麦克风权限
+            audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(audioStream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = event => {
+                if (event.data.size > 0) audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); 
+                const formData = new FormData();
+                formData.append('audio_file', audioBlob, 'speaking.webm');
+                formData.append('exercise_id', '{{ exercise.id }}');
+
+                // 改变按钮为上传状态
+                recordText.textContent = "Saving...";
+                recordBtn.classList.replace('btn-dark', 'btn-secondary');
+                recordBtn.classList.remove('animate__pulse', 'animate__infinite');
+                recordBtn.disabled = true;
+
+                try {
+                    const response = await fetch("{{ url_for('speaking.upload_audio') }}", {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+
+                    if (result.status === 'success') {
+                        if (noRecordingsMsg) noRecordingsMsg.classList.add('d-none');
+                        attemptCounter.textContent = parseInt(attemptCounter.textContent) + 1;
+
+                        const now = new Date();
+                        const timeString = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0') + " " + String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
+                        const audioUrl = `/speaking/audio/${result.filename}`;
+                        const userInitial = currentUsername.charAt(0).toUpperCase();
+
+                        // 生成精美的新卡片 HTML
+                        const listItemHtml = `
+                            <div class="card shadow-sm rounded-4 bg-white p-4 feed-card animate__animated animate__fadeInDown" id="record-card-${result.submission_id}">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary bg-gradient text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-3 shadow-sm" style="width: 45px; height: 45px; font-size: 1.3rem;">
+                                            ${userInitial}
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark fs-6">${currentUsername}</div>
+                                            <div class="text-muted" style="font-size: 0.8rem;"><i class="bi bi-clock me-1"></i>${timeString}</div>
+                                        </div>
+                                    </div>
+                                    <button onclick="deleteSubmission(${result.submission_id})" class="btn btn-light btn-sm rounded-circle text-danger shadow-sm border" title="Delete my recording" style="width: 32px; height: 32px;">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </div>
+                                <div class="bg-light p-3 rounded-4 mb-3">
+                                    <audio controls class="w-100 shadow-sm" style="height: 40px;">
+                                        <source src="${audioUrl}" type="audio/webm">
+                                    </audio>
+                                </div>
+                                <div class="d-flex justify-content-end align-items-center" id="action-area-${result.submission_id}">
+                                    <button class="btn btn-primary btn-sm rounded-pill px-4 fw-medium ai-btn-glow" onclick="requestAIAnalysis(${result.submission_id}, this)">
+                                        <i class="bi bi-stars me-1"></i> Get AI Feedback
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        historyList.insertAdjacentHTML('afterbegin', listItemHtml);
+                    } else {
+                        alert("Upload failed: " + result.message);
+                    }
+                } catch (error) {
+                    console.error("Error:", error);
+                    alert("Network error.");
+                } finally {
+                    recordBtn.disabled = false;
+                    recordBtn.classList.remove('btn-secondary');
+                    recordBtn.classList.add('btn-danger');
+                    recordIcon.classList.replace('bi-stop-fill', 'bi-mic-fill');
+                    recordText.textContent = "Start Recording";
+                }
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+
+            recordBtn.classList.replace('btn-danger', 'btn-dark'); 
+            recordBtn.classList.add('animate__animated', 'animate__pulse', 'animate__infinite');
+            recordIcon.classList.replace('bi-mic-fill', 'bi-stop-fill');
+            recordText.textContent = "Finish Speaking";
+
+        } catch (err) {
+            alert("Cannot access microphone. Please check your browser permissions.");
+        }
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+            audioStream.getTracks().forEach(track => track.stop()); 
+            isRecording = false;
+        }
+    }
+
+    async function requestAIAnalysis(subId, btnElement) {
+        const originalHtml = btnElement.innerHTML;
+        btnElement.disabled = true;
+        btnElement.classList.remove('ai-btn-glow'); // 移除发光效果避免冲突
+        btnElement.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Analyzing...';
+        
+        try {
+            const response = await fetch(`/speaking/analyze-audio/${subId}`, { method: 'POST' });
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                window.location.href = `/speaking/analysis-detail/${subId}`;
+            } else {
+                alert("AI Analysis failed: " + data.message);
+                btnElement.disabled = false;
+                btnElement.classList.add('ai-btn-glow');
+                btnElement.innerHTML = originalHtml;
+            }
+        } catch (error) {
+            console.error("Analysis Error:", error);
+            alert("Network error during AI analysis.");
+            btnElement.disabled = false;
+            btnElement.classList.add('ai-btn-glow');
+            btnElement.innerHTML = originalHtml;
+        }
+    }
+
+    async function deleteSubmission(subId) {
+        if (!confirm("Are you sure you want to delete this recording?")) return;
+        try {
+            const response = await fetch(`/speaking/delete-submission/${subId}`, { method: 'POST' });
+            const data = await response.json();
+            if (data.status === 'success') {
+                const card = document.getElementById(`record-card-${subId}`);
+                if (card) {
+                    card.classList.add('animate__fadeOutUp');
+                    setTimeout(() => {
+                        card.remove();
+                        const currentCount = historyList.querySelectorAll('.feed-card').length;
+                        attemptCounter.textContent = currentCount;
+                        if (currentCount === 0 && noRecordingsMsg) {
+                            noRecordingsMsg.classList.remove('d-none');
+                            noRecordingsMsg.classList.add('animate__animated', 'animate__fadeIn');
+                        }
+                    }, 500); 
+                }
+            }
+        } catch (error) {
+            alert('Error deleting recording.');
+        }
+    }
 </script>
 {% endblock %}
