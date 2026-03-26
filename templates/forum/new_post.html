@@ -16,16 +16,32 @@
         <i class="bi bi-pencil me-2"></i>Create a New Post
       </div>
       <div class="card-body p-4">
-        <form method="POST">
+       <form method="POST">
           <div class="mb-3">
             <label class="form-label fw-semibold">Title</label>
             <input type="text" class="form-control" name="title"
                    placeholder="A clear, descriptive title" required>
           </div>
-          <div class="mb-3">
 
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Publish to Board  <span class="text-danger">*</span></label>
+            <select class="form-select" name="board" required>
+              <option value="discussion" {% if current_board == 'discussion' %}selected{% endif %}>
+                ☕ Discussion - Everyone can post.
+              </option>
+              
+              <option value="guide" {% if current_board == 'guide' %}selected{% endif %} {% if not current_user.is_guide_qualified %}disabled{% endif %}>
+                🎓 Guide - High-scoring tips and tricks sharing {% if not current_user.is_guide_qualified %}🔒 (The English grades need to be certified.){% endif %}
+              </option>
+            </select>
             
-           <div class="mb-3">
+            {% if not current_user.is_guide_qualified %}
+            <div class="form-text text-danger mt-1">
+              <i class="bi bi-shield-lock-fill me-1"></i> You have not yet unlocked the privilege to post in the "Guidance Area". Please go ahead and do so first. <a href="{{ url_for('auth.profile') }}" class="text-danger fw-bold text-decoration-underline">Personal center</a> Enter the qualified examination results!
+            </div>
+            {% endif %}
+          </div>
+          <div class="mb-3">
             <label class="form-label fw-semibold">Category <span class="text-muted fw-normal">(optional)</span></label>
             <select class="form-select" name="category">
               <option value="" selected>— Select category —</option>
@@ -38,16 +54,18 @@
               <option value="General">General</option>
             </select>
           </div>
+          
           <div class="mb-4">
             <label class="form-label fw-semibold">Content</label>
             <textarea class="form-control" name="content" rows="6"
                       placeholder="Share your question or thoughts…" required></textarea>
           </div>
+          
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-danger">
               <i class="bi bi-send me-1"></i>Publish Post
             </button>
-            <a href="{{ url_for('forum.index') }}" class="btn btn-outline-secondary">Cancel</a>
+            <a href="{{ url_for('forum.index', board=current_board) }}" class="btn btn-outline-secondary">Cancel</a>
           </div>
         </form>
       </div>
