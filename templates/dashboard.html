@@ -66,7 +66,9 @@
 
           <div class="overall-guidance-list">
             {% for card in overall_guidance_cards %}
-            <a href="{{ url_for('dashboard.guidance_page', card_key=card.key) }}" class="overall-guidance-mini-card text-decoration-none">
+            <a href="{% if card.url %}{{ card.url }}{% else %}{{ url_for('dashboard.guidance_page', card_key=card.key) }}{% endif %}"
+               {% if card.url %}target="_blank" rel="noopener noreferrer"{% endif %}
+               class="overall-guidance-mini-card text-decoration-none">
               <div class="card border-0 shadow-sm card-hover">
                 <div class="card-body d-flex align-items-center gap-3 py-3 px-3">
                   <div class="rounded-3 bg-{{ card.color }} bg-opacity-10 p-2 guidance-icon {% if card.key == 'teams' %}guidance-icon-teams{% endif %}">
@@ -133,7 +135,15 @@
 </div>
 
 <!-- ── Calendar Reminder ─────────────────────────────────────────────────── -->
-<h5 class="fw-bold mb-3"><i class="bi bi-calendar-event-fill text-primary me-2"></i>My Schedule</h5>
+<h5 class="fw-bold mb-2"><i class="bi bi-calendar-event-fill text-primary me-2"></i>My Schedule</h5>
+<div class="d-flex justify-content-center mb-3">
+  <div class="calendar-tip text-muted small px-3 py-2">
+    <span class="badge rounded-pill bg-warning text-dark me-2">!</span>
+    <span class="fw-semibold text-primary">Why You Should Use a Calendar:</span>
+    During your studies at DIICSU, deadlines are of paramount importance; all assigned tasks must be completed within the specified timeframe, or you may face penalties.
+    Making effective use of a calendar can help you cultivate a strong sense of time awareness.
+  </div>
+</div>
 <div class="card border-0 shadow-sm mb-5">
   <div class="card-body">
     {% if not schedule_table_ready %}
@@ -255,10 +265,19 @@
     border-radius: 999px;
   }
 
+  .calendar-tip {
+    max-width: 980px;
+    background: rgba(18, 53, 107, 0.06);
+    border: 1px solid rgba(18, 53, 107, 0.18);
+    border-radius: 14px;
+    text-align: center;
+  }
+
   .schedule-calendar { table-layout: fixed; }
   .schedule-calendar td { height: 88px; padding: 0; cursor: pointer; vertical-align: top; }
   .schedule-calendar td:hover { background: rgba(18, 53, 107, 0.18); }
-  .schedule-calendar td.is-outside { background: #FFFFFF; color: #FFFFFF; }
+  .schedule-calendar td.is-outside { background: #FFFFFF; color: #FFFFFF; cursor: not-allowed; }
+  .schedule-calendar td.is-outside:hover { background: #FFFFFF; }
   .schedule-calendar td.is-selected { outline: 2px solid rgba(143, 178, 230, 0.6); outline-offset: -2px; }
   .schedule-cell { height: 88px; padding: 6px; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
   .schedule-day { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
@@ -404,7 +423,11 @@
         const iso = toIsoDate(d);
         const td = document.createElement('td');
         td.dataset.date = iso;
-        if (!inViewedMonth(d)) td.classList.add('is-outside');
+        const inMonth = inViewedMonth(d);
+        if (!inMonth) {
+          td.classList.add('is-outside');
+          td.setAttribute('aria-disabled', 'true');
+        }
         if (selectedDateIso === iso) td.classList.add('is-selected');
 
         const cell = document.createElement('div');
@@ -413,12 +436,12 @@
         const dayHeader = document.createElement('div');
         dayHeader.className = 'schedule-day';
         const count = (itemsByDate.get(iso)?.length || 0) + (iso === selectedDateIso ? pendingAdds.length : 0);
-        dayHeader.innerHTML = `<span class="date">${d.getDate()}</span><span class="meta">${inViewedMonth(d) && count ? count + ' item(s)' : ''}</span>`;
+        dayHeader.innerHTML = `<span class="date">${d.getDate()}</span><span class="meta">${inMonth && count ? count + ' item(s)' : ''}</span>`;
         cell.appendChild(dayHeader);
 
         const badges = document.createElement('div');
         badges.className = 'schedule-badges';
-        if (inViewedMonth(d)) {
+        if (inMonth) {
           const items = itemsByDate.get(iso) || [];
           for (const item of items.slice(0, 4)) {
             const span = document.createElement('span');
@@ -432,7 +455,9 @@
 
         td.appendChild(cell);
 
-        td.addEventListener('click', () => openScheduleModal(iso));
+        if (inMonth) {
+          td.addEventListener('click', () => openScheduleModal(iso));
+        }
         tr.appendChild(td);
       }
       scheduleCalendarBody.appendChild(tr);
