@@ -23,7 +23,9 @@
     <button class="btn btn-outline-secondary btn-sm me-2" id="backToCategoriesBtn">
       <i class="bi bi-arrow-left"></i> Back
     </button>
-    <h5 class="fw-bold mb-0" id="currentCategoryName"></h5>
+    <h5 class="fw-bold mb-0">
+      <span id="currentCategoryName" class="subject-tag" data-subject-tag></span>
+    </h5>
   </div>
 
   <!-- 单词卡片 -->
@@ -175,11 +177,15 @@
         <div class="card h-100 border-0 shadow-sm category-card" data-cat-id="${cat.id}" data-cat-name="${displayName}" style="cursor: pointer;">
           <div class="card-body text-center">
             <i class="bi bi-book fs-1 text-primary mb-3"></i>
-            <h6 class="fw-bold">${displayName}</h6>
+            <div class="category-tag subject-tag" data-subject-tag data-subject="${displayName}">${displayName}</div>
             <p class="text-muted small">${cat.count} words</p>
           </div>
         </div>
       `;
+      const tagEl = col.querySelector('.category-tag');
+      if (window.applySubjectTag && tagEl) {
+        window.applySubjectTag(tagEl);
+      }
       col.querySelector('.category-card').addEventListener('click', () => selectCategory(cat.id, displayName));
       categoryGrid.appendChild(col);
     });
@@ -189,6 +195,8 @@
   function selectCategory(catId, catDisplayName) {
     currentCategory = catId;
     currentCategoryName.innerText = catDisplayName;
+    currentCategoryName.dataset.subject = catDisplayName;
+    if (window.applySubjectTag) window.applySubjectTag(currentCategoryName);
     categorySection.style.display = 'none';
     learningSection.style.display = 'block';
     // 重置计数器
@@ -358,6 +366,11 @@
   .category-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
+  }
+  .category-tag {
+    display: inline-block;
+    margin-bottom: 6px;
+    font-weight: 600;
   }
   #wordDisplay {
     word-break: break-word;

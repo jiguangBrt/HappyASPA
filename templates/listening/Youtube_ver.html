@@ -27,7 +27,7 @@
         {% endif %}
         <div class="d-flex align-items-center gap-2 mb-3">
           {% if ex.category %}
-          <span class="badge bg-info bg-opacity-10 text-info">{{ ex.category }}</span>
+          <span class="badge subject-tag" data-subject-tag data-subject="{{ ex.category }}">{{ ex.category }}</span>
           {% endif %}
           {% if ex.duration_seconds %}
           <small class="text-muted">

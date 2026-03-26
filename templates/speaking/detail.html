@@ -16,7 +16,7 @@
             <h4 class="mb-0">
                 <i class="bi bi-mic-fill me-2"></i>{{ exercise.title }}
                 <span class="badge bg-light text-primary ms-2">Difficulty: {{ exercise.difficulty }}</span>
-                <span class="badge bg-light text-primary ms-1">{{ exercise.category }}</span>
+                <span class="badge subject-tag ms-1" data-subject-tag data-subject="{{ exercise.category }}">{{ exercise.category }}</span>
             </h4>
         </div>
         <div class="card-body">

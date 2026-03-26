@@ -16,26 +16,237 @@
   {% block head %}{% endblock %}
   <style>
   html { scrollbar-gutter: stable; }
-  /* 修改所有带有 bg-primary 类的背景颜色 */
-  .bg-primary {
-    background-color: #12356B !important;
+  :root {
+    --app-primary: #12356B;
+    --app-primary-dark: #0F2D5A;
+    --app-primary-soft: #1B447E;
+    --app-bg-deep: #0E1F3B;
+    --app-bg-muted: #F2F5FA;
+    --app-bg-panel: #FFFFFF;
+    --app-bg-light: #E6EBF3;
+    --app-text: #1B2433;
+    --app-text-secondary: #4B5B73;
+    --app-text-muted: #6C7B92;
+    --app-border: #D6DEE9;
+    --app-shadow: 0 6px 18px rgba(16, 24, 40, 0.08);
+    --app-shadow-lift: 0 12px 28px rgba(16, 24, 40, 0.12);
+    --app-focus: 0 0 0 0.2rem rgba(27, 68, 126, 0.35);
+    --app-overlay: rgba(10, 20, 40, 0.65);
+
+    --tag-cs: #2B2F36;
+    --tag-academic: #1E4A78;
+    --tag-civil: #2F5A52;
+    --tag-math: #4B2C7A;
+    --tag-mech: #7A3E28;
+    --tag-traffic: #7A222F;
   }
 
-  /* 修改所有主色按钮的颜色及边框 */
+  body {
+    background: var(--app-bg-light);
+    color: var(--app-text);
+  }
+
+  a { color: #1B4A8E; }
+  a:hover { color: #2A5BA6; }
+
+  .text-muted { color: var(--app-text-muted) !important; }
+  .text-secondary { color: var(--app-text-secondary) !important; }
+
+  /* brand primary */
+  .bg-primary { background-color: var(--app-primary) !important; }
   .btn-primary {
-    background-color: #12356B !important;
-    border-color: #12356B !important;
+    background-color: var(--app-primary) !important;
+    border-color: var(--app-primary) !important;
   }
-  
-  /* 鼠标悬停在按钮上时稍微加深一点，提升交互感 */
   .btn-primary:hover {
-    background-color: #0d274f !important;
-    border-color: #0d274f !important;
+    background-color: var(--app-primary-soft) !important;
+    border-color: var(--app-primary-soft) !important;
+  }
+  .btn-primary:active {
+    background-color: var(--app-primary-dark) !important;
+    border-color: var(--app-primary-dark) !important;
+  }
+  .btn-primary:focus-visible { box-shadow: var(--app-focus) !important; }
+
+  .btn-secondary {
+    background-color: #E8EDF5 !important;
+    border-color: #D6DEE9 !important;
+    color: var(--app-text) !important;
+  }
+  .btn-secondary:hover {
+    background-color: #DEE6F1 !important;
+    border-color: #C9D4E4 !important;
   }
 
-  /* 修改所有 primary 文本颜色（如图标和文字链接） */
-  .text-primary {
-    color: #3B6EBF !important;
+  .btn-outline-primary {
+    color: var(--app-primary) !important;
+    border-color: #2A4B79 !important;
+  }
+  .btn-outline-primary:hover {
+    background-color: rgba(18, 53, 107, 0.12) !important;
+    color: var(--app-primary) !important;
+  }
+
+  .btn-outline-secondary {
+    color: var(--app-text-secondary) !important;
+    border-color: #C9D4E4 !important;
+  }
+  .btn-outline-secondary:hover {
+    background-color: rgba(20, 40, 71, 0.06) !important;
+    color: var(--app-text) !important;
+  }
+
+  .text-primary { color: #1B4A8E !important; }
+
+  .card {
+    background-color: #FFFFFF;
+    border: 1px solid var(--app-border);
+    box-shadow: var(--app-shadow);
+    color: var(--app-text);
+  }
+  .card .text-body { color: var(--app-text) !important; }
+
+  .navbar,
+  .dropdown-menu {
+    border-color: var(--app-border);
+  }
+  .dropdown-menu {
+    background: #FFFFFF;
+  }
+  .dropdown-item { color: var(--app-text); }
+  .dropdown-item:hover,
+  .dropdown-item:focus {
+    background: rgba(18, 53, 107, 0.08);
+    color: var(--app-text);
+  }
+
+  footer.bg-light {
+    background: #FFFFFF !important;
+    color: var(--app-text-muted);
+    border-top: 1px solid var(--app-border) !important;
+  }
+
+  .modal-content {
+    background: #FFFFFF;
+    border: 1px solid var(--app-border);
+    color: var(--app-text);
+    box-shadow: var(--app-shadow-lift);
+  }
+  .modal-backdrop.show { opacity: 1; background: var(--app-overlay); }
+
+  .form-control,
+  .form-select,
+  .input-group-text,
+  textarea.form-control {
+    background: #FFFFFF;
+    border-color: var(--app-border);
+    color: var(--app-text);
+  }
+  .form-control::placeholder,
+  textarea.form-control::placeholder { color: var(--app-text-muted); }
+  .form-control:focus,
+  .form-select:focus,
+  textarea.form-control:focus { box-shadow: var(--app-focus); border-color: #2A4B79; }
+
+  .table { color: var(--app-text); }
+  .table-light {
+    --bs-table-bg: #F2F5FA;
+    --bs-table-border-color: #D6DEE9;
+    color: var(--app-text);
+  }
+  .table-bordered > :not(caption) > * { border-color: var(--app-border); }
+
+  .alert {
+    background: #F2F5FA;
+    border: 1px solid #D6DEE9;
+    color: var(--app-text);
+  }
+  .alert-warning {
+    background: #FFF4D6;
+    border-color: #F0D48A;
+    color: #5A4A2A;
+  }
+
+  .badge.bg-info { background: #2F5B4D !important; color: #E9F2EE; }
+  .badge.bg-success {
+    background: rgba(25, 135, 84, 0.14) !important;
+    color: #198754 !important;
+    border-color: rgba(25, 135, 84, 0.35) !important;
+  }
+  .badge.bg-secondary { background: #5B6B84 !important; color: #F8F9FA; }
+  .text-success { color: #198754 !important; }
+
+  .tag {
+    background: rgba(18, 53, 107, 0.08);
+    color: var(--app-text);
+    border: 1px solid rgba(18, 53, 107, 0.16);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    letter-spacing: 0.3px;
+  }
+  .tag--cs {
+    background: color-mix(in srgb, var(--tag-cs) 16%, #FFFFFF);
+    color: var(--tag-cs);
+    border-color: color-mix(in srgb, var(--tag-cs) 28%, #FFFFFF);
+  }
+  .tag--civil {
+    background: color-mix(in srgb, var(--tag-civil) 16%, #FFFFFF);
+    color: var(--tag-civil);
+    border-color: color-mix(in srgb, var(--tag-civil) 28%, #FFFFFF);
+  }
+  .tag--math {
+    background: color-mix(in srgb, var(--tag-math) 16%, #FFFFFF);
+    color: var(--tag-math);
+    border-color: color-mix(in srgb, var(--tag-math) 28%, #FFFFFF);
+  }
+  .tag--mech {
+    background: color-mix(in srgb, var(--tag-mech) 16%, #FFFFFF);
+    color: var(--tag-mech);
+    border-color: color-mix(in srgb, var(--tag-mech) 28%, #FFFFFF);
+  }
+  .tag--traffic {
+    background: color-mix(in srgb, var(--tag-traffic) 16%, #FFFFFF);
+    color: var(--tag-traffic);
+    border-color: color-mix(in srgb, var(--tag-traffic) 28%, #FFFFFF);
+  }
+  .tag--academic {
+    background: color-mix(in srgb, var(--tag-academic) 16%, #FFFFFF);
+    color: var(--tag-academic);
+    border-color: color-mix(in srgb, var(--tag-academic) 28%, #FFFFFF);
+  }
+
+  .subject-theme-cs { --subject-color: var(--tag-cs); }
+  .subject-theme-civil { --subject-color: var(--tag-civil); }
+  .subject-theme-math { --subject-color: var(--tag-math); }
+  .subject-theme-mech { --subject-color: var(--tag-mech); }
+  .subject-theme-traffic { --subject-color: var(--tag-traffic); }
+  .subject-theme-academic { --subject-color: var(--tag-academic); }
+
+  .subject-icon-box {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--subject-color) 14%, #FFFFFF);
+    color: var(--subject-color);
+    border: 1px solid color-mix(in srgb, var(--subject-color) 28%, #FFFFFF);
+  }
+
+  .btn-outline-subject {
+    color: var(--subject-color);
+    border-color: color-mix(in srgb, var(--subject-color) 40%, #FFFFFF);
+  }
+  .btn-outline-subject:hover {
+    background: color-mix(in srgb, var(--subject-color) 12%, #FFFFFF);
+    color: var(--subject-color);
+  }
+  .btn-outline-subject.is-active {
+    background: var(--subject-color);
+    color: #FFFFFF;
+    border-color: var(--subject-color);
   }
 </style>
 </head>
@@ -231,5 +442,33 @@
   <!-- Bootstrap 5 JS — BootCDN（国内稳定，含 Popper.js） -->
   <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   {% block scripts %}{% endblock %}
+  <script>
+    (function () {
+      function tagClassFor(subject) {
+        const name = (subject || '').toLowerCase();
+        if (name.includes('academic english')) return 'tag--academic';
+        if (name.includes('computer science')) return 'tag--cs';
+        if (name.includes('civil engineering')) return 'tag--civil';
+        if (name.includes('applied mathematics')) return 'tag--math';
+        if (name.includes('mechanical engineering')) return 'tag--mech';
+        if (name.includes('traffic control')) return 'tag--traffic';
+        return 'tag--academic';
+      }
+
+      window.applySubjectTag = function (el) {
+        if (!el) return;
+        const subject = el.dataset.subject || el.textContent || '';
+        ['tag--cs','tag--civil','tag--math','tag--mech','tag--traffic','tag--academic'].forEach(c => el.classList.remove(c));
+        el.classList.add('tag');
+        el.classList.add(tagClassFor(subject));
+      };
+
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-subject-tag]').forEach(el => {
+          window.applySubjectTag(el);
+        });
+      });
+    })();
+  </script>
 </body>
 </html>

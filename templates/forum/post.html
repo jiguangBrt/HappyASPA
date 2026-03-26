@@ -22,8 +22,7 @@
       </div>
       
       {% if post.category %}
-        {% set color = category_colors.get(post.category, 'secondary') %}
-        <span class="badge bg-{{ color }} bg-opacity-10 text-{{ color }} ms-auto">{{ post.category }}</span>
+        <span class="badge subject-tag ms-auto" data-subject-tag data-subject="{{ post.category }}">{{ post.category }}</span>
       {% endif %}
 
       {% if post.user_id == current_user.id %}
