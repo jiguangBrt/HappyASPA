@@ -20,6 +20,22 @@ class User(UserMixin, db.Model):
     created_at     = db.Column(db.DateTime, default=datetime.utcnow)
     last_login_at  = db.Column(db.DateTime, nullable=True)
 
+    # ==========================================
+    # 💰 NEW: 经济系统与每日任务字段
+    # ==========================================
+    coins                 = db.Column(db.Integer, default=0)
+    last_checkin_date     = db.Column(db.Date, nullable=True)
+    last_post_reward_date = db.Column(db.Date, nullable=True)
+
+    # ==========================================
+    # 🎓 NEW: 英语成绩认证与权限字段
+    # ==========================================
+    gaokao_score       = db.Column(db.Float, nullable=True)   # 高考英语
+    ielts_score        = db.Column(db.Float, nullable=True)   # 雅思
+    toefl_score        = db.Column(db.Integer, nullable=True) # 托福
+    gre_score          = db.Column(db.Integer, nullable=True) # GRE
+    is_guide_qualified = db.Column(db.Boolean, default=False) # 指导区发帖资格标签
+
     # relationships
     vocab_progress      = db.relationship('UserVocabularyProgress', backref='user', lazy=True)
     flashcard_progress  = db.relationship('UserFlashcardProgress',  backref='user', lazy=True)
@@ -44,7 +60,7 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return f'<User {self.username}>'
-
+    
 # ─────────────────────────────────────────────
 # Vocabulary
 # ─────────────────────────────────────────────
@@ -111,6 +127,8 @@ class ForumPost(db.Model):
     title      = db.Column(db.String(200), nullable=False)
     content    = db.Column(db.Text,        nullable=False)
     category   = db.Column(db.String(50),  nullable=True)
+    # 👇 NEW: 新增一个字段专门管大分区（默认发到交流区 discussion）
+    board      = db.Column(db.String(50),  default='discussion')
     views      = db.Column(db.Integer,     default=0)
     created_at = db.Column(db.DateTime,    default=datetime.utcnow)
     updated_at = db.Column(db.DateTime,    default=datetime.utcnow, onupdate=datetime.utcnow)

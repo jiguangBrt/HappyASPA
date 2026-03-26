@@ -3,14 +3,49 @@
 
 {% block content %}
 
-<!-- ── Welcome Banner ─────────────────────────────────────────────────── -->
-<div class="p-4 mb-4 bg-primary text-white rounded-3 shadow-sm">
+<style>
+  /* 专属闪亮标签的全局样式 */
+  .badge-guide-expert {
+    background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%);
+    color: #fff;
+    padding: 0.25rem 0.6rem;
+    border-radius: 50rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(255, 140, 0, 0.4);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.4);
+  }
+</style>
+
+<div class="p-4 mb-4 bg-primary text-white rounded-3 shadow-sm d-flex flex-wrap justify-content-between align-items-center gap-3">
   <div class="d-flex align-items-center gap-3">
     <i class="bi bi-mortarboard-fill" style="font-size: 2.5rem;"></i>
     <div>
-      <h2 class="fw-bold mb-0">Hello, {{ current_user.username }}! 👋</h2>
+      <h2 class="fw-bold mb-0 d-flex align-items-center gap-2 flex-wrap">
+        Hello, {{ current_user.username }}! 👋
+        
+        {% if current_user.is_guide_qualified %}
+          <span class="badge-guide-expert" title="Guide Forum Qualified">
+            <i class="bi bi-patch-check-fill"></i> Guidance Area Certification
+          </span>
+        {% endif %}
+      </h2>
       <p class="mb-0 opacity-75">Keep up the great work on your academic English journey.</p>
     </div>
+  </div>
+
+  <div class="bg-white bg-opacity-10 p-3 rounded-4 text-center border border-light border-opacity-25" style="min-width: 140px;">
+    <div class="mb-2 d-flex align-items-center justify-content-center gap-1">
+      <i class="bi bi-coin text-warning fs-5"></i> 
+      <span class="fw-bold fs-4" id="userCoinsDisplay">{{ current_user.coins }}</span>
+    </div>
+    <button id="checkinBtn" class="btn btn-sm btn-light fw-bold text-primary w-100 rounded-pill shadow-sm">
+      <i class="bi bi-calendar-check-fill me-1"></i> Daily attendance
+    </button>
   </div>
 </div>
 
@@ -656,5 +691,50 @@
   indexItems(scheduleItems);
   renderCalendar();
   updateTodayReminder();
+
+  // ==========================================
+  // 💰 每日签到 API 调用逻辑
+  // ==========================================
+  const checkinBtn = document.getElementById('checkinBtn');
+  const coinsDisplay = document.getElementById('userCoinsDisplay');
+
+  if (checkinBtn) {
+    checkinBtn.addEventListener('click', async function() {
+      // 防止重复点击
+      this.disabled = true;
+      const originalText = this.innerHTML;
+      this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>...';
+
+      try {
+        const response = await fetch('/auth/checkin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          // 签到成功：数字跳动，按钮变灰
+          coinsDisplay.textContent = data.coins;
+          this.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Signed in';
+          this.classList.replace('btn-light', 'btn-secondary');
+          this.classList.replace('text-primary', 'text-white');
+          alert('🎉 ' + data.message); 
+        } else {
+          // 已经签到过了或报错
+          this.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Today has been signed.';
+          this.classList.replace('btn-light', 'btn-secondary');
+          this.classList.replace('text-primary', 'text-white');
+          alert(data.message);
+        }
+      } catch (error) {
+        console.error('Checkin Error:', error);
+        alert('Network error, please try again.');
+        this.disabled = false;
+        this.innerHTML = originalText;
+      }
+    });
+  }
+
 </script>
 {% endblock %}

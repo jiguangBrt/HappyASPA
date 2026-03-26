@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row g-4">
+    
+    <div class="col-12 col-lg-4">
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body p-4">
+          <div class="mb-3">
+            {% if current_user.avatar_url %}
+              <img src="{{ current_user.avatar_url }}" alt="Avatar" class="rounded-circle" width="120" height="120" style="object-fit: cover;">
+            {% else %}
+              <i class="bi bi-person-circle text-secondary" style="font-size: 120px; line-height: 1;"></i>
+            {% endif %}
+          </div>
+          
+          <h4 class="fw-bold">{{ current_user.username }}</h4>
+          <p class="text-muted">{{ current_user.email }}</p>
+          
+          <div class="mb-4" id="guideBadgeContainer">
+            {% if current_user.is_guide_qualified %}
+              <span class="badge" style="background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%); color: #fff; padding: 0.4rem 0.8rem; border-radius: 50rem; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(255, 140, 0, 0.4);">
+                <i class="bi bi-patch-check-fill"></i> Expert 
+              </span>
+            {% else %}
+              <span class="badge bg-secondary opacity-50"><i class="bi bi-lock-fill"></i> The guidance area has not been unlocked yet.</span>
+            {% endif %}
+          </div>
+
+          <div class="d-flex justify-content-center gap-3 mb-3">
+            <div class="bg-light rounded-3 p-3 w-100 border">
+              <div class="text-muted small mb-1">My Coins</div>
+              <div class="fs-3 fw-bold text-warning"><i class="bi bi-coin"></i> {{ current_user.coins or 0 }}</div>
+            </div>
+          </div>
+          
+          <button class="btn btn-outline-primary w-100 btn-sm" disabled>
+            <i class="bi bi-camera"></i> Change Avatar (Coming Soon)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+          <h5 class="fw-bold mb-0"><i class="bi bi-award text-primary me-2"></i>English Proficiency Certification</h5>
+          <p class="text-muted small mt-1">
+            Enter your standardized test scores. As long as you meet one of the high score criteria (such as a score of >135 in the college entrance exam, >7 in IELTS, etc.), you will automatically gain the posting permission for the "guidance forum"!
+          </p>
+        </div>
+        
+        <div class="card-body p-4">
+        <form id="proficiencyForm">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">College Entrance Examination English(Max 150)</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light"><i class="bi bi-journal-text"></i></span>
+                  <input type="number" step="0.5" min="0" max="150" class="form-control" id="gaokao" value="{{ current_user.gaokao_score or '' }}" placeholder="For example: 138">
+                </div>
+              </div>
+              
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">IELTS (Max 9.0)</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light"><i class="bi bi-globe"></i></span>
+                  <input type="number" step="0.5" min="0" max="9" class="form-control" id="ielts" value="{{ current_user.ielts_score or '' }}" placeholder="For example: 7.5">
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">TOEFL (Max 120)</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light"><i class="bi bi-building"></i></span>
+                  <input type="number" min="0" max="120" class="form-control" id="toefl" value="{{ current_user.toefl_score or '' }}" placeholder="For example: 105">
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">GRE (Max 340)</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light"><i class="bi bi-mortarboard"></i></span>
+                  <input type="number" min="0" max="340" class="form-control" id="gre" value="{{ current_user.gre_score or '' }}" placeholder="For example: 325">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-check mt-4 mb-2 border border-danger border-opacity-25 p-3 rounded bg-danger bg-opacity-10">
+              <input class="form-check-input ms-1" type="checkbox" id="honorPledge" required>
+              <label class="form-check-label text-danger fw-semibold small ms-2" for="honorPledge">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i> I hereby guarantee that the above academic achievements are genuine and valid. I am aware that forging academic records to obtain the "guidance zone" privilege will result in permanent account suspension upon verification.
+              </label>
+            </div>
+
+            <div class="mt-3 text-end">
+              <button type="submit" class="btn btn-primary px-4" id="submitProficiencyBtn">
+                <i class="bi bi-cloud-arrow-up me-1"></i> Save & Certify
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // 处理表单提交并调用刚才写的 API
+  document.getElementById('proficiencyForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submitProficiencyBtn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+
+    // 收集数据
+    const payload = {
+      gaokao_score: document.getElementById('gaokao').value || null,
+      ielts_score: document.getElementById('ielts').value || null,
+      toefl_score: document.getElementById('toefl').value || null,
+      gre_score: document.getElementById('gre').value || null
+    };
+
+    try {
+      const response = await fetch('/auth/proficiency', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        alert('🎉 ' + data.message);
+        // 如果认证成功，刷新页面以显示闪亮标签
+        window.location.reload();
+      } else {
+        alert('Error: ' + data.message);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Network error!');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  });
+</script>
+{% endblock %}
