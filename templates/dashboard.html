@@ -34,7 +34,7 @@
             <a href="{{ url_for('dashboard.guidance_page', card_key=card.key) }}" class="overall-guidance-mini-card text-decoration-none">
               <div class="card border-0 shadow-sm card-hover">
                 <div class="card-body d-flex align-items-center gap-3 py-3 px-3">
-                  <div class="rounded-3 bg-{{ card.color }} bg-opacity-10 p-2">
+                  <div class="rounded-3 bg-{{ card.color }} bg-opacity-10 p-2 guidance-icon {% if card.key == 'teams' %}guidance-icon-teams{% endif %}">
                     <i class="bi {{ card.icon }} text-{{ card.color }}" style="font-size: 1.25rem;"></i>
                   </div>
                   <div class="min-w-0">
@@ -180,13 +180,14 @@
 {% block scripts %}
 <style>
   .card-hover { transition: transform .15s ease, box-shadow .15s ease; cursor: pointer; }
-  .card-hover:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.12) !important; }
+  .card-hover:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(5, 10, 20, 0.32) !important; }
 
   .overall-guidance-right { max-width: 520px; }
   .overall-guidance-panel {
     background-image: url("/static/pictures/dashboard-background.png");
     background-size: cover;
     background-position: center;
+    border: 1px solid #1E3558;
   }
   .overall-guidance-list {
     display: flex;
@@ -197,7 +198,14 @@
     padding-right: 6px;
   }
   .overall-guidance-list::-webkit-scrollbar { width: 8px; }
+  .overall-guidance-list::-webkit-scrollbar-thumb {
+    background: rgba(18, 53, 107, 0.45);
+    border-radius: 999px;
+  }
   .overall-guidance-mini-card { flex: 0 0 auto; }
+  .guidance-icon-teams {
+    background: rgba(18, 53, 107, 0.12) !important;
+  }
 
   .personal-growth-scroller {
     display: flex;
@@ -208,23 +216,33 @@
   .personal-growth-card { flex: 0 0 220px; }
   .personal-growth-scroller::-webkit-scrollbar { height: 6px; }
   .personal-growth-scroller::-webkit-scrollbar-thumb {
-    background: rgba(13,110,253,.35);
+    background: rgba(18, 53, 107, 0.45);
     border-radius: 999px;
   }
 
   .schedule-calendar { table-layout: fixed; }
   .schedule-calendar td { height: 88px; padding: 0; cursor: pointer; vertical-align: top; }
-  .schedule-calendar td:hover { background: rgba(59,110,191,.08); }
-  .schedule-calendar td.is-outside { background: rgba(0,0,0,.02); color: #6c757d; }
-  .schedule-calendar td.is-selected { outline: 2px solid rgba(59,110,191,.55); outline-offset: -2px; }
+  .schedule-calendar td:hover { background: rgba(18, 53, 107, 0.18); }
+  .schedule-calendar td.is-outside { background: #FFFFFF; color: #FFFFFF; }
+  .schedule-calendar td.is-selected { outline: 2px solid rgba(143, 178, 230, 0.6); outline-offset: -2px; }
   .schedule-cell { height: 88px; padding: 6px; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
   .schedule-day { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
   .schedule-day .date { font-weight: 700; font-size: .9rem; }
-  .schedule-day .meta { font-size: .75rem; color: #6c757d; }
+  .schedule-day .meta { font-size: .75rem; color: #9AA9BF; }
   .schedule-badges { flex: 1 1 auto; min-height: 0; display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; align-content: flex-start; overflow: hidden; }
-  .schedule-badges .badge { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .schedule-badges .badge {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #FFFFFF !important;
+  }
+  .schedule-badges .badge.bg-info { background: #2B5C9A !important; }
+  .schedule-badges .badge.bg-primary { background: #1F5A3A !important; }
+  .schedule-badges .badge.bg-success { background: #7A2E3A !important; }
+  .schedule-badges .badge.bg-secondary { background: #5A2F7A !important; }
   .schedule-item--deleted { opacity: .6; text-decoration: line-through; }
-  .schedule-item--draft { background: rgba(59,110,191,.06); }
+  .schedule-item--draft { background: rgba(18, 53, 107, 0.18); }
 
   .schedule-reminder {
     position: fixed;
@@ -365,13 +383,15 @@
 
         const badges = document.createElement('div');
         badges.className = 'schedule-badges';
-        const items = itemsByDate.get(iso) || [];
-        for (const item of items.slice(0, 4)) {
-          const span = document.createElement('span');
-          span.className = `badge rounded-pill ${kindBadgeClass(item.kind)}`;
-          span.title = item.notes || '';
-          span.textContent = item.title;
-          badges.appendChild(span);
+        if (inViewedMonth(d)) {
+          const items = itemsByDate.get(iso) || [];
+          for (const item of items.slice(0, 4)) {
+            const span = document.createElement('span');
+            span.className = `badge rounded-pill ${kindBadgeClass(item.kind)}`;
+            span.title = item.notes || '';
+            span.textContent = item.title;
+            badges.appendChild(span);
+          }
         }
         cell.appendChild(badges);
 

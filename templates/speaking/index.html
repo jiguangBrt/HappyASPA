@@ -53,11 +53,11 @@
     <div class="d-flex justify-content-center gap-2 mt-2 mb-4 flex-wrap" id="filter-buttons">
       <button class="btn btn-primary btn-sm rounded-pill px-3 filter-btn" data-filter="all">All Scenarios</button>
       <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="General Topic">General Topic</button>
-      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Computer Science">Computer Science</button>
-      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Civil Engineering">Civil Engineering</button>
-      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Applied Mathematics">Applied Mathematics</button>
-      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Mechanical Engineering">Mechanical Engineering</button>
-      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="Traffic Control">Traffic Control</button>
+      <button class="btn btn-outline-subject subject-theme-cs btn-sm rounded-pill px-3 filter-btn" data-filter="Computer Science">Computer Science</button>
+      <button class="btn btn-outline-subject subject-theme-civil btn-sm rounded-pill px-3 filter-btn" data-filter="Civil Engineering">Civil Engineering</button>
+      <button class="btn btn-outline-subject subject-theme-math btn-sm rounded-pill px-3 filter-btn" data-filter="Applied Mathematics">Applied Mathematics</button>
+      <button class="btn btn-outline-subject subject-theme-mech btn-sm rounded-pill px-3 filter-btn" data-filter="Mechanical Engineering">Mechanical Engineering</button>
+      <button class="btn btn-outline-subject subject-theme-traffic btn-sm rounded-pill px-3 filter-btn" data-filter="Traffic Control">Traffic Control</button>
     </div>
 
     <div class="row g-4" id="scenarios-grid">
@@ -66,22 +66,22 @@
         
         {% set cat = scenario.category %}
         {% if cat == 'Computer Science' %}
-            {% set theme_color = 'primary' %}
+            {% set theme_class = 'subject-theme-cs' %}
             {% set icon = 'bi-laptop' %}
         {% elif cat == 'Civil Engineering' %}
-            {% set theme_color = 'warning' %}
+            {% set theme_class = 'subject-theme-civil' %}
             {% set icon = 'bi-cone-striped' %}
         {% elif cat == 'Applied Mathematics' %}
-            {% set theme_color = 'info' %}
+            {% set theme_class = 'subject-theme-math' %}
             {% set icon = 'bi-calculator' %}
         {% elif cat == 'Mechanical Engineering' %}
-            {% set theme_color = 'secondary' %}
+            {% set theme_class = 'subject-theme-mech' %}
             {% set icon = 'bi-gear' %}
         {% elif cat == 'Traffic Control' %}
-            {% set theme_color = 'danger' %}
+            {% set theme_class = 'subject-theme-traffic' %}
             {% set icon = 'bi-stoplights' %}
         {% else %}
-            {% set theme_color = 'success' %}
+            {% set theme_class = 'subject-theme-cs' %}
             {% set icon = 'bi-chat-dots' %}
         {% endif %}
 
@@ -89,7 +89,7 @@
             <div class="card border-0 shadow-sm h-100 scenario-card" style="transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="bg-{{ theme_color }} bg-opacity-10 text-{{ theme_color }} d-flex align-items-center justify-content-center rounded" style="width: 48px; height: 48px; font-size: 1.5rem;">
+                        <div class="subject-icon-box {{ theme_class }}" style="font-size: 1.5rem;">
                             <i class="bi {{ icon }}"></i>
                         </div>
                         <span class="badge bg-{% if scenario.difficulty == 3 %}danger{% elif scenario.difficulty == 2 %}warning text-dark{% else %}success{% endif %} bg-opacity-10 text-{% if scenario.difficulty == 3 %}danger{% elif scenario.difficulty == 2 %}dark{% else %}success{% endif %} border border-{% if scenario.difficulty == 3 %}danger{% elif scenario.difficulty == 2 %}warning{% else %}success{% endif %}-subtle">
@@ -104,11 +104,11 @@
                     </p>
                     
                     <div class="d-flex flex-wrap gap-2 mt-auto mb-2">
-                        <span class="badge bg-light text-dark border"><i class="bi bi-tag me-1"></i>{{ cat }}</span>
+                        <span class="badge subject-tag" data-subject-tag data-subject="{{ cat }}"><i class="bi bi-tag me-1"></i>{{ cat }}</span>
                     </div>
                 </div>
                 <div class="card-footer bg-white border-top-0 pt-0 pb-4 px-4">
-                    <a href="{{ url_for('speaking.academic_detail', scenario_id=scenario.id) }}" class="btn btn-outline-{{ theme_color }} w-100 fw-medium">
+                    <a href="{{ url_for('speaking.academic_detail', scenario_id=scenario.id) }}" class="btn btn-outline-subject {{ theme_class }} w-100 fw-medium">
                         Start Simulation <i class="bi bi-arrow-right ms-1"></i>
                     </a>
                 </div>
@@ -152,7 +152,7 @@
             
             <div class="d-flex align-items-center flex-wrap gap-2 mb-3">
               {% if ex.category %}
-              <span class="badge bg-primary bg-opacity-10 text-primary">{{ ex.category }}</span>
+              <span class="badge subject-tag" data-subject-tag data-subject="{{ ex.category }}">{{ ex.category }}</span>
               {% endif %}
               
               {% if ex.creator %}
@@ -263,11 +263,18 @@
       filterBtns.forEach(btn => {
           btn.addEventListener('click', function() {
               filterBtns.forEach(b => {
-                  b.classList.remove('btn-primary');
-                  b.classList.add('btn-outline-secondary');
+                  b.classList.remove('btn-primary', 'is-active');
+                  if (!b.classList.contains('btn-outline-subject')) {
+                      b.classList.add('btn-outline-secondary');
+                  }
               });
-              this.classList.remove('btn-outline-secondary');
-              this.classList.add('btn-primary');
+              if (this.getAttribute('data-filter') === 'all') {
+                  this.classList.remove('btn-outline-secondary');
+                  this.classList.add('btn-primary');
+              } else {
+                  this.classList.remove('btn-outline-secondary');
+                  this.classList.add('is-active');
+              }
               const filterValue = this.getAttribute('data-filter');
               grid.style.opacity = '0';
               setTimeout(() => {
