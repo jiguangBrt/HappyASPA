@@ -11,6 +11,8 @@ listening_bp = Blueprint("listening", __name__, url_prefix="/listening")
 def index():
     # 获取URL参数
     difficulty = request.args.get("difficulty", type=int)
+    category = request.args.get("category", type=str)  
+    accent = request.args.get("accent", type=str)  # 新增：获取accent参数
 
     # 构建查询
     query = ListeningExercise.query
@@ -18,16 +20,24 @@ def index():
     # 如果选择了难度 → 过滤
     if difficulty is not None:
         query = query.filter(ListeningExercise.difficulty == difficulty)
+    # 分类过滤
+    if category:
+        query = query.filter(ListeningExercise.category == category)
+    # 口音过滤
+    if accent:
+        query = query.filter(ListeningExercise.accent == accent)  # 新增：根据accent过滤
 
     # 排序 + 查询
     exercises = query.order_by(ListeningExercise.difficulty).all()
 
-    # 传递给前端（包含当前用户ID）
+    # 传递给前端（包含当前用户ID + 当前accent）
     return render_template(
         "listening/index.html",
         exercises=exercises,
         current_difficulty=difficulty,
-        user_id=current_user.id  # 新增：传递用户ID
+        current_category=category,
+        current_accent=accent,  # 新增：传递当前accent
+        user_id=current_user.id
     )
 
 
