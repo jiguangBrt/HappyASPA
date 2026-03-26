@@ -250,6 +250,7 @@
   }
 </style>
 </head>
+
 <body>
 
   <!-- ── Navbar ─────────────────────────────────────────────────────────── -->
@@ -443,32 +444,63 @@
   <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   {% block scripts %}{% endblock %}
   <script>
-    (function () {
-      function tagClassFor(subject) {
-        const name = (subject || '').toLowerCase();
-        if (name.includes('academic english')) return 'tag--academic';
-        if (name.includes('computer science')) return 'tag--cs';
-        if (name.includes('civil engineering')) return 'tag--civil';
-        if (name.includes('applied mathematics')) return 'tag--math';
-        if (name.includes('mechanical engineering')) return 'tag--mech';
-        if (name.includes('traffic control')) return 'tag--traffic';
-        return 'tag--academic';
-      }
+  (function () {
+    // === 1. 学科标签工具函数 (原第二个脚本逻辑) ===
+    function tagClassFor(subject) {
+      const name = (subject || '').toLowerCase();
+      if (name.includes('academic english')) return 'tag--academic';
+      if (name.includes('computer science')) return 'tag--cs';
+      if (name.includes('civil engineering')) return 'tag--civil';
+      if (name.includes('applied mathematics')) return 'tag--math';
+      if (name.includes('mechanical engineering')) return 'tag--mech';
+      if (name.includes('traffic control')) return 'tag--traffic';
+      return 'tag--academic';
+    }
 
-      window.applySubjectTag = function (el) {
-        if (!el) return;
-        const subject = el.dataset.subject || el.textContent || '';
-        ['tag--cs','tag--civil','tag--math','tag--mech','tag--traffic','tag--academic'].forEach(c => el.classList.remove(c));
-        el.classList.add('tag');
-        el.classList.add(tagClassFor(subject));
-      };
+    window.applySubjectTag = function (el) {
+      if (!el) return;
+      const subject = el.dataset.subject || el.textContent || '';
+      ['tag--cs','tag--civil','tag--math','tag--mech','tag--traffic','tag--academic'].forEach(c => el.classList.remove(c));
+      el.classList.add('tag');
+      el.classList.add(tagClassFor(subject));
+    };
 
-      document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('[data-subject-tag]').forEach(el => {
-          window.applySubjectTag(el);
+    // === 2. DOM 加载完成后的统一初始化 ===
+    document.addEventListener('DOMContentLoaded', function () {
+      console.log("🚀 Initializing UI components...");
+
+      // --- 处理学科标签 ---
+      document.querySelectorAll('[data-subject-tag]').forEach(el => {
+        window.applySubjectTag(el);
+      });
+
+      // --- 处理防止重复提交 (表单) ---
+      document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function() {
+          const submitBtn = this.querySelector('button[type="submit"]');
+          if (submitBtn && !submitBtn.disabled) {
+            console.log("🚫 Disabling form button to prevent double submit...");
+            submitBtn.disabled = true;
+            submitBtn.classList.add('disabled', 'opacity-75');
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+          }
         });
       });
-    })();
-  </script>
+
+      // --- 处理防止重复点击 (普通链接按钮) ---
+      document.querySelectorAll('a.btn').forEach(link => {
+        link.addEventListener('click', function(e) {
+          if (this.classList.contains('disabled')) {
+            e.preventDefault();
+            return;
+          }
+          console.log("🚫 Locking link button...");
+          this.classList.add('disabled', 'opacity-75');
+          this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Loading...';
+        });
+      });
+    });
+  })();
+</script>
 </body>
 </html>
