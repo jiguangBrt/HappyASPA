@@ -9,8 +9,6 @@ import click
 import json
 import os
 from flask.cli import with_appcontext
-
-# 👇 确保导入了所有需要的模型，包括新增的 ShadowingExercise 和 ShadowingAudio
 from models import (
     db, ListeningExercise, SpeakingExercise, VocabularyWord, 
     AcademicScenario, User, ForumPost, ForumComment, 
@@ -30,19 +28,12 @@ def add_default_data():
     if not tutor_user:
         tutor_user = User(
             username='HappyASPA_Tutor',
-            email='tutor@happyaspa.com',
-            # 👇 新增：导师出场自带满级属性和发帖特权
-            coins=9999,
-            gaokao_score=150.0,
-            ielts_score=9.0,
-            toefl_score=120,
-            gre_score=340,
-            is_guide_qualified=True 
+            email='tutor@happyaspa.com'
         )
         tutor_user.set_password('happyaspa2026') # 默认密码
         db.session.add(tutor_user)
         db.session.commit() # 先提交以获取 tutor_user.id
-        print("  👤 已创建系统默认导师账号: HappyASPA_Tutor (满级认证)")
+        print("  👤 已创建系统默认导师账号: HappyASPA_Tutor")
 
     # ─────────────────────────────────────────────
     # 1. 导入单词数据
@@ -357,14 +348,15 @@ def add_default_data():
             db.session.add(exercise)
 
     # ─────────────────────────────────────────────
-    # 4. Academic Scenarios (学术情景模拟)
+    # 4. Academic Scenarios (学术情景模拟) - 🌟 定制版 🌟
     # ─────────────────────────────────────────────
     
-    # 清理旧的学术情景
+    # [清理步骤] 暴力清理：直接清空所有旧的学术情景，防止新老数据叠加
     AcademicScenario.query.delete()
     db.session.commit()
     print("  🗑️ 已清空旧版学术情景，准备刷入最新数据...")
 
+    # [新增步骤] 插入 6 个全新定制话题
     scenario_defaults = [
         {
             'title': 'Asking About Project Requirements',
@@ -458,21 +450,19 @@ def add_default_data():
         print(f"  ✅ 正在插入新学术情景：{data['title']}")
 
     # ─────────────────────────────────────────────
-    # 4.5. 🎙️ Shadowing Practice (沉浸式跟读练习)
+    # 4.5. 🎙️ Shadowing Practice (沉浸式跟读练习) 
     # ─────────────────────────────────────────────
-    # 🌟 修复：先清空关联的音频表 (ShadowingAudio)，再清空主表 (ShadowingExercise)
-    ShadowingAudio.query.delete() 
     ShadowingExercise.query.delete()
     db.session.commit()
-    print("  🗑️ 已清空旧版跟读练习及音频数据，准备刷入最新数据...")
+    print("  🗑️ 已清空旧版跟读练习，准备刷入最新数据...")
 
     shadowing_defaults = [
         {
             'title': 'Using the Coffee Machine',
-            'focus': 'Practice polite requests and apologies for interrupting. Focus on linking words like "could you" and the rising intonation when asking for help.',
-            'text': '"Hi, sorry to bother you. I\'m trying to use the new coffee machine in the lounge, but I can\'t figure it out. Could you quickly show me how to make an espresso?"',
-            'duration_str': '~0:35',
-            'word_count': 32,
+            'focus': 'Practice polite requests. Focus on linking words like "could you" and the rising intonation when asking for help.',
+            'text': '"Hi, could I get a medium iced latte with oat milk, please? And I\'ll also have one of those chocolate croissants to have here. Thanks!"',
+            'duration_str': '~0:30',
+            'word_count': 23,
             'audios': {
                 'us': '/static/audio/shadowing/coffee_us.mp3',
                 'gb': '/static/audio/shadowing/coffee_gb.mp3',
@@ -487,8 +477,7 @@ def add_default_data():
             'word_count': 24,
             'audios': {
                 'us': '/static/audio/shadowing/clarification_us.mp3',
-                'gb': '/static/audio/shadowing/clarification_gb.mp3',
-                'au': '/static/audio/shadowing/clarification_au.mp3'
+                'gb': '/static/audio/shadowing/clarification_gb.mp3'
             }
         },
         {
@@ -511,8 +500,7 @@ def add_default_data():
             'word_count': 29,
             'audios': {
                 'us': '/static/audio/shadowing/presentation_us.mp3',
-                'gb': '/static/audio/shadowing/presentation_gb.mp3',
-                'au': '/static/audio/shadowing/presentation_au.mp3'
+                'gb': '/static/audio/shadowing/presentation_gb.mp3'
             }
         }
     ]
@@ -526,7 +514,7 @@ def add_default_data():
             word_count=data['word_count']
         )
         db.session.add(exercise)
-        db.session.flush() # 刷新以获取 exercise.id
+        db.session.flush()
 
         for accent_code, audio_url in data['audios'].items():
             audio = ShadowingAudio(
@@ -542,21 +530,12 @@ def add_default_data():
     # ─────────────────────────────────────────────
     # 5. Forum Posts & Comments (🌟 论坛干货数据 + 互动数据 🌟)
     # ─────────────────────────────────────────────
-    # [新增] 创建 5 个"群演"学生账号，用来给帖子点赞和收藏
     dummy_users = []
     for i in range(1, 6):
         username = f'HappyStudent_{i}'
         u = User.query.filter_by(username=username).first()
         if not u:
-            # 👇 新增：模拟真实生态，偶数ID是认证大神，奇数是普通小白
-            is_qualified = (i % 2 == 0) 
-            u = User(
-                username=username, 
-                email=f'student{i}@happyaspa.com',
-                coins=10 * i, # 给点初始金币
-                gaokao_score=140.0 if is_qualified else 110.0,
-                is_guide_qualified=is_qualified
-            )
+            u = User(username=username, email=f'student{i}@happyaspa.com')
             u.set_password('123456')
             db.session.add(u)
             db.session.flush() 
@@ -659,7 +638,6 @@ def add_default_data():
                 title=data['title'],
                 content=data['content'],
                 category=data['category'],
-                board='guide',
                 user_id=tutor_user.id,
                 views=data['views']
             )
