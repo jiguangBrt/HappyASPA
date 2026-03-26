@@ -30,12 +30,19 @@ def add_default_data():
     if not tutor_user:
         tutor_user = User(
             username='HappyASPA_Tutor',
-            email='tutor@happyaspa.com'
+            email='tutor@happyaspa.com',
+            # 👇 新增：导师出场自带满级属性和发帖特权
+            coins=9999,
+            gaokao_score=150.0,
+            ielts_score=9.0,
+            toefl_score=120,
+            gre_score=340,
+            is_guide_qualified=True 
         )
         tutor_user.set_password('happyaspa2026') # 默认密码
         db.session.add(tutor_user)
         db.session.commit() # 先提交以获取 tutor_user.id
-        print("  👤 已创建系统默认导师账号: HappyASPA_Tutor")
+        print("  👤 已创建系统默认导师账号: HappyASPA_Tutor (满级认证)")
 
     # ─────────────────────────────────────────────
     # 1. 导入单词数据
@@ -535,12 +542,21 @@ def add_default_data():
     # ─────────────────────────────────────────────
     # 5. Forum Posts & Comments (🌟 论坛干货数据 + 互动数据 🌟)
     # ─────────────────────────────────────────────
+    # [新增] 创建 5 个"群演"学生账号，用来给帖子点赞和收藏
     dummy_users = []
     for i in range(1, 6):
         username = f'HappyStudent_{i}'
         u = User.query.filter_by(username=username).first()
         if not u:
-            u = User(username=username, email=f'student{i}@happyaspa.com')
+            # 👇 新增：模拟真实生态，偶数ID是认证大神，奇数是普通小白
+            is_qualified = (i % 2 == 0) 
+            u = User(
+                username=username, 
+                email=f'student{i}@happyaspa.com',
+                coins=10 * i, # 给点初始金币
+                gaokao_score=140.0 if is_qualified else 110.0,
+                is_guide_qualified=is_qualified
+            )
             u.set_password('123456')
             db.session.add(u)
             db.session.flush() 
@@ -643,6 +659,7 @@ def add_default_data():
                 title=data['title'],
                 content=data['content'],
                 category=data['category'],
+                board='guide',
                 user_id=tutor_user.id,
                 views=data['views']
             )
