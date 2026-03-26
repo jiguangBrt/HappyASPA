@@ -39,6 +39,7 @@
   }
 </style>
 </head>
+
 <body>
 
   <!-- ── Navbar ─────────────────────────────────────────────────────────── -->
@@ -231,5 +232,39 @@
   <!-- Bootstrap 5 JS — BootCDN（国内稳定，含 Popper.js） -->
   <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   {% block scripts %}{% endblock %}
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log("🛡️ Anti-double-click guard is active!");
+
+    // 1. 处理所有表单提交 (如：发布帖子、保存成绩)
+    document.querySelectorAll('form').forEach(form => {
+      form.addEventListener('submit', function() {
+        const submitBtn = this.querySelector('button[type="submit"]');
+        if (submitBtn && !submitBtn.disabled) {
+          console.log("🚫 Disabling form button to prevent double submit...");
+          submitBtn.disabled = true;
+          submitBtn.classList.add('disabled', 'opacity-75');
+          submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+        }
+      });
+    });
+
+    // 2. 处理普通按钮/链接 (如：顶部的 New Post 按钮)
+    // 只要 class 里带有 btn-danger 或 btn-primary 的链接点击后都会锁定
+    document.querySelectorAll('a.btn').forEach(link => {
+      link.addEventListener('click', function(e) {
+        if (this.classList.contains('disabled')) {
+          e.preventDefault();
+          return;
+        }
+        console.log("🚫 Locking link button...");
+        this.classList.add('disabled', 'opacity-75');
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Loading...';
+      });
+    });
+  });
+</script>
+
 </body>
 </html>

@@ -7,6 +7,17 @@ from models import db, ForumPost, ForumComment, ForumLike, ForumFavorite, Commen
 # ==========================================
 # 💰 NEW: 每日首次互动金币奖励小助手
 # ==========================================
+# 🔍 检查用户今天是否已经完成互动的工具函数
+def has_user_interacted_today():
+    now = datetime.utcnow()
+    today_start = datetime(now.year, now.month, now.day)
+    
+    # 只要发帖数 + 评论数 > 0，就说明今天任务已完成
+    posts_count = ForumPost.query.filter(ForumPost.user_id == current_user.id, ForumPost.created_at >= today_start).count()
+    comments_count = ForumComment.query.filter(ForumComment.user_id == current_user.id, ForumComment.created_at >= today_start).count()
+    
+    return (posts_count + comments_count) > 0
+
 def reward_daily_forum_coin():
     """
     检查用户今天是否是第一次发帖或评论。
@@ -80,8 +91,6 @@ def index():
     tab = request.args.get('tab', 'all')
     category_filter = request.args.get('category')
     sort_by = request.args.get('sort_by', 'hot') 
-    
-    # 👇 NEW: 获取前端传来的当前板块参数，默认设为 'discussion' (交流区)
     board = request.args.get('board', 'discussion') 
     
     saved_comments = []
@@ -90,22 +99,26 @@ def index():
     post_query = db.session.query(ForumPost)
 
     if tab == 'saved':
+        # 👇 NEW: 在查询收藏帖子时，加上 .filter(ForumPost.board == board) 强隔离！
         post_query = post_query.join(ForumFavorite, ForumPost.id == ForumFavorite.post_id)\
             .filter(ForumFavorite.user_id == current_user.id)\
+            .filter(ForumPost.board == board)\
             .order_by(ForumFavorite.created_at.desc())
             
+        # 👇 NEW: 收藏的评论同样要 join 帖子表，并根据帖子所在的 board 进行强隔离！
         comment_query = db.session.query(ForumComment)\
             .join(CommentFavorite, ForumComment.id == CommentFavorite.comment_id)\
-            .filter(CommentFavorite.user_id == current_user.id)
+            .join(ForumPost, ForumComment.post_id == ForumPost.id)\
+            .filter(CommentFavorite.user_id == current_user.id)\
+            .filter(ForumPost.board == board)
             
         if category_filter:
-            comment_query = comment_query.join(ForumPost, ForumComment.post_id == ForumPost.id)\
-                .filter(ForumPost.category == category_filter)
+            comment_query = comment_query.filter(ForumPost.category == category_filter)
                 
         saved_comments = comment_query.order_by(CommentFavorite.created_at.desc()).all()
         
     else:
-        # 👇 NEW: 只有在看全部帖子时，才根据 board (指导区/交流区) 进行硬过滤
+        # 常规列表下的分区过滤
         post_query = post_query.filter(ForumPost.board == board)
 
     # 无论哪个 tab，处理小标签分类过滤 (Vocabulary/Grammar等)
@@ -121,13 +134,15 @@ def index():
         else:
             posts.sort(key=calculate_hot_score, reverse=True)
 
-    # 👇 NEW: 把 board 变量传给前端模板，让前端知道当前亮起哪个 Tab
+    daily_done = has_user_interacted_today()  # 调用刚才写的检查函数
+
     return render_template('forum/index.html', 
                            posts=posts, 
                            tab=tab, 
                            saved_comments=saved_comments,
                            current_category=category_filter,
                            sort_by=sort_by,
+                           daily_done=daily_done,
                            board=board)
 
 @forum_bp.route('/post/<int:post_id>')

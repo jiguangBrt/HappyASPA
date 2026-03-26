@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
 {% block title %}Community Forum{% endblock %}
-
 {% block content %}
 <style>
   .badge-guide-expert {
@@ -13,20 +12,36 @@
   .transition-hover:hover { transform: translateY(-3px); }
 </style>
 
-<div class="d-flex align-items-center justify-content-between mb-4">
+
+ <div class="d-flex align-items-center justify-content-between mb-4">
   <div>
     <h3 class="fw-bold mb-0"><i class="bi bi-chat-dots text-danger me-2"></i>Community Forum</h3>
     <p class="text-muted mb-0 mt-1">Ask questions, share tips, and support each other.</p>
   </div>
-  <a href="{{ url_for('forum.new_post', board=board) }}" class="btn btn-danger shadow-sm">
-    <i class="bi bi-plus-lg me-1"></i>New Post
-  </a>
+  
+  <div class="d-flex align-items-center gap-2">
+    {% if daily_done %}
+      <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2">
+        <i class="bi bi-check-circle-fill me-1"></i> Daily Reward Claimed
+      </span>
+    {% else %}
+      <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 rounded-pill px-3 py-2 animate-pulse">
+        <i class="bi bi-coin me-1"></i> Post today for +1 Coin!
+      </span>
+    {% endif %}
+
+    
+    <a href="{{ url_for('forum.new_post', board=board) }}" class="btn btn-danger shadow-sm">
+      <i class="bi bi-plus-lg me-1"></i>New Post
+    </a>
+  </div>
+</div>
 </div>
 
 <div class="mb-4">
   <div class="d-inline-flex bg-light rounded-pill p-1 shadow-sm border border-secondary border-opacity-25">
     
-    <a href="{{ url_for('forum.index', board='discussion') }}" 
+    <a href="{{ url_for('forum.index', board='discussion', tab=tab, category=current_category, sort_by=sort_by) }}" 
        class="btn rounded-pill px-4 py-2 fw-bold d-flex align-items-center gap-2 transition-hover
               {% if board == 'discussion' %}btn-primary shadow{% else %}btn-light text-muted border-0 bg-transparent{% endif %}">
       <i class="bi bi-cup-hot-fill fs-5"></i>
@@ -36,7 +51,7 @@
       </span>
     </a>
 
-    <a href="{{ url_for('forum.index', board='guide') }}" 
+    <a href="{{ url_for('forum.index', board='guide', tab=tab, category=current_category, sort_by=sort_by) }}" 
        class="btn rounded-pill px-4 py-2 fw-bold d-flex align-items-center gap-2 transition-hover
               {% if board == 'guide' %}btn-warning text-dark shadow{% else %}btn-light text-muted border-0 bg-transparent{% endif %}">
       <i class="bi bi-mortarboard-fill fs-5"></i>
@@ -45,20 +60,34 @@
         <span style="font-size: 0.65rem; font-weight: normal; opacity: 0.8;">Experts Only</span>
       </span>
     </a>
-    
   </div>
 </div>
+
+<ul class="nav nav-tabs mb-4">
+  <li class="nav-item">
+    <a class="nav-link {% if tab != 'saved' %}active fw-bold{% else %}text-muted{% endif %}" 
+       href="{{ url_for('forum.index', board=board, category=current_category, sort_by=sort_by) }}">
+      <i class="bi bi-collection me-1"></i>All Posts
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if tab == 'saved' %}active fw-bold text-warning{% else %}text-muted{% endif %}" 
+       href="{{ url_for('forum.index', tab='saved', board=board, category=current_category, sort_by=sort_by) }}">
+      <i class="bi bi-bookmark-star-fill me-1"></i>My Saved
+    </a>
+  </li>
+</ul>
 
 <div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
   
   <div class="d-flex gap-2 flex-wrap">
-    <a href="{{ url_for('forum.index', tab=tab, sort_by=sort_by) }}" 
+    <a href="{{ url_for('forum.index', tab=tab, sort_by=sort_by, board=board) }}" 
        class="btn btn-sm {% if not current_category %}btn-dark{% else %}btn-outline-dark{% endif %} rounded-pill">
       All
     </a>
     {% if category_colors %}
       {% for cat_name, color in category_colors.items() %}
-        <a href="{{ url_for('forum.index', tab=tab, category=cat_name, sort_by=sort_by) }}" 
+        <a href="{{ url_for('forum.index', tab=tab, category=cat_name, sort_by=sort_by, board=board) }}" 
            class="btn btn-sm {% if current_category == cat_name %}btn-{{ color }}{% else %}btn-outline-{{ color }}{% endif %} rounded-pill">
           {{ cat_name }}
         </a>
@@ -68,11 +97,11 @@
 
   {% if tab != 'saved' %}
   <div class="btn-group btn-group-sm flex-shrink-0 shadow-sm" role="group">
-    <a href="{{ url_for('forum.index', tab=tab, category=current_category, sort_by='hot') }}" 
+    <a href="{{ url_for('forum.index', tab=tab, category=current_category, sort_by='hot', board=board) }}" 
        class="btn {% if sort_by == 'hot' or not sort_by %}btn-danger{% else %}btn-outline-danger{% endif %}">
       <i class="bi bi-fire me-1"></i>Hot
     </a>
-    <a href="{{ url_for('forum.index', tab=tab, category=current_category, sort_by='new') }}" 
+    <a href="{{ url_for('forum.index', tab=tab, category=current_category, sort_by='new', board=board) }}" 
        class="btn {% if sort_by == 'new' %}btn-danger{% else %}btn-outline-danger{% endif %}">
       <i class="bi bi-clock me-1"></i>New
     </a>
