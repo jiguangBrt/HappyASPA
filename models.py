@@ -1,8 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, timezone
 
 db = SQLAlchemy()
 
@@ -54,6 +53,12 @@ class User(UserMixin, db.Model):
     
     # 🌟 NEW: 关联用户的跟读练习录音记录
     shadowing_records    = db.relationship('UserShadowingRecord',    backref='user', lazy=True)
+
+    # 累计正确题目数（首次做对计数的题目总数）
+    total_correct_questions = db.Column(db.Integer, default=0)
+
+    # 累计学习时长（秒）
+    total_listening_duration = db.Column(db.Integer, default=0)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -268,13 +273,19 @@ class UserListeningProgress(db.Model):
     user_id         = db.Column(db.Integer, db.ForeignKey('users.id'),                nullable=False)
     exercise_id     = db.Column(db.Integer, db.ForeignKey('listening_exercises.id'),  nullable=False)
     completed       = db.Column(db.Boolean, default=False)
-    score           = db.Column(db.Float,   nullable=True)
+    # score           = db.Column(db.Float,   nullable=True)
     attempts        = db.Column(db.Integer, default=0)
     last_attempt_at = db.Column(db.DateTime, nullable=True)
 
     last_position   = db.Column(db.Float, nullable=True)           # current play position
-    two_thirds_count = db.Column(db.Integer, default=0)           # count of finishing exercises
+    # two_thirds_count = db.Column(db.Integer, default=0)           # count of finishing exercises
     answers         = db.Column(db.JSON, nullable=True)           # record of answer result
+
+    # 永久记录：已做过的题目索引列表（无论对错，永不重置）
+    permanent_answered = db.Column(db.JSON, default=lambda: list())
+
+    # 永久记录：已正确答对的题目索引列表（首次正确才记录）
+    permanent_correct = db.Column(db.JSON, default=lambda: list())
     
 # ─────────────────────────────────────────────
 # Writing
