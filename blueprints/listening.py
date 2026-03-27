@@ -28,8 +28,6 @@ def index():
     # 排序 + 查询
     exercises = query.order_by(ListeningExercise.difficulty).all()
 
-    # 传递给前端（包含当前用户ID + 当前accent）
-    exercises = query.order_by(ListeningExercise.difficulty).all()
     return render_template(
         "listening/index.html",
         exercises=exercises,
@@ -58,6 +56,10 @@ def save_progress():
     if not exercise:
         return jsonify({"error": "Exercise not found"}), 404
 
+    # 只有当有实际数据时才创建记录
+    if not answers and last_position is None and duration_spent <= 0:
+        return jsonify({"success": True})
+
     progress = UserListeningProgress.query.filter_by(
         user_id=current_user.id, exercise_id=exercise_id
     ).first()
@@ -83,9 +85,8 @@ def save_progress():
         db.session.add(progress)
     else:
         if last_position is not None:
-            if progress.last_position is None or last_position > progress.last_position:
-                progress.last_position = last_position
-                db.session.add(progress)
+            progress.last_position = last_position
+            db.session.add(progress)
 
         # 确保永久记录字段是列表类型（避免 None）
         if progress.permanent_answered is None:
@@ -98,61 +99,63 @@ def save_progress():
         questions = exercise.questions or []
 
         # 处理答案
-        for q_idx_str, selected_opt in answers.items():
-            q_idx = int(q_idx_str)
+        if answers:
+            for q_idx_str, selected_opt in answers.items():
+                q_idx = int(q_idx_str)
 
-            if q_idx >= len(questions) or q_idx < 0:
-                print(f"  Skipping, invalid index")
-                continue
+                if q_idx >= len(questions) or q_idx < 0:
+                    print(f"  Skipping, invalid index")
+                    continue
 
-            # 确保列表存在
-            if progress.permanent_answered is None:
-                progress.permanent_answered = []
-            if progress.permanent_correct is None:
-                progress.permanent_correct = []
+                # 确保列表存在
+                if progress.permanent_answered is None:
+                    progress.permanent_answered = []
+                if progress.permanent_correct is None:
+                    progress.permanent_correct = []
 
-            # ========== 1. 记录到 permanent_answered（第一次答题） ==========
-            if q_idx not in progress.permanent_answered:
-                # 修改列表（直接在原列表上操作，然后标记为修改）
-                progress.permanent_answered.append(q_idx)
-                flag_modified(progress, "permanent_answered")
-                # 可选刷新，但不是必须
-                # db.session.flush()
+                # ========== 1. 记录到 permanent_answered（第一次答题） ==========
+                if q_idx not in progress.permanent_answered:
+                    # 修改列表（直接在原列表上操作，然后标记为修改）
+                    progress.permanent_answered.append(q_idx)
+                    flag_modified(progress, "permanent_answered")
+                    # 可选刷新，但不是必须
+                    # db.session.flush()
 
-            # ========== 2. 判断正确性，更新 permanent_correct ==========
-            correct_answer = questions[q_idx].get("answer")
-            correct_answer_int = None
-            if correct_answer is not None:
-                try:
-                    correct_answer_int = int(correct_answer)
-                except (ValueError, TypeError):
-                    pass
+                # ========== 2. 判断正确性，更新 permanent_correct ==========
+                correct_answer = questions[q_idx].get("answer")
+                correct_answer_int = None
+                if correct_answer is not None:
+                    try:
+                        correct_answer_int = int(correct_answer)
+                    except (ValueError, TypeError):
+                        pass
 
-            if correct_answer_int is not None and selected_opt == correct_answer_int:
-                if q_idx not in progress.permanent_correct:
-                    progress.permanent_correct.append(q_idx)
-                    flag_modified(progress, "permanent_correct")
-                    current_user.total_correct_questions += 1
-                    db.session.add(current_user)
+                if correct_answer_int is not None and selected_opt == correct_answer_int:
+                    if q_idx not in progress.permanent_correct:
+                        progress.permanent_correct.append(q_idx)
+                        flag_modified(progress, "permanent_correct")
+                        if current_user.total_correct_questions is None:
+                            current_user.total_correct_questions = 0
+                        current_user.total_correct_questions += 1
+                        db.session.add(current_user)
 
-        # 合并 answers 字段
-        if not answers:
-            progress.answers = {}
-        else:
+            # 合并 answers 字段
             if progress.answers is None:
                 progress.answers = answers
             else:
                 merged = {**progress.answers, **answers}
                 progress.answers = merged
-        # 标记 answers 字段修改（可选，因为 answers 是 JSON，也需要 flag_modified）
-        flag_modified(progress, "answers")
-        db.session.add(progress)
+            # 标记 answers 字段修改（可选，因为 answers 是 JSON，也需要 flag_modified）
+            flag_modified(progress, "answers")
+            db.session.add(progress)
 
         if completed:
             progress.completed = True
             db.session.add(progress)
 
     if duration_spent > 0:
+        if current_user.total_listening_duration is None:
+            current_user.total_listening_duration = 0
         current_user.total_listening_duration += duration_spent
         db.session.add(current_user)
 

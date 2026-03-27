@@ -126,14 +126,19 @@
   }
 
   function cleanOldStorage() {
+    // 清理旧格式
     const oldPattern = /^listening_progress_\d+$/;
+    // 清理其他用户的存储数据
+    const otherUserPattern = new RegExp(`^listening_progress_(?!${CURRENT_USER_ID}_)\\d+_\\d+$`);
+    
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (oldPattern.test(key)) {
+      if (oldPattern.test(key) || otherUserPattern.test(key)) {
         localStorage.removeItem(key);
       }
     }
   }
+  
   cleanOldStorage();
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -167,6 +172,7 @@
       progressMap.set(exerciseId, prog);
     });
 
+    // 修改前端从服务器获取进度的逻辑
     videoWrappers.forEach(wrapper => {
       const video = wrapper.querySelector('video');
       const exerciseId = video.dataset.exerciseId;
@@ -177,6 +183,9 @@
           if (!prog) return;
 
           if (data.exists) {
+            // 优先使用服务器数据
+            prog.lastTime = data.last_position || 0;
+            // 同步答案数据
             const serverAnswers = new Map(Object.entries(data.answers || {}).map(([k, v]) => [k, Number(v)]));
             serverAnswers.forEach((value, key) => {
               if (!prog.answers.has(key)) {
@@ -184,17 +193,22 @@
                 prog.triggered.add(Number(key));
               }
             });
-
-            if (prog.lastTime === 0) {
-              prog.lastTime = data.last_position || 0;
-            }
-
-            saveProgress(exerciseId);
+            // 清空本地存储，强制使用服务器数据
+            localStorage.removeItem(getStorageKey(exerciseId));
+          } else {
+            // 服务器没有数据，清空本地存储
+            prog.lastTime = 0;
+            prog.triggered.clear();
+            prog.answers.clear();
+            localStorage.removeItem(getStorageKey(exerciseId));
           }
-
+          
+          // 保存到本地存储
+          saveProgress(exerciseId);
+          // 更新按钮显示
           renderButtons();
         })
-        .catch(err => console.warn('Failed to fetch server progress', err));
+        .catch(error => console.error('Error fetching progress:', error));
     });
 
     function saveProgress(exerciseId) {
@@ -209,6 +223,15 @@
     }
 
     function sendProgressToServer(exerciseId, data) {
+      // 检查是否有实际数据
+      const hasData = data.lastPosition !== null || 
+                     (data.answers && Object.keys(data.answers).length > 0) || 
+                     data.durationSpent > 0;
+      
+      if (!hasData) {
+        return; // 没有实际数据，不发送请求
+      }
+
       fetch('/listening/progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -221,13 +244,13 @@
           duration_spent: data.durationSpent || 0
         })
       })
-        .then(response => response.json())
-        .then(data => {
-          if (!data.success) {
-            console.warn('Failed to save progress to server:', data);
-          }
-        })
-        .catch(error => console.error('Error saving progress:', error));
+      .then(response => response.json())
+      .then(data => {
+        if (!data.success) {
+          console.warn('Failed to save progress to server:', data);
+        }
+      })
+      .catch(error => console.error('Error saving progress:', error));
     }
 
     function renderButtons() {
@@ -297,17 +320,9 @@
         prog.lastTime = 0;
         saveProgress(exerciseId);
         video.currentTime = 0;
-
-        sendProgressToServer(exerciseId, {
-          lastPosition: 0,
-          answers: {},
-          completed: false,
-          reset: true
-        });
-      } else if (mode === 'resume') {
-        video.currentTime = prog.lastTime || 0;
-      } else {
-        video.currentTime = 0;
+      } else if (mode === 'resume' || mode === 'start') {
+        // 恢复到上次的实时进度
+        video.currentTime = prog.lastTime;
       }
 
       currentFullscreenWrapper = wrapper;
@@ -391,6 +406,7 @@
         const currentTime = video.currentTime;
 
         if (currentTime - lastSaveTime > 10) {
+          // 总是更新为最新位置
           progress.lastTime = currentTime;
           saveProgress(exerciseId);
           lastSaveTime = currentTime;
@@ -417,6 +433,7 @@
         const currentTime = video.currentTime;
         const prog = progressMap.get(exerciseId);
         if (prog) {
+          // 总是更新为最新位置
           prog.lastTime = currentTime;
           saveProgress(exerciseId);
           const answersObj = Object.fromEntries(prog.answers);
@@ -621,31 +638,41 @@
         const video = wrapper.querySelector('video');
         if (!video) return;
         const exerciseId = video.dataset.exerciseId;
-        if (video._playStartTime !== null) {
-          const now = Date.now();
-          const delta = (now - video._playStartTime) / 1000;
-          if (delta > 0) {
-            const blob = new Blob([JSON.stringify({
-              exercise_id: exerciseId,
-              duration_spent: delta,
-              last_position: video.currentTime,
-              answers: Object.fromEntries(progressMap.get(exerciseId)?.answers || {}),
-              completed: false
-            })], { type: 'application/json' });
-            navigator.sendBeacon('/listening/progress', blob);
-          }
-        }
-
         const prog = progressMap.get(exerciseId);
         if (!prog) return;
-        const data = {
-          exercise_id: exerciseId,
-          last_position: prog.lastTime,
-          answers: Object.fromEntries(prog.answers),
-          completed: (prog.triggered.size === wrapper.questions?.length) || false
-        };
-        const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-        navigator.sendBeacon('/listening/progress', blob);
+
+        // 检查是否有实际数据
+        const hasData = video._playStartTime !== null || 
+                       prog.lastTime > 0 || 
+                       prog.answers.size > 0;
+
+        if (hasData) {
+          // 发送播放时长数据
+          if (video._playStartTime !== null) {
+            const now = Date.now();
+            const delta = (now - video._playStartTime) / 1000;
+            if (delta > 0) {
+              const blob = new Blob([JSON.stringify({
+                exercise_id: exerciseId,
+                duration_spent: delta,
+                last_position: video.currentTime,
+                answers: Object.fromEntries(prog.answers || {}),
+                completed: false
+              })], { type: 'application/json' });
+              navigator.sendBeacon('/listening/progress', blob);
+            }
+          }
+
+          // 发送进度数据
+          const data = {
+            exercise_id: exerciseId,
+            last_position: prog.lastTime,
+            answers: Object.fromEntries(prog.answers),
+            completed: (prog.triggered.size === wrapper.questions?.length) || false
+          };
+          const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+          navigator.sendBeacon('/listening/progress', blob);
+        }
       });
     });
 

@@ -55,10 +55,10 @@ class User(UserMixin, db.Model):
     shadowing_records    = db.relationship('UserShadowingRecord',    backref='user', lazy=True)
 
     # 累计正确题目数（首次做对计数的题目总数）
-    total_correct_questions = db.Column(db.Integer, default=0)
-
+    total_correct_questions = db.Column(db.Integer, default=0, nullable=False)
+    
     # 累计学习时长（秒）
-    total_listening_duration = db.Column(db.Integer, default=0)
+    total_listening_duration = db.Column(db.Integer, default=0, nullable=False)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
