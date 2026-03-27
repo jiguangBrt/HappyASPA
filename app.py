@@ -66,4 +66,6 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
+    # 设置服务器最大接收体积：16MB (留1MB给文本，5MB图片+10MB语音)
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
     app.run(debug=True)

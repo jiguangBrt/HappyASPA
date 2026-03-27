@@ -4,6 +4,17 @@ from sqlalchemy import func  # <--- 新增：用于统计点赞数
 from datetime import datetime
 from models import db, ForumPost, ForumComment, ForumLike, ForumFavorite, CommentLike, CommentFavorite
 
+import os
+import uuid
+
+# 允许上传的文件后缀白名单
+ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_AUDIO_EXTENSIONS = {'mp3', 'wav', 'ogg', 'm4a'}
+
+def allowed_file(filename, allowed_set):
+    """检查文件后缀是否在白名单内"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_set
+
 # ==========================================
 # 💰 NEW: 每日首次互动金币奖励小助手
 # ==========================================

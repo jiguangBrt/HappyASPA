@@ -136,6 +136,9 @@ class ForumPost(db.Model):
     created_at = db.Column(db.DateTime,    default=datetime.utcnow)
     updated_at = db.Column(db.DateTime,    default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    image_url = db.Column(db.String(256), nullable=True) # 👈 存图片路径
+    audio_url = db.Column(db.String(256), nullable=True) # 👈 存语音路径
+    
     comments  = db.relationship('ForumComment', backref='post', lazy=True, cascade='all, delete-orphan')
     likes     = db.relationship('ForumLike',    backref='post', lazy=True, cascade='all, delete-orphan')
     favorites = db.relationship('ForumFavorite', backref='post', lazy=True, cascade='all, delete-orphan') 
