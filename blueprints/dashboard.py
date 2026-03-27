@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta
 
-from flask import Blueprint, render_template, request, jsonify, abort
+from flask import Blueprint, render_template, request, jsonify, abort, redirect
 from flask_login import login_required, current_user
 from sqlalchemy import func
 from sqlalchemy.exc import OperationalError
@@ -23,7 +23,7 @@ OVERALL_GUIDANCE_CARDS = [
     {
         "key": "teams",
         "title": "How to Use Microsoft Teams",
-        "front": "Using Teams for group communication and attending meetings.",
+        "front": "For group communication and meetings.",
         "back": "Open Teams every day to check announcements, files, and channels. Keep questions and decisions in the channel/chat so you can find them later.",
         "icon": "bi-people",
         "color": "primary",
@@ -31,26 +31,29 @@ OVERALL_GUIDANCE_CARDS = [
     {
         "key": "diicsu",
         "title": "DIICSU Before You Start",
-        "front": "What DIICSU is, where to find it, and what to do first.",
+        "front": "The DIICSU website.",
         "back": "Learn the core tools and expectations in DIICSU before Week 1. This app guides your weekly routine so you arrive prepared and confident.",
         "icon": "bi-building",
         "color": "secondary",
+        "url": "https://dii.csu.edu.cn/EN/ABOUT/Why_DIICSU/Introduction.htm",
     },
     {
         "key": "misconduct",
         "title": "Academic Integrity",
-        "front": "Avoid common mistakes with sources, AI, and collaboration.",
+        "front": "Avoid mistakes with sources and collaboration.",
         "back": "Write in your own words, cite sources, and don’t reuse others’ writing without permission. If you’re unsure what’s allowed, ask before you submit.",
         "icon": "bi-shield-check",
         "color": "danger",
+        "url": "https://www.dundee.ac.uk/corporate-information/code-practice-academic-misconduct-students",
     },
     {
         "key": "focus",
-        "title": "What to Focus On in DIICSU",
-        "front": "A simple priority order for faster progress.",
+        "title": "Academic Skills",
+        "front": "DIICSU focus on skills.",
         "back": "Prioritize listening + speaking every week. Use the forum when you’re stuck, and keep vocabulary practice steady to support both skills.",
         "icon": "bi-bullseye",
         "color": "success",
+        "url": "https://www.dundee.ac.uk/academic-skills",
     },
 ]
 
@@ -211,6 +214,8 @@ def guidance_page(card_key: str):
     )
     if not card:
         abort(404)
+    if card.get("url"):
+        return redirect(card["url"])
     return render_template(f"guidance/{card_key}.html", card=card)
 
 
