@@ -255,6 +255,7 @@ class ListeningExercise(db.Model):
     duration_seconds = db.Column(db.Integer,      nullable=True)
     created_at       = db.Column(db.DateTime,     default=datetime.utcnow)
     subtitle_url     = db.Column(db.String(256),  nullable=True)
+    accent = db.Column(db.String(50), nullable=True)
     questions = db.Column(db.JSON, nullable=True)  
 
     progress = db.relationship('UserListeningProgress', backref='exercise', lazy=True)
