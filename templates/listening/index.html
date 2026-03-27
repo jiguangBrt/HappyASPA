@@ -19,7 +19,25 @@
       <option value="4" {% if current_difficulty==4 %}selected{% endif %}>⭐⭐⭐⭐ 4</option>
       <option value="5" {% if current_difficulty==5 %}selected{% endif %}>⭐⭐⭐⭐⭐ 5</option>
     </select>
-
+    <select name="category" class="form-select w-auto ms-2">
+      <option value="">All Category</option>
+      <option value="Society" {% if current_category=="Society" %}selected{% endif %}>Society</option>
+      <option value="Motivation" {% if current_category=="Motivation" %}selected{% endif %}>Motivation</option>
+      <option value="Science" {% if current_category=="Science" %}selected{% endif %}>Science</option>
+      <option value="Education" {% if current_category=="Education" %}selected{% endif %}>Education</option>
+      <option value="Culture" {% if current_category=="Culture" %}selected{% endif %}>Culture</option>
+      <option value="Politics" {% if current_category=="Politics" %}selected{% endif %}>Politics</option>
+    </select>
+    <select name="accent" class="form-select w-auto ms-2">
+      <option value="">All Accents</option>
+      <option value="British" {% if current_accent=="British" %}selected{% endif %}>British</option>
+      <option value="American" {% if current_accent=="American" %}selected{% endif %}>American</option>
+      <option value="Dutch" {% if current_accent=="Dutch" %}selected{% endif %}>Dutch</option>
+      <option value="Australian" {% if current_accent=="Australian" %}selected{% endif %}>Australian</option>
+      <option value="Chinese" {% if current_accent=="Chinese" %}selected{% endif %}>Chinese</option>
+      <option value="Indian" {% if current_accent=="Indian" %}selected{% endif %}>Indian</option>
+      <option value="Iranian" {% if current_accent=="Iranian" %}selected{% endif %}>Iranian</option>
+    </select>
     <button type="submit" class="btn btn-info ms-2">Filter</button>
   </form>
 </div>
@@ -42,6 +60,9 @@
         <div class="d-flex align-items-center gap-2 mb-3">
           {% if ex.category %}
           <span class="badge bg-info bg-opacity-10 text-info">{{ ex.category }}</span>
+          {% endif %}
+          {% if ex.accent %}
+          <span class="badge bg-info bg-opacity-10 text-info">{{ ex.accent }}</span>
           {% endif %}
           {% if ex.duration_seconds %}
           <small class="text-muted">
