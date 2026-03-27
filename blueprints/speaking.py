@@ -1,8 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, current_app, url_for, redirect, flash
 from flask_login import login_required, current_user
-# 👇 🌟 新增导入了 UserShadowingRecord
 from models import db, UserActivityLog, SpeakingExercise, UserSpeakingSubmission, User, AcademicScenario, UserScenarioSubmission, ShadowingExercise, ShadowingAudio, UserShadowingRecord
-from werkzeug.utils import secure_filename # 👈 🌟 引入用于生成安全文件名的工具
+from werkzeug.utils import secure_filename 
 from flask import send_from_directory
 from datetime import datetime, timezone, timedelta
 import os
@@ -181,28 +180,21 @@ def new_exercise():
             
     return render_template('speaking/new_exercise.html')
 
-# 3. 提供音频文件访问 (支持普通口语、学术情景、跟读练习三张表)
+# 3. 提供音频文件访问
 @speaking_bp.route('/audio/<filename>')
 @login_required
 def get_audio(filename):
-    # 先在普通口语表里找
     submission = UserSpeakingSubmission.query.filter_by(audio_filename=filename).first()
-    
-    # 如果没找到，再去学术情景表里找
     if not submission:
         submission = UserScenarioSubmission.query.filter_by(audio_filename=filename).first()
-        
-    # 🌟 NEW: 如果还没找到，去跟读练习表里找
     if not submission:
         submission = UserShadowingRecord.query.filter_by(audio_path=filename).first()
-        
-    # 如果三张表里都没有，说明有人在乱猜文件名，拒绝访问
     if not submission:
         return "Access denied", 403
         
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
 
-# 4. 上传录音接口
+# 4. 上传录音接口 (修改：仅保存录音，不再自动调用 AI)
 @speaking_bp.route('/upload-audio', methods=['POST'])
 @login_required
 def upload_audio():
@@ -239,27 +231,69 @@ def upload_audio():
                 duration_seconds=float(duration) if duration else 0.0
             )
             db.session.add(submission)
-            db.session.flush()
+            # 直接提交数据库，不再等待 AI 分析
+            db.session.commit() 
             
-            # === AI 自动点评 ===
-            exercise = SpeakingExercise.query.get(exercise_id)
-            ai_result = ai_evaluate_audio(filepath)
-            submission.feedback = ai_result.get('feedback', '')
-            
-            db.session.commit()
             return jsonify({
                 'status': 'success',
-                'message': 'Audio uploaded & evaluated!',
+                'message': 'Audio saved successfully!',
                 'submission_id': submission.id,
-                'filename': filename,
-                'feedback': submission.feedback
+                'filename': filename
             }), 200
         else:
-            return jsonify({'status': 'error', 'message': 'File type not allowed (only mp3/wav/ogg/webm)'}), 400
+            return jsonify({'status': 'error', 'message': 'File type not allowed'}), 400
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Upload audio error: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Server error, please try again'}), 500
+
+# 4.1 🌟 NEW: 专门用于触发 AI 分析的接口
+@speaking_bp.route('/analyze-audio/<int:sub_id>', methods=['POST'])
+@login_required
+def analyze_audio(sub_id):
+    submission = UserSpeakingSubmission.query.get_or_404(sub_id)
+    
+    # 权限校验：只能分析自己的录音
+    if submission.user_id != current_user.id:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+        
+    # 如果已经分析过了，直接返回成功
+    if submission.feedback:
+        return jsonify({'status': 'success', 'message': 'Already analyzed'})
+
+    try:
+        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], submission.audio_filename)
+        if not os.path.exists(filepath):
+            return jsonify({'status': 'error', 'message': 'Audio file not found'}), 404
+            
+        # 调用火山引擎 AI 自动点评
+        ai_result = ai_evaluate_audio(filepath)
+        submission.feedback = ai_result.get('feedback', 'No feedback generated.')
+        
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'AI analysis complete!'})
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"AI analysis error: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'AI Analysis failed. Please try again.'}), 500
+
+# 4.2 🌟 NEW: AI 点评详情页路由
+@speaking_bp.route('/analysis-detail/<int:sub_id>')
+@login_required
+def analysis_detail(sub_id):
+    submission = UserSpeakingSubmission.query.get_or_404(sub_id)
+    exercise = SpeakingExercise.query.get(submission.exercise_id)
+    
+    # 格式化时间
+    utc_time = submission.submitted_at       
+    local_time = utc_time.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+    formatted_time = local_time.strftime('%Y-%m-%d %H:%M')
+    
+    return render_template('speaking/analysis_detail.html', 
+                           submission=submission, 
+                           exercise=exercise,
+                           formatted_time=formatted_time)
 
 # 5. 删除录音记录
 @speaking_bp.route('/delete-submission/<int:sub_id>', methods=['POST'])
@@ -474,7 +508,7 @@ def practice_detail(practice_id):
         'audio': audio_dict
     }
     
-    # 🌟 NEW: 查询该用户在此题目的录音历史
+    # 查询该用户在此题目的录音历史
     records = UserShadowingRecord.query.filter_by(
         user_id=current_user.id, 
         exercise_id=practice_id
@@ -487,13 +521,13 @@ def practice_detail(practice_id):
         history_list.append({
             'id': r.id,
             'attempt': r.attempt_number,
-            'audio_url': url_for('speaking.get_audio', filename=r.audio_path), # 走刚才修改过的 get_audio 路由
+            'audio_url': url_for('speaking.get_audio', filename=r.audio_path),
             'created_at': local_time.strftime("%H:%M:%S")
         })
     
     return render_template('speaking/practice_detail.html', practice=practice_data, history=history_list)
 
-# 13. 🌟 NEW: 上传跟读录音接口
+# 13. 上传跟读录音接口
 @speaking_bp.route('/practice/<int:practice_id>/upload_record', methods=['POST'])
 @login_required
 def upload_shadowing_record(practice_id):
@@ -528,7 +562,7 @@ def upload_shadowing_record(practice_id):
             new_record = UserShadowingRecord(
                 user_id=current_user.id,
                 exercise_id=practice_id,
-                audio_path=filename, # 只存文件名，回放走 get_audio 路由
+                audio_path=filename,
                 attempt_number=next_attempt
             )
             db.session.add(new_record)
@@ -553,7 +587,7 @@ def upload_shadowing_record(practice_id):
         current_app.logger.error(f"Upload shadowing record error: {str(e)}")
         return jsonify({'success': False, 'message': '服务器处理失败'}), 500
 
-# 14. 🌟 NEW: 删除某条跟读录音记录接口
+# 14. 删除某条跟读录音记录接口
 @speaking_bp.route('/delete-shadowing-record/<int:record_id>', methods=['POST'])
 @login_required
 def delete_shadowing_record(record_id):
