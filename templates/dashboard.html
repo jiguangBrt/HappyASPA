@@ -1,10 +1,8 @@
 {% extends 'base.html' %}
 {% block title %}Dashboard{% endblock %}
 
-{% block content %}
-
+{% block head %}
 <style>
-  /* 专属闪亮标签的全局样式 */
   .badge-guide-expert {
     background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%);
     color: #fff;
@@ -19,7 +17,95 @@
     text-shadow: 0 1px 1px rgba(0,0,0,0.2);
     border: 1px solid rgba(255,255,255,0.4);
   }
+
+  .card-hover { transition: transform .15s ease, box-shadow .15s ease; cursor: pointer; }
+  .card-hover:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(5, 10, 20, 0.32) !important; }
+
+  .overall-guidance-right { max-width: 520px; }
+  .overall-guidance-panel {
+    background-image: url("/static/pictures/dashboard-background.png");
+    background-size: cover;
+    background-position: center;
+    border: 1px solid #1E3558;
+  }
+  .overall-guidance-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 360px;
+    overflow-y: auto;
+    padding-right: 6px;
+  }
+  .overall-guidance-list::-webkit-scrollbar { width: 8px; }
+  .overall-guidance-list::-webkit-scrollbar-thumb {
+    background: rgba(18, 53, 107, 0.45);
+    border-radius: 999px;
+  }
+  .overall-guidance-mini-card { flex: 0 0 auto; }
+  .guidance-icon-teams.bg-primary {
+    background: rgba(13, 110, 253, 0.12) !important;
+  }
+
+  .personal-growth-scroller {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+  }
+  .personal-growth-card { flex: 0 0 220px; }
+  .personal-growth-scroller::-webkit-scrollbar { height: 6px; }
+  .personal-growth-scroller::-webkit-scrollbar-thumb {
+    background: rgba(18, 53, 107, 0.45);
+    border-radius: 999px;
+  }
+
+  .calendar-tip {
+    max-width: 980px;
+    background: rgba(18, 53, 107, 0.06);
+    border: 1px solid rgba(18, 53, 107, 0.18);
+    border-radius: 14px;
+    text-align: center;
+  }
+
+  .schedule-calendar { table-layout: fixed; }
+  .schedule-calendar td { height: 88px; padding: 0; cursor: pointer; vertical-align: top; }
+  .schedule-calendar td:hover { background: rgba(18, 53, 107, 0.18); }
+  .schedule-calendar td.is-outside { background: #FFFFFF; color: #FFFFFF; cursor: not-allowed; }
+  .schedule-calendar td.is-outside:hover { background: #FFFFFF; }
+  .schedule-calendar td.is-selected { outline: 2px solid rgba(143, 178, 230, 0.6); outline-offset: -2px; }
+  .schedule-cell { height: 88px; padding: 6px; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+  .schedule-day { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+  .schedule-day .date { font-weight: 700; font-size: .9rem; }
+  .schedule-day .meta { font-size: .75rem; color: #9AA9BF; }
+  .schedule-badges { flex: 1 1 auto; min-height: 0; display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; align-content: flex-start; overflow: hidden; }
+  .schedule-badges .badge {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #FFFFFF !important;
+  }
+  .schedule-badges .badge.bg-info { background: #2B5C9A !important; }
+  .schedule-badges .badge.bg-primary { background: #1F5A3A !important; }
+  .schedule-badges .badge.bg-success { background: #7A2E3A !important; }
+  .schedule-badges .badge.bg-secondary { background: #5A2F7A !important; }
+  .schedule-item--deleted { opacity: .6; text-decoration: line-through; }
+  .schedule-item--draft { background: rgba(18, 53, 107, 0.18); }
+
+  .schedule-reminder {
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 1080;
+    border-radius: 0;
+    margin: 0;
+  }
 </style>
+{% endblock %}
+
+{% block content %}
+
+
 
 <div class="p-4 mb-4 bg-primary text-white rounded-3 shadow-sm d-flex flex-wrap justify-content-between align-items-center gap-3">
   <div class="d-flex align-items-center gap-3">
@@ -223,90 +309,7 @@
 {% endblock %}
 
 {% block scripts %}
-<style>
-  .card-hover { transition: transform .15s ease, box-shadow .15s ease; cursor: pointer; }
-  .card-hover:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(5, 10, 20, 0.32) !important; }
 
-  .overall-guidance-right { max-width: 520px; }
-  .overall-guidance-panel {
-    background-image: url("/static/pictures/dashboard-background.png");
-    background-size: cover;
-    background-position: center;
-    border: 1px solid #1E3558;
-  }
-  .overall-guidance-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    max-height: 360px;
-    overflow-y: auto;
-    padding-right: 6px;
-  }
-  .overall-guidance-list::-webkit-scrollbar { width: 8px; }
-  .overall-guidance-list::-webkit-scrollbar-thumb {
-    background: rgba(18, 53, 107, 0.45);
-    border-radius: 999px;
-  }
-  .overall-guidance-mini-card { flex: 0 0 auto; }
-  .guidance-icon-teams {
-    background: rgba(18, 53, 107, 0.12) !important;
-  }
-
-  .personal-growth-scroller {
-    display: flex;
-    gap: 12px;
-    overflow-x: auto;
-    padding-bottom: 6px;
-  }
-  .personal-growth-card { flex: 0 0 220px; }
-  .personal-growth-scroller::-webkit-scrollbar { height: 6px; }
-  .personal-growth-scroller::-webkit-scrollbar-thumb {
-    background: rgba(18, 53, 107, 0.45);
-    border-radius: 999px;
-  }
-
-  .calendar-tip {
-    max-width: 980px;
-    background: rgba(18, 53, 107, 0.06);
-    border: 1px solid rgba(18, 53, 107, 0.18);
-    border-radius: 14px;
-    text-align: center;
-  }
-
-  .schedule-calendar { table-layout: fixed; }
-  .schedule-calendar td { height: 88px; padding: 0; cursor: pointer; vertical-align: top; }
-  .schedule-calendar td:hover { background: rgba(18, 53, 107, 0.18); }
-  .schedule-calendar td.is-outside { background: #FFFFFF; color: #FFFFFF; cursor: not-allowed; }
-  .schedule-calendar td.is-outside:hover { background: #FFFFFF; }
-  .schedule-calendar td.is-selected { outline: 2px solid rgba(143, 178, 230, 0.6); outline-offset: -2px; }
-  .schedule-cell { height: 88px; padding: 6px; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
-  .schedule-day { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
-  .schedule-day .date { font-weight: 700; font-size: .9rem; }
-  .schedule-day .meta { font-size: .75rem; color: #9AA9BF; }
-  .schedule-badges { flex: 1 1 auto; min-height: 0; display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; align-content: flex-start; overflow: hidden; }
-  .schedule-badges .badge {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: #FFFFFF !important;
-  }
-  .schedule-badges .badge.bg-info { background: #2B5C9A !important; }
-  .schedule-badges .badge.bg-primary { background: #1F5A3A !important; }
-  .schedule-badges .badge.bg-success { background: #7A2E3A !important; }
-  .schedule-badges .badge.bg-secondary { background: #5A2F7A !important; }
-  .schedule-item--deleted { opacity: .6; text-decoration: line-through; }
-  .schedule-item--draft { background: rgba(18, 53, 107, 0.18); }
-
-  .schedule-reminder {
-    position: fixed;
-    left: 0;
-    right: 0;
-    z-index: 1080;
-    border-radius: 0;
-    margin: 0;
-  }
-</style>
 
 <script>
   const calendarStartIso = {{ calendar_start|tojson }};
@@ -316,7 +319,7 @@
   const scheduleTableReady = {{ schedule_table_ready|tojson }};
 
   const scheduleModalEl = document.getElementById('scheduleModal');
-  const scheduleModal = new bootstrap.Modal(scheduleModalEl);
+  const scheduleModal = window.bootstrap ? new bootstrap.Modal(scheduleModalEl) : null;
 
   const scheduleRangeLabel = document.getElementById('scheduleRangeLabel');
   const schedulePrevMonthBtn = document.getElementById('schedulePrevMonthBtn');
@@ -564,7 +567,7 @@
       scheduleAddDraftBtn.disabled = false;
       scheduleSaveBtn.disabled = false;
     }
-    scheduleModal.show();
+    if (scheduleModal) scheduleModal.show();
   }
 
   scheduleKind.addEventListener('change', () => {
@@ -608,7 +611,7 @@
       return;
     }
     if (!pendingAdds.length && !pendingDeletes.size) {
-      scheduleModal.hide();
+      if (scheduleModal) scheduleModal.hide();
       return;
     }
 
@@ -651,7 +654,7 @@
       renderExistingList(selectedDateIso);
       renderCalendar();
       updateTodayReminder();
-      scheduleModal.hide();
+      if (scheduleModal) scheduleModal.hide();
     } catch (err) {
       setError(err?.message || 'Failed to save.');
       renderExistingList(selectedDateIso);

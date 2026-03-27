@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta
 
-from flask import Blueprint, render_template, request, jsonify, abort
+from flask import Blueprint, render_template, request, jsonify, abort, redirect
 from flask_login import login_required, current_user
 from sqlalchemy import func
 from sqlalchemy.exc import OperationalError
@@ -53,6 +53,7 @@ OVERALL_GUIDANCE_CARDS = [
         "back": "Prioritize listening + speaking every week. Use the forum when you’re stuck, and keep vocabulary practice steady to support both skills.",
         "icon": "bi-bullseye",
         "color": "success",
+        "url": "https://www.dundee.ac.uk/academic-skills",
     },
 ]
 
@@ -207,6 +208,8 @@ def guidance_page(card_key: str):
     )
     if not card:
         abort(404)
+    if card.get("url"):
+        return redirect(card["url"])
     return render_template(f"guidance/{card_key}.html", card=card)
 
 
