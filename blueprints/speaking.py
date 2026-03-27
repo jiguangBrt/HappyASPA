@@ -51,6 +51,42 @@ def file_to_base64(file_path):
         base64_data = base64.b64encode(file_data).decode('utf-8')
     return base64_data
 
+
+def build_topic_context_text(topic_context):
+    """将题目上下文规范化为可读文本，供 LLM 结合录音进行点评。"""
+    if not topic_context:
+        return ""
+
+    lines = []
+    if topic_context.get("type"):
+        lines.append(f"Practice type: {topic_context.get('type')}")
+    if topic_context.get("title"):
+        lines.append(f"Title: {topic_context.get('title')}")
+    if topic_context.get("category"):
+        lines.append(f"Category: {topic_context.get('category')}")
+    if topic_context.get("difficulty") is not None:
+        lines.append(f"Difficulty: {topic_context.get('difficulty')}")
+    if topic_context.get("prompt"):
+        lines.append(f"Prompt: {topic_context.get('prompt')}")
+    if topic_context.get("background"):
+        lines.append(f"Background: {topic_context.get('background')}")
+    if topic_context.get("role"):
+        lines.append(f"Role: {topic_context.get('role')}")
+
+    tasks = topic_context.get("tasks")
+    if tasks:
+        if isinstance(tasks, list):
+            task_text = "; ".join(str(t) for t in tasks if t)
+        else:
+            task_text = str(tasks)
+        if task_text:
+            lines.append(f"Required tasks: {task_text}")
+
+    if topic_context.get("reference_material"):
+        lines.append(f"Reference material: {topic_context.get('reference_material')}")
+
+    return "\n".join(lines)
+
 def audio_to_text(tos_public_url):
     print(f"Audio URL for ASR: {tos_public_url}")
     import json
@@ -134,7 +170,7 @@ def audio_to_text(tos_public_url):
 
         time.sleep(1)
 
-def text_evaluation(text):
+def text_evaluation(text, topic_context_text=""):
     print("Evaluating text with AI, input length:", len(text))
     api_key = "31720b1b-57b7-467d-9517-eab3ab9c1ec1"  # TODO: 建议改为配置项
     print('api_key:', api_key)
@@ -154,19 +190,28 @@ def text_evaluation(text):
                         {"type": "input_text", "text": '''  You are a friendly, supportive, and encouraging English speaking coach.
                                                             Your goal is to make students feel motivated, confident, and excited to improve.
 
+                                                            First, tell me what the learner had said in the audio, and what the current topic is. Then, give them specific feedback on their speaking performance, covering these aspects:
                                                             Evaluate their speaking based on:
                                                             - Clarity & pronunciation
                                                             - Fluency & natural rhythm
                                                             - Grammar & vocabulary choice
                                                             - Confidence & emotional delivery
                                                             - How well they express their ideas
+                                                            - How well they stay on topic and address the speaking task
+
+                                                            IMPORTANT:
+                                                            1) If topic context is provided, use it to judge relevance and task completion.
+                                                            2) Mention whether the learner answered the prompt or scenario tasks clearly.
+                                                            3) Keep a warm and encouraging tone.
 
                                                             Please respond:
                                                             1. 🌟 What they did really well (positive, specific, warm)
-                                                            2. 💡 One small, gentle suggestion to improve
+                                                            2. 💡 One or two small, gentle suggestions to improve (include topic relevance if needed)
                                                             3. 💬 A short, encouraging message to keep them practicing
 
-                                                            Use simple, positive, friendly English. Keep it short and supportive.'''},
+                                                            Use simple, positive, friendly English. Keep it short and supportive.
+                                                            Give feedback in plain text only — NO asterisks, NO bullet points, NO hashtags, NO bold, NO markdown symbols of any kind.'''},
+                        {"type": "input_text", "text": f"Topic Context:\n{topic_context_text or 'N/A'}"},
                         {"type": "input_text", "text": text}
                     ]
                 }
@@ -180,7 +225,7 @@ def text_evaluation(text):
     except Exception as e:
         return f"❌ 点评出错：{str(e)}"
 
-def ai_evaluate_audio(tos_public_url):
+def ai_evaluate_audio(tos_public_url, topic_context=None):
     """
     综合调用：音频转文字+AI点评
     现在接收 TOS 公网链接，并把音频特征一起送给豆包点评
@@ -192,9 +237,13 @@ def ai_evaluate_audio(tos_public_url):
     gender = asr_result.get("gender", "unknown")
     emotion = asr_result.get("emotion", "neutral")
     smooth = asr_result.get("smooth", 0.0)
+    topic_context_text = build_topic_context_text(topic_context)
+    print(f"Built topic context text:\n{topic_context_text}")
 
-    # 把音频信息拼到文本前面，让AI一起点评
+    # 把题目上下文+音频分析+转写文本拼接，让 AI 同时判断语言表现与切题度
     input_for_llm = (
+        f"[Topic Context]\n"
+        f"{topic_context_text or 'N/A'}\n\n"
         f"[Audio Analysis]\n"
         f"Gender: {gender}\n"
         f"Emotion: {emotion}\n"
@@ -202,7 +251,7 @@ def ai_evaluate_audio(tos_public_url):
         f"Transcript: {text}"
     )
 
-    feedback = text_evaluation(input_for_llm)
+    feedback = text_evaluation(input_for_llm, topic_context_text)
 
     return {
         "transcript": text,
@@ -331,7 +380,14 @@ def upload_audio():
             db.session.flush()  # 获取ID
             # === AI 自动点评 ===
             exercise = SpeakingExercise.query.get(exercise_id)
-            ai_result = ai_evaluate_audio(tos_url)
+            topic_context = {
+                "type": "English Corner",
+                "title": exercise.title if exercise else "",
+                "category": exercise.category if exercise else "",
+                "difficulty": exercise.difficulty if exercise else None,
+                "prompt": exercise.prompt if exercise else ""
+            }
+            ai_result = ai_evaluate_audio(tos_url, topic_context=topic_context)
             submission.feedback = ai_result.get('feedback', '')
             # 可选：如需评分，可在 text_evaluation 返回结构中解析分数
             db.session.commit()
@@ -491,6 +547,10 @@ def upload_scenario_audio():
         
         if not scenario_id:
             return jsonify({'status': 'error', 'message': 'Invalid scenario ID'}), 400
+
+        scenario = AcademicScenario.query.get(scenario_id)
+        if not scenario:
+            return jsonify({'status': 'error', 'message': 'Scenario not found'}), 404
         
         if file and allowed_file(file.filename):
             ext = file.filename.rsplit('.', 1)[1].lower()
@@ -516,7 +576,17 @@ def upload_scenario_audio():
             db.session.add(new_sub)
             db.session.flush()
             # === AI 自动点评 ===
-            ai_result = ai_evaluate_audio(tos_url)
+            topic_context = {
+                "type": "Academic Scenario",
+                "title": scenario.title,
+                "category": scenario.category,
+                "difficulty": scenario.difficulty,
+                "background": scenario.background,
+                "role": scenario.role,
+                "tasks": scenario.tasks,
+                "reference_material": scenario.reference_material
+            }
+            ai_result = ai_evaluate_audio(tos_url, topic_context=topic_context)
             new_sub.overall_feedback = ai_result.get('feedback', '')
             db.session.commit()
             return jsonify({
