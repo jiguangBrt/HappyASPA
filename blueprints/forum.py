@@ -175,37 +175,79 @@ def new_post():
         title    = request.form.get('title',    '').strip()
         content  = request.form.get('content',  '').strip()
         category = request.form.get('category', '').strip()
-        
-        # 👇 NEW: 抓取用户想发到的板块
         board    = request.form.get('board', 'discussion').strip() 
 
-        # ==========================================
         # 🛡️ THE GUARD (发帖守卫核心逻辑)
-        # ==========================================
         if board == 'guide' and not current_user.is_guide_qualified:
             flash('Post submission failed: Your English score has not yet reached the guideline standard. Please go to your personal center to complete the verification first!', 'danger')
-            # 拦截后，强行把他踢回交流区
             return redirect(url_for('forum.index', board='discussion'))
 
         if not title or not content:
             flash('Title and content are required.', 'danger')
-        else:
-            post = ForumPost(
-                user_id=current_user.id,
-                title=title,
-                content=content,
-                category=category,
-                board=board  # 👇 NEW: 将板块信息正式存入数据库
-            )
-            db.session.add(post)
-            db.session.commit()
+            return redirect(url_for('forum.new_post', board=board))
 
-            # 👇 检查并发放奖励
-            if reward_daily_forum_coin():
-                flash('Post published! 🎉 [Daily First] You earned 1 Coin!', 'success')
+        # ==========================================
+        # 📷🎙️ THE WAREHOUSE (多媒体接收与保存逻辑) - 之前你漏掉了这里！
+        # ==========================================
+        image_url = None
+        audio_url = None
+        
+        # 定义保存路径 (会自动在 static 目录下建文件夹)
+        base_upload_dir = os.path.join('static', 'uploads', 'forum')
+        img_dir = os.path.join(base_upload_dir, 'images')
+        audio_dir = os.path.join(base_upload_dir, 'audio')
+        os.makedirs(img_dir, exist_ok=True)
+        os.makedirs(audio_dir, exist_ok=True)
+
+        # 1. 拦截并处理图片
+        image_file = request.files.get('image')
+        if image_file and image_file.filename != '':
+            if allowed_file(image_file.filename, ALLOWED_IMAGE_EXTENSIONS):
+                # 用 UUID 重命名，防止中文名乱码或文件覆盖
+                ext = image_file.filename.rsplit('.', 1)[1].lower()
+                safe_filename = f"{uuid.uuid4().hex}.{ext}"
+                file_path = os.path.join(img_dir, safe_filename)
+                image_file.save(file_path)
+                image_url = f"/static/uploads/forum/images/{safe_filename}" # 存入数据库的路径
             else:
-                flash('Post created!', 'success')
-            return redirect(url_for('forum.post_detail', post_id=post.id))
+                flash("Invalid image format. Allowed: JPG, PNG, GIF.", "danger")
+                return redirect(request.url)
+
+        # 2. 拦截并处理语音
+        audio_file = request.files.get('audio')
+        if audio_file and audio_file.filename != '':
+            if allowed_file(audio_file.filename, ALLOWED_AUDIO_EXTENSIONS):
+                ext = audio_file.filename.rsplit('.', 1)[1].lower()
+                safe_filename = f"{uuid.uuid4().hex}.{ext}"
+                file_path = os.path.join(audio_dir, safe_filename)
+                audio_file.save(file_path)
+                audio_url = f"/static/uploads/forum/audio/{safe_filename}"
+            else:
+                flash("Invalid audio format. Allowed: MP3, WAV, M4A, OGG.", "danger")
+                return redirect(request.url)
+
+        # ==========================================
+        # 存入数据库
+        # ==========================================
+        post = ForumPost(
+            user_id=current_user.id,
+            title=title,
+            content=content,
+            category=category,
+            board=board,
+            image_url=image_url,  # 👈 这次肯定装上车了！
+            audio_url=audio_url   # 👈 语音也装上车了！
+        )
+        db.session.add(post)
+        db.session.commit()
+
+        # 发放金币奖励
+        if reward_daily_forum_coin():
+            flash('Post published! 🎉 [Daily First] You earned 1 Coin!', 'success')
+        else:
+            flash('Post created!', 'success')
+            
+        return redirect(url_for('forum.post_detail', post_id=post.id))
 
     return render_template('forum/new_post.html', current_board=current_board)
 
