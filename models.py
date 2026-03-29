@@ -47,6 +47,7 @@ class User(UserMixin, db.Model):
     activity_logs       = db.relationship('UserActivityLog',        backref='user',   lazy=True)
     created_flashcards  = db.relationship('Flashcard', backref='creator', lazy=True)
     schedule_items      = db.relationship('UserScheduleItem',       backref='user',   lazy=True)
+    journal_markers     = db.relationship('UserJournalMarker',      backref='user',   lazy=True)
     
     # 关联用户的学术情景录音提交
     scenario_submissions = db.relationship('UserScenarioSubmission', backref='user', lazy=True)
@@ -141,6 +142,9 @@ class ForumPost(db.Model):
     created_at = db.Column(db.DateTime,    default=datetime.utcnow)
     updated_at = db.Column(db.DateTime,    default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    image_url = db.Column(db.String(256), nullable=True) # 👈 存图片路径
+    audio_url = db.Column(db.String(256), nullable=True) # 👈 存语音路径
+    
     comments  = db.relationship('ForumComment', backref='post', lazy=True, cascade='all, delete-orphan')
     likes     = db.relationship('ForumLike',    backref='post', lazy=True, cascade='all, delete-orphan')
     favorites = db.relationship('ForumFavorite', backref='post', lazy=True, cascade='all, delete-orphan') 
@@ -454,3 +458,18 @@ class UserScheduleItem(db.Model):
     title          = db.Column(db.String(200), nullable=False)
     notes          = db.Column(db.Text, nullable=True)
     created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+
+# Dashboard journal markers (custom log)
+class UserJournalMarker(db.Model):
+    __tablename__ = 'user_journal_markers'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    title      = db.Column(db.String(200), nullable=False)
+    kind       = db.Column(db.String(30), default='custom')
+    value      = db.Column(db.Float, nullable=True)
+    unit       = db.Column(db.String(20), nullable=True)
+    notes      = db.Column(db.Text, nullable=True)
+    color      = db.Column(db.String(20), nullable=True)
+    event_date = db.Column(db.Date, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
