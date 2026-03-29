@@ -3,6 +3,8 @@
 
 {% block head %}
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Spectral:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600&display=swap');
+
   .badge-guide-expert {
     background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%);
     color: #fff;
@@ -46,17 +48,133 @@
     background: rgba(13, 110, 253, 0.12) !important;
   }
 
-  .personal-growth-scroller {
-    display: flex;
-    gap: 12px;
-    overflow-x: auto;
-    padding-bottom: 6px;
+  .journey-shell {
+    background: linear-gradient(135deg, #F7FAFF 0%, #EEF4FF 100%);
+    border: 1px solid rgba(30, 64, 122, 0.14);
+    border-radius: 18px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
   }
-  .personal-growth-card { flex: 0 0 220px; }
-  .personal-growth-scroller::-webkit-scrollbar { height: 6px; }
-  .personal-growth-scroller::-webkit-scrollbar-thumb {
-    background: rgba(18, 53, 107, 0.45);
-    border-radius: 999px;
+  .journey-title {
+    font-family: 'Spectral', serif;
+    letter-spacing: .02em;
+  }
+  .journey-meta {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: .85rem;
+    color: #6B7688;
+  }
+  .journey-canvas {
+    position: relative;
+    margin-top: 14px;
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 12px;
+    border: 1px solid rgba(30, 64, 122, 0.1);
+    overflow-x: auto;
+  }
+  .journey-svg {
+    display: block;
+    height: 180px;
+  }
+  .journey-tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid rgba(30, 64, 122, 0.18);
+    box-shadow: 0 10px 24px rgba(10, 20, 40, 0.08);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: .85rem;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity .12s ease, transform .12s ease;
+    min-width: 160px;
+    z-index: 10;
+  }
+  .journey-tooltip.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .journey-tooltip .label {
+    font-weight: 600;
+    color: #101828;
+  }
+  .journey-tooltip .date {
+    font-size: .75rem;
+    color: #6B7688;
+    margin-top: 2px;
+  }
+  .journey-add-btn {
+    position: absolute;
+    right: 18px;
+    top: 24px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid rgba(18, 53, 107, 0.2);
+    background: #FFFFFF;
+    color: #1C4A73;
+    font-size: 1.4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 18px rgba(18, 53, 107, 0.12);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .journey-head {
+    padding-right: 64px;
+  }
+  .journey-add-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(18, 53, 107, 0.16);
+  }
+  .journey-panel {
+    position: absolute;
+    right: 24px;
+    bottom: 24px;
+    width: min(360px, 90%);
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(30, 64, 122, 0.2);
+    border-radius: 18px;
+    box-shadow: 0 18px 40px rgba(10, 20, 40, 0.18);
+    backdrop-filter: blur(12px);
+    padding: 16px 18px;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: transform .2s ease, opacity .2s ease;
+    pointer-events: none;
+  }
+  .journey-panel.is-open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .journey-panel h6 {
+    font-family: 'Spectral', serif;
+    margin-bottom: 6px;
+  }
+  .journey-panel .meta {
+    font-size: .75rem;
+    color: #6B7688;
+  }
+  .journey-panel .value {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    margin: 8px 0;
+  }
+  .journey-panel .notes {
+    font-size: .88rem;
+    color: #1D2939;
+    line-height: 1.5;
+  }
+  .journey-panel .close-btn {
+    border: none;
+    background: transparent;
+    color: #6B7688;
+    font-size: 1.1rem;
   }
 
   .calendar-tip {
@@ -177,44 +295,84 @@
 
 <!-- ── Recent Activity ─────────────────────────────────────────────────── -->
 <h5 class="fw-bold mb-3"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Personal Growth</h5>
-<div class="personal-growth-scroller mb-5">
-  <div class="personal-growth-card">
-    <div class="card border-0 shadow-sm h-100 text-center">
-      <div class="card-body py-3">
-        <div class="display-6 fw-bold">{{ growth_stats.vocab_mastered }}</div>
-        <div class="small text-muted">Words Mastered</div>
-      </div>
+<div class="journey-shell mb-5" id="journeyShell">
+  <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap journey-head">
+    <div>
+      <div class="journey-title fw-semibold">The Minimalist Path</div>
+      <div class="journey-meta">Learning is a journey. Click any marker to open the journal.</div>
+    </div>
+    <div class="journey-meta">Streak: <span class="fw-semibold" id="journeyStreak">{{ streak_count }}</span> day(s)</div>
+  </div>
+
+  <button type="button" class="journey-add-btn" id="journeyAddBtn" aria-label="Add custom log">+</button>
+
+  <div class="journey-canvas" id="journeyCanvas">
+    <svg class="journey-svg" id="journeySvg" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="journey-tooltip" id="journeyTooltip">
+      <div class="label" id="journeyTooltipLabel"></div>
+      <div class="date" id="journeyTooltipDate"></div>
     </div>
   </div>
-  <div class="personal-growth-card">
-    <div class="card border-0 shadow-sm h-100 text-center">
-      <div class="card-body py-3">
-        <div class="display-6 fw-bold">{{ growth_stats.vocab_learning }}</div>
-        <div class="small text-muted">Words Learning</div>
+
+  <div class="journey-panel" id="journeyPanel">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <h6 id="journeyPanelTitle"></h6>
+        <div class="meta" id="journeyPanelDate"></div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-sm btn-outline-primary" id="journeyPanelEdit">Edit</button>
+        <button class="close-btn" id="journeyPanelClose" aria-label="Close journal">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
     </div>
+    <div class="value" id="journeyPanelValue"></div>
+    <div class="notes" id="journeyPanelNotes"></div>
   </div>
-  <div class="personal-growth-card">
-    <div class="card border-0 shadow-sm h-100 text-center">
-      <div class="card-body py-3">
-        <div class="display-6 fw-bold">{{ growth_stats.listening_lecture_count }}</div>
-        <div class="small text-muted">Lectures Listened</div>
+</div>
+
+<div class="modal fade" id="journeyAddModal" tabindex="-1" aria-labelledby="journeyAddModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="journeyAddModalLabel"><i class="bi bi-plus-circle me-2"></i>New Journal Marker</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-    </div>
-  </div>
-  <div class="personal-growth-card">
-    <div class="card border-0 shadow-sm h-100 text-center">
-      <div class="card-body py-3">
-        <div class="display-6 fw-bold">{{ growth_stats.scenario_participations }}</div>
-        <div class="small text-muted">Scenario Participations</div>
+      <div class="modal-body">
+        <div class="mb-2">
+          <label class="form-label small">Title</label>
+          <input type="text" class="form-control" id="journeyInputTitle" placeholder="GMAT Reading Practice">
+        </div>
+        <div class="mb-2">
+          <label class="form-label small">Date</label>
+          <input type="date" class="form-control" id="journeyInputDate">
+        </div>
+        <div class="row g-2">
+          <div class="col-7">
+            <label class="form-label small">Value (optional)</label>
+            <input type="number" class="form-control" id="journeyInputValue" placeholder="45">
+          </div>
+          <div class="col-5">
+            <label class="form-label small">Unit</label>
+            <input type="text" class="form-control" id="journeyInputUnit" placeholder="minutes">
+          </div>
+        </div>
+        <div class="mb-2 mt-2">
+          <label class="form-label small">Color (optional)</label>
+          <input type="color" class="form-control form-control-color" id="journeyInputColor" value="#C89F5B">
+        </div>
+        <div class="mb-2">
+          <label class="form-label small">Notes (Markdown supported)</label>
+          <textarea class="form-control" id="journeyInputNotes" rows="3" placeholder="Short reflections..."></textarea>
+        </div>
+        <div class="text-danger small d-none" id="journeyAddError"></div>
       </div>
-    </div>
-  </div>
-  <div class="personal-growth-card">
-    <div class="card border-0 shadow-sm h-100 text-center">
-      <div class="card-body py-3">
-        <div class="display-6 fw-bold">{{ growth_stats.english_corner_recordings }}</div>
-        <div class="small text-muted">English Corner Recordings</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="journeySaveBtn">
+          <i class="bi bi-check-lg me-1"></i>Save
+        </button>
       </div>
     </div>
   </div>
@@ -317,6 +475,9 @@
   const todaySchedule = {{ today_schedule|tojson }};
   const todayIso = {{ today_iso|tojson }};
   const scheduleTableReady = {{ schedule_table_ready|tojson }};
+  const growthMilestones = {{ growth_milestones|tojson }};
+  const growthCustomLogs = {{ growth_custom_logs|tojson }};
+  const streakCount = {{ streak_count|tojson }};
 
   const scheduleModalEl = document.getElementById('scheduleModal');
   const scheduleModal = window.bootstrap ? new bootstrap.Modal(scheduleModalEl) : null;
@@ -334,12 +495,42 @@
   const scheduleSaveBtn = document.getElementById('scheduleSaveBtn');
   const scheduleAddDraftBtn = document.getElementById('scheduleAddDraftBtn');
 
+  const journeyShell = document.getElementById('journeyShell');
+  const journeyCanvas = document.getElementById('journeyCanvas');
+  const journeySvg = document.getElementById('journeySvg');
+  const journeyTooltip = document.getElementById('journeyTooltip');
+  const journeyTooltipLabel = document.getElementById('journeyTooltipLabel');
+  const journeyTooltipDate = document.getElementById('journeyTooltipDate');
+  const journeyPanel = document.getElementById('journeyPanel');
+  const journeyPanelTitle = document.getElementById('journeyPanelTitle');
+  const journeyPanelDate = document.getElementById('journeyPanelDate');
+  const journeyPanelValue = document.getElementById('journeyPanelValue');
+  const journeyPanelNotes = document.getElementById('journeyPanelNotes');
+  const journeyPanelClose = document.getElementById('journeyPanelClose');
+  const journeyPanelEdit = document.getElementById('journeyPanelEdit');
+  const journeyAddBtn = document.getElementById('journeyAddBtn');
+  const journeyAddModalEl = document.getElementById('journeyAddModal');
+  const journeyAddModalLabel = document.getElementById('journeyAddModalLabel');
+  const journeyInputTitle = document.getElementById('journeyInputTitle');
+  const journeyInputDate = document.getElementById('journeyInputDate');
+  const journeyInputValue = document.getElementById('journeyInputValue');
+  const journeyInputUnit = document.getElementById('journeyInputUnit');
+  const journeyInputColor = document.getElementById('journeyInputColor');
+  const journeyInputNotes = document.getElementById('journeyInputNotes');
+  const journeyAddError = document.getElementById('journeyAddError');
+  const journeySaveBtn = document.getElementById('journeySaveBtn');
+  const journeyStreak = document.getElementById('journeyStreak');
+
   let selectedDateIso = null;
   const itemsByDate = new Map();
   let pendingAdds = [];
   const pendingDeletes = new Set();
   const initialFocus = new Date(`${calendarStartIso}T00:00:00`);
   let viewedMonth = new Date(initialFocus.getFullYear(), initialFocus.getMonth(), 1);
+  let journeyEvents = [];
+  let journeyStreakValue = streakCount;
+  let journeyEditingId = null;
+  let activeJourneyEvent = null;
 
   function pad2(n) { return String(n).padStart(2, '0'); }
   function toIsoDate(d) {
@@ -349,6 +540,328 @@
     const next = new Date(d.getTime());
     next.setDate(next.getDate() + days);
     return next;
+  }
+
+  function formatDisplayDate(iso) {
+    if (!iso) return '';
+    try {
+      return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' })
+        .format(new Date(`${iso}T00:00:00`));
+    } catch (_) {
+      return iso;
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function renderMarkdown(text) {
+    const safe = escapeHtml(text || '');
+    return safe
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/\n/g, '<br>');
+  }
+
+  function calculateLocalStreak(dates) {
+    if (!dates.length) return 0;
+    const set = new Set(dates);
+    let streak = 0;
+    let cursor = new Date(`${todayIso}T00:00:00`);
+    while (set.has(toIsoDate(cursor))) {
+      streak += 1;
+      cursor = addDays(cursor, -1);
+    }
+    return streak;
+  }
+
+  function buildJourneyData() {
+    const custom = (growthCustomLogs || []).map(item => ({
+      id: item.id,
+      title: item.title,
+      kind: item.kind || 'custom',
+      value: typeof item.value === 'number' ? item.value : null,
+      unit: item.unit || '',
+      notes: item.notes || '',
+      color: item.color || '',
+      event_date: item.event_date,
+      created_at: item.created_at || ''
+    }));
+
+    custom.sort((a, b) => {
+      if (a.event_date === b.event_date) return (a.created_at || '').localeCompare(b.created_at || '');
+      return (a.event_date || '').localeCompare(b.event_date || '');
+    });
+
+    const builtIn = (growthMilestones || []).map((item, index) => ({
+      id: `system_${item.key}`,
+      title: item.title,
+      kind: 'system',
+      value: typeof item.value === 'number' ? item.value : Number(item.value || 0),
+      unit: item.unit || '',
+      notes: 'System milestone summary.',
+      color: '#1C4A73',
+      event_date: item.event_date || todayIso,
+      created_at: `${item.event_date || todayIso}T23:59:59`,
+      order: 1000 + index
+    }));
+
+    const combined = custom.concat(builtIn);
+    combined.sort((a, b) => {
+      if (a.event_date === b.event_date) {
+        const ao = a.order || 0;
+        const bo = b.order || 0;
+        if (ao !== bo) return ao - bo;
+        return (a.created_at || '').localeCompare(b.created_at || '');
+      }
+      return (a.event_date || '').localeCompare(b.event_date || '');
+    });
+    return combined;
+  }
+
+  function journeyColorFromStreak(count) {
+    const sat = Math.min(85, 28 + count * 4);
+    return `hsl(210, ${sat}%, 34%)`;
+  }
+
+  function radiusFromValue(value) {
+    if (!value || value <= 0) return 5;
+    const scaled = Math.log10(value + 1);
+    return Math.min(18, 5 + scaled * 6);
+  }
+
+  function renderJourney() {
+    if (!journeyCanvas || !journeySvg) return;
+    journeySvg.innerHTML = '';
+
+    const events = journeyEvents;
+    const height = 180;
+    const midY = 100;
+    const spacing = 140;
+    const padding = 60;
+    const minWidth = journeyCanvas.clientWidth - 24;
+    const width = Math.max(minWidth, padding * 2 + Math.max(0, events.length - 1) * spacing + 120);
+
+    journeySvg.setAttribute('width', width);
+    journeySvg.setAttribute('height', height);
+    journeySvg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+    const ns = 'http://www.w3.org/2000/svg';
+    const path = document.createElementNS(ns, 'path');
+    const pathColor = journeyColorFromStreak(journeyStreakValue);
+    path.setAttribute('d', `M ${padding} ${midY} L ${width - padding} ${midY}`);
+    path.setAttribute('stroke', pathColor);
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-dasharray', `${width}`);
+    path.setAttribute('stroke-dashoffset', `${width}`);
+    journeySvg.appendChild(path);
+
+    requestAnimationFrame(() => {
+      path.style.transition = 'stroke-dashoffset .9s ease';
+      path.style.strokeDashoffset = '0';
+    });
+
+    if (!events.length) {
+      const emptyText = document.createElementNS(ns, 'text');
+      emptyText.textContent = 'Add your first journal marker';
+      emptyText.setAttribute('x', padding);
+      emptyText.setAttribute('y', midY - 12);
+      emptyText.setAttribute('fill', '#6B7688');
+      emptyText.setAttribute('font-size', '12');
+      journeySvg.appendChild(emptyText);
+      return;
+    }
+
+    events.forEach((event, index) => {
+      const x = padding + index * spacing;
+      const isSystem = event.kind === 'system';
+      const markerColor = event.color || (isSystem ? '#1C4A73' : '#C89F5B');
+      const radius = radiusFromValue(event.value);
+      const group = document.createElementNS(ns, 'g');
+      group.setAttribute('data-id', event.id);
+      group.style.cursor = 'pointer';
+
+      if (!isSystem) {
+        const line = document.createElementNS(ns, 'line');
+        const flagOffset = index % 2 === 0 ? -34 : 34;
+        line.setAttribute('x1', x);
+        line.setAttribute('y1', midY);
+        line.setAttribute('x2', x);
+        line.setAttribute('y2', midY + flagOffset);
+        line.setAttribute('stroke', markerColor);
+        line.setAttribute('stroke-width', '2');
+        line.setAttribute('stroke-linecap', 'round');
+        group.appendChild(line);
+
+        const ring = document.createElementNS(ns, 'circle');
+        ring.setAttribute('cx', x);
+        ring.setAttribute('cy', midY + flagOffset);
+        ring.setAttribute('r', radius);
+        ring.setAttribute('fill', '#FFFFFF');
+        ring.setAttribute('stroke', markerColor);
+        ring.setAttribute('stroke-width', '2');
+        group.appendChild(ring);
+      } else {
+        const dot = document.createElementNS(ns, 'circle');
+        dot.setAttribute('cx', x);
+        dot.setAttribute('cy', midY);
+        dot.setAttribute('r', radius);
+        dot.setAttribute('fill', markerColor);
+        dot.setAttribute('opacity', '0.88');
+        group.appendChild(dot);
+      }
+
+      const hit = document.createElementNS(ns, 'circle');
+      hit.setAttribute('cx', x);
+      hit.setAttribute('cy', isSystem ? midY : (midY + (index % 2 === 0 ? -34 : 34)));
+      hit.setAttribute('r', radius + 10);
+      hit.setAttribute('fill', 'transparent');
+      group.appendChild(hit);
+
+      group.addEventListener('mouseenter', (e) => {
+        if (!journeyTooltip) return;
+        journeyTooltipLabel.textContent = event.title;
+        journeyTooltipDate.textContent = formatDisplayDate(event.event_date);
+        journeyTooltip.classList.add('is-visible');
+        positionTooltip(e);
+      });
+      group.addEventListener('mousemove', positionTooltip);
+      group.addEventListener('mouseleave', () => {
+        journeyTooltip?.classList.remove('is-visible');
+      });
+      group.addEventListener('click', () => {
+        openJourneyPanel(event);
+      });
+
+      journeySvg.appendChild(group);
+    });
+  }
+
+  function positionTooltip(e) {
+    if (!journeyTooltip || !journeyCanvas) return;
+    const rect = journeyCanvas.getBoundingClientRect();
+    const left = e.clientX - rect.left + journeyCanvas.scrollLeft + 12;
+    const top = e.clientY - rect.top + journeyCanvas.scrollTop - 12;
+    journeyTooltip.style.left = `${left}px`;
+    journeyTooltip.style.top = `${top}px`;
+  }
+
+  function openJourneyPanel(event) {
+    if (!journeyPanel) return;
+    activeJourneyEvent = event;
+    journeyPanelTitle.textContent = event.title;
+    journeyPanelDate.textContent = formatDisplayDate(event.event_date);
+    if (event.value !== null && event.value !== undefined && event.value !== '') {
+      journeyPanelValue.textContent = `${event.value}${event.unit ? ' ' + event.unit : ''}`;
+    } else {
+      journeyPanelValue.textContent = 'No value provided';
+    }
+    const notes = event.notes ? renderMarkdown(event.notes) : 'No notes yet.';
+    journeyPanelNotes.innerHTML = notes;
+    if (journeyPanelEdit) {
+      journeyPanelEdit.classList.toggle('d-none', event.kind === 'system');
+    }
+    journeyPanel.classList.add('is-open');
+  }
+
+  function setJourneyError(msg) {
+    if (!journeyAddError) return;
+    if (!msg) {
+      journeyAddError.classList.add('d-none');
+      journeyAddError.textContent = '';
+      return;
+    }
+    journeyAddError.classList.remove('d-none');
+    journeyAddError.textContent = msg;
+  }
+
+  function openJourneyModal(mode, event = null) {
+    if (!journeyAddModalEl) return;
+    journeyEditingId = mode === 'edit' && event ? event.id : null;
+    if (journeyAddModalLabel) {
+      journeyAddModalLabel.textContent = mode === 'edit' ? 'Edit Journal Marker' : 'New Journal Marker';
+    }
+    if (journeyInputTitle) journeyInputTitle.value = event?.title || '';
+    if (journeyInputDate) journeyInputDate.value = event?.event_date || todayIso;
+    if (journeyInputValue) journeyInputValue.value = event?.value ?? '';
+    if (journeyInputUnit) journeyInputUnit.value = event?.unit || '';
+    if (journeyInputColor) journeyInputColor.value = event?.color || '#C89F5B';
+    if (journeyInputNotes) journeyInputNotes.value = event?.notes || '';
+    setJourneyError('');
+    if (window.bootstrap) {
+      bootstrap.Modal.getOrCreateInstance(journeyAddModalEl).show();
+    }
+  }
+
+  async function saveJourneyLog() {
+    if (!journeyInputTitle || !journeyInputDate) return;
+    const title = journeyInputTitle.value.trim();
+    const eventDate = journeyInputDate.value;
+    const value = journeyInputValue?.value ?? '';
+    const unit = journeyInputUnit?.value?.trim() ?? '';
+    const color = journeyInputColor?.value ?? '';
+    const notes = journeyInputNotes?.value ?? '';
+
+    if (!title) {
+      setJourneyError('Title is required.');
+      return;
+    }
+    if (!eventDate) {
+      setJourneyError('Date is required.');
+      return;
+    }
+
+    journeySaveBtn.disabled = true;
+    setJourneyError('');
+
+    try {
+      const isEdit = !!journeyEditingId;
+      const targetUrl = isEdit ? `/growth/logs/${journeyEditingId}` : '/growth/logs';
+      const resp = await fetch(targetUrl, {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          event_date: eventDate,
+          kind: 'custom',
+          value: value === '' ? null : value,
+          unit,
+          color,
+          notes
+        })
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data.error || 'Failed to save.');
+
+      if (isEdit) {
+        const index = growthCustomLogs.findIndex(item => item.id === data.id);
+        if (index >= 0) growthCustomLogs[index] = data;
+      } else {
+        growthCustomLogs.push(data);
+      }
+      journeyEvents = buildJourneyData();
+      journeyStreakValue = calculateLocalStreak(growthCustomLogs.map(item => item.event_date));
+      if (journeyStreak) journeyStreak.textContent = journeyStreakValue;
+      renderJourney();
+
+      journeyEditingId = null;
+      if (journeyAddModalEl && window.bootstrap) {
+        bootstrap.Modal.getOrCreateInstance(journeyAddModalEl).hide();
+      }
+    } catch (err) {
+      setJourneyError(err?.message || 'Failed to save.');
+    } finally {
+      journeySaveBtn.disabled = false;
+    }
   }
   function formatRange(start, end) {
     return `${start.getFullYear()}-${pad2(start.getMonth() + 1)}-${pad2(start.getDate())} → ${end.getFullYear()}-${pad2(end.getMonth() + 1)}-${pad2(end.getDate())} (4×7)`;
@@ -719,6 +1232,42 @@
   indexItems(scheduleItems);
   renderCalendar();
   updateTodayReminder();
+
+  if (journeyShell) {
+    journeyEvents = buildJourneyData();
+    renderJourney();
+    window.addEventListener('resize', renderJourney);
+
+    if (journeyPanelClose) {
+      journeyPanelClose.addEventListener('click', () => {
+        journeyPanel?.classList.remove('is-open');
+      });
+    }
+
+    if (journeyAddBtn) {
+      journeyAddBtn.addEventListener('click', () => {
+        openJourneyModal('create');
+      });
+    }
+
+    if (journeySaveBtn) {
+      journeySaveBtn.addEventListener('click', saveJourneyLog);
+    }
+
+    if (journeyPanelEdit) {
+      journeyPanelEdit.addEventListener('click', () => {
+        if (activeJourneyEvent && activeJourneyEvent.kind !== 'system') {
+          openJourneyModal('edit', activeJourneyEvent);
+        }
+      });
+    }
+
+    journeyAddModalEl?.addEventListener('hidden.bs.modal', () => {
+      journeyEditingId = null;
+      if (journeyAddModalLabel) journeyAddModalLabel.textContent = 'New Journal Marker';
+      setJourneyError('');
+    });
+  }
 
   // ==========================================
   // 💰 每日签到 API 调用逻辑

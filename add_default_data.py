@@ -1,8 +1,14 @@
 """
 Flask CLI 命令：向数据库填充或更新默认初始数据（支持更新新增列）
-
-使用方法（在激活了虚拟环境的终端中运行）：
+数据库同步:
+flask db upgrade
+数据库修改:创建迁移脚本
+flask db migrate -m "add_new_table"
+添加默认数据：
     flask add-default-data
+整合数据库多个头部:
+flask db merge heads -m "Merge database branches"
+  然后执行:flask db upgrade
 """
 
 import click
