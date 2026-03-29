@@ -186,17 +186,11 @@ def index():
         .scalar()
         or 0
     )
-    listening_lecture_count = (
-        db.session.query(
-            func.coalesce(
-                func.sum(func.coalesce(UserListeningProgress.two_thirds_count, 0)), 0
-            )
-        )
-        .filter(UserListeningProgress.user_id == current_user.id)
-        .scalar()
-        or 0
-    )
+# === 结合了 fix_Question_perform 的容错机制和 main 的新增统计维度 ===
+    listening_lecture_count = 0
+    listening_question_count = 0
 
+    # 从 main 分支保留下来的：统计听力尝试总次数
     listening_attempts = (
         db.session.query(
             func.coalesce(func.sum(func.coalesce(UserListeningProgress.attempts, 0)), 0)
@@ -206,14 +200,23 @@ def index():
         or 0
     )
 
-    listening_progress_rows = (
-        UserListeningProgress.query.filter(
-            UserListeningProgress.user_id == current_user.id
-        ).all()
-    )
-    listening_question_count = 0
-    for row in listening_progress_rows:
-        answers = row.answers
+    # 遍历所有进度条目，同时计算 lecture_count 和 question_count
+    progresses = UserListeningProgress.query.filter_by(user_id=current_user.id).all()
+    for prog in progresses:
+        # 1. 来自 fix_Question_perform: 安全地处理可能损坏的JSON数据并计算 lecture_count
+        try:
+            if prog.permanent_correct and isinstance(prog.permanent_correct, list):
+                listening_lecture_count += len(prog.permanent_correct)
+        except (UnicodeDecodeError, ValueError, TypeError) as e:
+            # 如果数据损坏，重置为默认值
+            print(f"WARNING: Corrupted data in progress {prog.id}: {e}")
+            prog.permanent_correct = []
+            prog.permanent_answered = []
+            db.session.commit()
+            print(f"Fixed corrupted data for progress {prog.id}")
+        
+        # 2. 来自 main: 计算 listening_question_count
+        answers = prog.answers
         if isinstance(answers, list):
             listening_question_count += len(answers)
         elif isinstance(answers, dict):
