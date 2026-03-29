@@ -86,10 +86,37 @@
         <h3 class="fw-bold mb-2">Excellent!</h3>
         <p class="text-muted mb-4">You've learned 5 words. Keep up the great work!</p>
         <div class="d-flex justify-content-center gap-3">
-          <button class="btn btn-primary px-4" id="continueLearningBtn" data-bs-dismiss="modal">Continue Learning</button>
+  <!-- 拼写 -->
+          <button class="btn btn-primary px-4" id="startSpellingBtn">Start Spelling</button>
+
+  <!-- 跳过继续 -->
+          <button class="btn btn-secondary px-4" id="skipContinueBtn">Skip & Continue</button>
+
+  <!-- 跳过休息 -->
           <button class="btn btn-outline-secondary px-4" id="takeBreakBtn">Take a break</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal fade" id="errorModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center p-4">
+      <h4 class="text-danger mb-3">❌ Wrong</h4>
+      <p id="errorText"></p>
+      <button class="btn btn-danger mt-3" data-bs-dismiss="modal">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="finishModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center p-4">
+      <h4 class="text-success mb-3">🎉 Completed!</h4>
+      <p>You finished this round of spelling!</p>
+      <button class="btn btn-success mt-3" id="finishConfirmBtn">Continue</button>
     </div>
   </div>
 </div>
@@ -110,21 +137,23 @@
 
   // 状态变量
   let currentCategory = null;
+  let currentBatch = [];     // ⭐ 当前5个词
+  let spellingMode = false;  // ⭐ 是否拼写模式
+  let spellingIndex = 0;     // ⭐ 拼写进度
   let currentWordId = null;
   let currentMeaning = '';
   let tempChoice = null; // true=认识, false=不认识
   let wordsReviewedCount = 0; // 当前词书学习会话中已背诵的单词数
-
+  let knownBtn = document.getElementById('knownBtn');
+  let unknownBtn = document.getElementById('unknownBtn');
+  let nextBtn = document.getElementById('nextBtn');
+  let mistakeBtn = document.getElementById('mistakeBtn');
   // DOM 元素
   const categoryGrid = document.getElementById('categoryGrid');
   const learningSection = document.getElementById('learningSection');
   const categorySection = document.getElementById('categorySection');
   const currentCategoryName = document.getElementById('currentCategoryName');
   const wordDisplay = document.getElementById('wordDisplay');
-  const knownBtn = document.getElementById('knownBtn');
-  const unknownBtn = document.getElementById('unknownBtn');
-  const nextBtn = document.getElementById('nextBtn');
-  const mistakeBtn = document.getElementById('mistakeBtn');
   const backBtn = document.getElementById('backToCategoriesBtn');
   const loader = document.getElementById('loader');
   const errorMsg = document.getElementById('errorMsg');
@@ -135,7 +164,10 @@
 
   // 弹窗元素
   const encouragementModal = new bootstrap.Modal(document.getElementById('encouragementModal'));
-  const continueBtn = document.getElementById('continueLearningBtn');
+  const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+  const finishModal = new bootstrap.Modal(document.getElementById('finishModal'));
+  const startSpellingBtn = document.getElementById('startSpellingBtn');
+  const skipContinueBtn = document.getElementById('skipContinueBtn');
   const breakBtn = document.getElementById('takeBreakBtn');
 
   // 初始化：加载分类列表
@@ -226,6 +258,7 @@
 
   // 加载下一个单词
   async function loadNextWord() {
+    if (spellingMode) return;
     if (!currentCategory) return;
 
     showLoader(true);
@@ -277,36 +310,48 @@
   }
 
   // 最终提交记录
-  async function submitFinal(known) {
-    setAllButtonsDisabled(true);
-    showLoader(true);
-    clearError();
+  // 最终提交记录
+async function submitFinal(known) {
+  setAllButtonsDisabled(true);
+  showLoader(true);
+  clearError();
 
-    try {
-      const response = await fetch('/vocabulary/api/record', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ word_id: currentWordId, known: known })
-      });
-      if (!response.ok) throw new Error('提交失败');
+  try {
+    const response = await fetch('/vocabulary/api/record', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ word_id: currentWordId, known: known })
+    });
+    if (!response.ok) throw new Error('提交失败');
 
-      // 增加已背诵单词计数
-      wordsReviewedCount++;
-
-      // 检查是否达到5的倍数，达到则显示弹窗
-      if (wordsReviewedCount % 5 === 0) {
-        encouragementModal.show();
-      }
-
-      await loadNextWord();
-    } catch (error) {
-      showError(error.message);
-      resetButtons();
-      setAllButtonsDisabled(false);
-    } finally {
-      showLoader(false);
+    // 只有 Known 按钮才增加已背诵单词计数
+    if (known) {
+      wordsReviewedCount++; // 只在已知时计数
     }
+
+    // 记录这5个词
+    if (known) {
+      currentBatch.push({
+        id: currentWordId,
+        word: wordDisplay.innerText,
+        meaning: currentMeaning 
+      });
+    }
+
+    // 检查是否达到5个已知词，达到则显示弹窗
+   if (known && wordsReviewedCount % 5 === 0) {
+  encouragementModal.show();
+}
+
+    await loadNextWord();
+  } catch (error) {
+    showError(error.message);
+    resetButtons();
+    setAllButtonsDisabled(false);
+  } finally {
+    showLoader(false);
   }
+}
 
   // 控制所有按钮禁用状态
   function setAllButtonsDisabled(disabled) {
@@ -345,16 +390,114 @@
 
   backBtn.addEventListener('click', backToCategories);
 
-  // 弹窗按钮事件
-  continueBtn.addEventListener('click', () => {
-    // 继续学习，无需额外操作，模态框关闭后继续当前单词（已加载下一个）
-  });
+  document.getElementById('finishConfirmBtn').addEventListener('click', () => {
+  finishModal.hide();
+  loadNextWord(); // ✅ 在这里继续
+});
+  // ⭐ 1️⃣ 拼写
+startSpellingBtn.addEventListener('click', () => {
+  encouragementModal.hide();
+  startSpelling();
+});
 
-  breakBtn.addEventListener('click', () => {
-    encouragementModal.hide(); // 隐藏模态框
-    backToCategories(); // 返回分类选择
-  });
+// ⭐ 2️⃣ 跳过继续
+skipContinueBtn.addEventListener('click', () => {
+  encouragementModal.hide();
+  currentBatch = []; // 清空这5个词
+});
 
+// ⭐ 3️⃣ 跳过休息（你原来的）
+breakBtn.addEventListener('click', () => {
+  encouragementModal.hide();
+  currentBatch = [];
+  backToCategories();
+});
+
+  function startSpelling() {
+    spellingMode = true;
+    spellingIndex = 0;
+    showSpellingWord();
+  }
+
+  function showSpellingWord() {
+  const current = currentBatch[spellingIndex];
+
+  wordDisplay.innerText = "Spell this word"; // 显示拼写提示
+  meaningText.innerText = current.meaning;   // 显示中文释义
+  meaningContainer.style.display = 'block';
+
+  renderInputBox(current.word);
+}
+
+  function renderInputBox(correctWord) {
+  const container = document.getElementById('buttonContainer');
+
+  container.innerHTML = `
+    <input id="spellInput" class="form-control w-50 mx-auto" placeholder="Type here"/>
+    <button class="btn btn-primary mt-2" onclick="checkSpelling('${correctWord}')">Submit</button>
+  `;
+}
+
+function checkSpelling(correctWord) {
+  const input = document.getElementById('spellInput').value.trim();
+
+  if (input.toLowerCase() === correctWord.toLowerCase()) {
+    spellingIndex++;
+
+    if (spellingIndex >= currentBatch.length) {
+      finishSpelling();
+    } else {
+      showSpellingWord();
+    }
+
+  } else {
+    document.getElementById('errorText').innerText = `Correct answer: ${correctWord}`;
+    errorModal.show();
+  }
+}
+
+function finishSpelling() {
+ finishModal.show();
+
+  spellingMode = false;
+  currentBatch = [];
+
+  tempChoice = null;              // ⭐ 重置选择状态
+  meaningContainer.style.display = 'none'; // ⭐ 隐藏释义
+
+  restoreButtons();               // ⭐ 恢复按钮
+  resetButtons();
+  setAllButtonsDisabled(false);   // ⭐ 解锁按钮
+
+}
+function restoreButtons() {
+  const container = document.getElementById('buttonContainer');
+
+  container.innerHTML = `
+    <button class="btn btn-success btn-lg" id="knownBtn">Known</button>
+    <button class="btn btn-danger btn-lg" id="unknownBtn">Unknown</button>
+    <button class="btn btn-primary btn-lg" id="nextBtn" style="display:none;">Next</button>
+    <button class="btn btn-warning btn-lg" id="mistakeBtn" style="display:none;">Mistake</button>
+  `;
+
+  // ⭐ 覆盖全局变量（关键！！！）
+  knownBtn = document.getElementById('knownBtn');
+  unknownBtn = document.getElementById('unknownBtn');
+  nextBtn = document.getElementById('nextBtn');
+  mistakeBtn = document.getElementById('mistakeBtn');
+
+  // ⭐ 重新绑定事件
+  knownBtn.addEventListener('click', () => handleChoice(true));
+unknownBtn.addEventListener('click', () => handleChoice(false));
+
+nextBtn.addEventListener('click', () => {
+  if (tempChoice !== null) submitFinal(tempChoice);
+});
+
+mistakeBtn.addEventListener('click', () => {
+  submitFinal(false);
+});
+}
   // 页面加载
   loadCategories();
 </script>

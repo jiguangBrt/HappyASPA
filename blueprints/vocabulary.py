@@ -53,8 +53,26 @@ def next_word():
         return jsonify({'error': 'Category not found'}), 404
 
     # 随机选择一个单词
-    word = random.choice(words)
+    # 获取当前分类下所有单词
+    words = VocabularyWord.query.filter_by(category=category).all()
 
+    available_words = []
+
+# 筛选未掌握的单词
+    for word in words:
+        progress = UserVocabularyProgress.query.filter_by(
+            user_id=current_user.id, word_id=word.id
+        ).first()
+
+        if not progress or progress.status != 'mastered':
+            available_words.append(word)
+
+# 全部学完则复习所有单词
+    if not available_words:
+        available_words = words
+
+# 随机选择一个单词
+    word = random.choice(available_words)
     progress = UserVocabularyProgress.query.filter_by(
         user_id=current_user.id, word_id=word.id
     ).first()
