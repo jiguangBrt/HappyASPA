@@ -33,3 +33,4 @@ typing_extensions==4.15.0
 urllib3==2.6.3
 volcengine-python-sdk==5.0.17
 Werkzeug==3.0.3
+tos==2.9.0
