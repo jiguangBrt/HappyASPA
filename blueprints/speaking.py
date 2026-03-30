@@ -153,10 +153,17 @@ def audio_to_text(tos_public_url):
                 print("⚠️ 识别结果中没有utterances字段或为空")
                 return {"text": "无识别结果", "gender": "", "emotion": "", "smooth": 0}
 
-            utt = utterances[0]
-            additions = utt.get('additions', {})
+            full_text = " ".join(
+                u.get('text', '').strip() for u in utterances if u.get('text')
+            ).strip()
+
+            # 兼容不同返回结构：优先取汇总特征，其次取最后一个分段特征
+            result_additions = result_json.get('result', {}).get('additions', {})
+            last_additions = utterances[-1].get('additions', {}) if utterances else {}
+            additions = result_additions or last_additions
+
             return {
-                "text": utt.get('text', ''),
+                "text": full_text,
                 "gender": additions.get('gender', 'unknown'),
                 "emotion": additions.get('emotion', 'neutral'),
                 "smooth": additions.get('smooth_score', 0.0)
