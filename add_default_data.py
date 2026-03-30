@@ -18,9 +18,10 @@ from flask.cli import with_appcontext
 
 # 👇 确保导入了所有需要的模型，包括新增的 ShadowingExercise 和 ShadowingAudio
 from models import (
-    db, ListeningExercise, SpeakingExercise, VocabularyWord, 
-    AcademicScenario, User, ForumPost, ForumComment, 
-    ForumLike, ForumFavorite, ShadowingExercise, ShadowingAudio
+    db, ListeningExercise, SpeakingExercise, VocabularyWord,
+    AcademicScenario, User, ForumPost, ForumComment,
+    ForumLike, ForumFavorite, ShadowingExercise, ShadowingAudio,
+    LandType, SeedType, FruitType, OrchardItem
 )
 
 @click.command(name='add-default-data')
@@ -919,6 +920,63 @@ def add_default_data():
             print(f"  ✅ 已发布干货贴：{data['category']} - {data['title'][:20]}... (获赞:{data['likes']}, 收藏:{data['favorites']})")
         else:
              print(f"  ⏭️ 帖子已存在，跳过：{data['title'][:20]}...")
+
+    # ─────────────────────────────────────────────
+    # 6. Orchard Default Data (我的家园)
+    # ─────────────────────────────────────────────
+    print("🍎 正在导入我的家园默认数据...")
+    
+    # Land Types
+    land_types = [
+        {'name': 'Common Dirt', 'name_en': 'Common Dirt', 'description': 'Basic land for planting.', 'growth_reduction': 0.0, 'rare_boost': 0.0, 'upgrade_cost': 0, 'level': 1},
+        {'name': 'Red Soil', 'name_en': 'Red Soil', 'description': 'Better soil, slightly faster growth.', 'growth_reduction': 0.2, 'rare_boost': 0.05, 'upgrade_cost': 500, 'level': 2},
+        {'name': 'Black Earth', 'name_en': 'Black Earth', 'description': 'Premium soil, high chance of rare fruits.', 'growth_reduction': 0.5, 'rare_boost': 0.15, 'upgrade_cost': 1500, 'level': 3}
+    ]
+    for data in land_types:
+        if not LandType.query.filter_by(name=data['name']).first():
+            db.session.add(LandType(**data))
+            
+    # Fruit Types
+    fruit_types = [
+        {'name': 'Apple of Knowledge', 'name_en': 'Apple of Knowledge', 'description': 'A basic fruit representing fundamental learning.', 'rarity': 'N', 'points': 10, 'icon': '🍎'},
+        {'name': 'Scholar\'s Pear', 'name_en': 'Scholar\'s Pear', 'description': 'A sweet reward for consistent study.', 'rarity': 'R', 'points': 30, 'icon': '🍐'},
+        {'name': 'Wisdom Peach', 'name_en': 'Wisdom Peach', 'description': 'A rare fruit that grants deep insights.', 'rarity': 'SR', 'points': 100, 'icon': '🍑'},
+        {'name': 'Golden Brain Melon', 'name_en': 'Golden Brain Melon', 'description': 'A legendary fruit of ultimate academic achievement.', 'rarity': 'SSR', 'points': 500, 'icon': '🍈'}
+    ]
+    
+    # We need to create seeds first because FruitType has a foreign key to SeedType
+    seed_types = [
+        {'name': 'Apple Seed', 'name_en': 'Apple Seed', 'description': 'Grows into an Apple of Knowledge.', 'growth_hours': 4, 'price': 50},
+        {'name': 'Pear Seed', 'name_en': 'Pear Seed', 'description': 'Grows into a Scholar\'s Pear.', 'growth_hours': 8, 'price': 120},
+        {'name': 'Mystery Seed', 'name_en': 'Mystery Seed', 'description': 'Could grow into anything! High chance of rare fruits.', 'growth_hours': 12, 'price': 300, 'is_mystery': True}
+    ]
+    for data in seed_types:
+        if not SeedType.query.filter_by(name=data['name']).first():
+            db.session.add(SeedType(**data))
+    db.session.flush()
+    
+    apple_seed = SeedType.query.filter_by(name='Apple Seed').first()
+    pear_seed = SeedType.query.filter_by(name='Pear Seed').first()
+    mystery_seed = SeedType.query.filter_by(name='Mystery Seed').first()
+
+    for data in fruit_types:
+        if not FruitType.query.filter_by(name=data['name']).first():
+            if data['name'] == 'Apple of Knowledge':
+                data['seed_type_id'] = apple_seed.id
+            elif data['name'] == 'Scholar\'s Pear':
+                data['seed_type_id'] = pear_seed.id
+            else:
+                data['seed_type_id'] = mystery_seed.id
+            db.session.add(FruitType(**data))
+            
+    # Items
+    items = [
+        {'name': 'Time Fertilizer', 'name_en': 'Time Fertilizer', 'description': 'Reduces growth time by 2 hours.', 'item_type': 'fertilizer', 'effect_value': 2.0, 'price': 100},
+        {'name': 'Super Fertilizer', 'name_en': 'Super Fertilizer', 'description': 'Reduces growth time by 6 hours.', 'item_type': 'fertilizer', 'effect_value': 6.0, 'price': 250}
+    ]
+    for data in items:
+        if not OrchardItem.query.filter_by(name=data['name']).first():
+            db.session.add(OrchardItem(**data))
 
     # ─────────────────────────────────────────────
     # 提交更改

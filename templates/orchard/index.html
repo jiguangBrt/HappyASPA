@@ -1,0 +1,522 @@
+{% extends "base.html" %}
+
+{% block title %}My Orchard - HappyASPA{% endblock %}
+
+{% block head %}
+<style>
+  .orchard-header {
+    background: linear-gradient(135deg, #1e4a78 0%, #12356b 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--app-shadow);
+  }
+  
+  .showcase-container {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    min-height: 150px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .fruit-item {
+    width: 80px;
+    height: 80px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2.5rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: transform 0.2s;
+    position: relative;
+  }
+  
+  .fruit-item:hover {
+    transform: scale(1.1);
+  }
+  
+  .fruit-ssr { border: 3px solid #ffd700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
+  .fruit-sr { border: 3px solid #c0c0c0; }
+  .fruit-r { border: 3px solid #cd7f32; }
+  .fruit-n { border: 1px solid #dee2e6; }
+  
+  .farmland-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .land-plot {
+    background: #8b5a2b;
+    border-radius: 8px;
+    height: 150px;
+    position: relative;
+    cursor: pointer;
+    transition: filter 0.2s;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    padding-bottom: 10px;
+    border: 4px solid #654321;
+  }
+  
+  .land-plot:hover {
+    filter: brightness(1.1);
+  }
+  
+  .land-plot.empty::after {
+    content: '+';
+    font-size: 3rem;
+    color: rgba(255,255,255,0.3);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  
+  .plant-sprite {
+    font-size: 4rem;
+    line-height: 1;
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  @keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+  }
+  
+  .progress-container {
+    width: 80%;
+    background: rgba(0,0,0,0.5);
+    border-radius: 10px;
+    height: 8px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+  
+  .progress-bar-custom {
+    height: 100%;
+    background: #4caf50;
+    width: 0%;
+    transition: width 1s linear;
+  }
+  
+  .leaderboard-card {
+    border-radius: 12px;
+    box-shadow: var(--app-shadow);
+    overflow: hidden;
+  }
+  
+  .rank-1 { color: #ffd700; font-weight: bold; }
+  .rank-2 { color: #c0c0c0; font-weight: bold; }
+  .rank-3 { color: #cd7f32; font-weight: bold; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="orchard-header d-flex justify-content-between align-items-center">
+  <div>
+    <h1 class="mb-1"><i class="bi bi-tree-fill me-2"></i>My Academic Orchard</h1>
+    <p class="mb-0 opacity-75">Plant seeds of knowledge, harvest fruits of success.</p>
+  </div>
+  <div class="text-end">
+    <div class="fs-4 fw-bold mb-2">
+      <i class="bi bi-coin text-warning me-1"></i> {{ current_user.coins | default(0) }} Coins
+    </div>
+    <button class="btn btn-light text-primary fw-bold" data-bs-toggle="modal" data-bs-target="#shopModal">
+      <i class="bi bi-shop me-1"></i> Farm Shop
+    </button>
+    <button class="btn btn-outline-light ms-2" data-bs-toggle="modal" data-bs-target="#inventoryModal">
+      <i class="bi bi-box-seam me-1"></i> Inventory
+    </button>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-8">
+    <!-- Module 1: Fruit Showcase -->
+    <div class="card mb-4">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-trophy text-warning me-2"></i>Trophy Room</h5>
+        <span class="badge bg-primary rounded-pill">{{ showcase_fruits|length }} Fruits</span>
+      </div>
+      <div class="card-body">
+        <div class="showcase-container">
+          {% if showcase_fruits %}
+            {% for fruit in showcase_fruits %}
+              <div class="fruit-item fruit-{{ fruit.fruit_type.rarity|lower }}" 
+                   data-bs-toggle="tooltip" data-bs-html="true"
+                   title="<b>{{ fruit.fruit_type.name }}</b><br>Rarity: {{ fruit.fruit_type.rarity }}<br>Harvested: {{ fruit.harvested_at.strftime('%Y-%m-%d') }}<br><i>{{ fruit.fruit_type.description }}</i>">
+                {{ fruit.fruit_type.image_url | default('🍎') }}
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="text-muted text-center w-100">
+              <i class="bi bi-info-circle me-1"></i> Your showcase is empty. Plant seeds to harvest rare fruits!
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Module 2: Knowledge Farmland -->
+    <div class="card mb-4">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-flower1 text-success me-2"></i>Knowledge Farmland</h5>
+        <button class="btn btn-sm btn-outline-primary" onclick="location.reload()">
+          <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+      </div>
+      <div class="card-body">
+        <div class="farmland-grid">
+          {% for land in user_lands %}
+            {% if land.status == 'empty' %}
+              <div class="land-plot empty" onclick="openPlantModal({{ land.id }})">
+                <div class="text-white-50 small mt-auto mb-1">{{ land.land_type.name }}</div>
+              </div>
+            {% elif land.status == 'growing' %}
+              <div class="land-plot" onclick="openAccelerateModal({{ land.id }})">
+                <div class="plant-sprite">🌱</div>
+                <div class="progress-container">
+                  <div class="progress-bar-custom" id="progress-{{ land.id }}" data-start="{{ land.planted_at.timestamp() }}" data-end="{{ land.expected_harvest_time.timestamp() }}"></div>
+                </div>
+                <div class="text-white small mt-1" id="timer-{{ land.id }}">Calculating...</div>
+              </div>
+            {% elif land.status == 'mature' %}
+              <div class="land-plot" onclick="harvest({{ land.id }})">
+                <div class="plant-sprite">{{ land.seed_type.fruit_type.image_url | default('🍎') }}</div>
+                <div class="badge bg-success mt-2 mb-1">Ready!</div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <!-- Module 3: Harvest Leaderboard -->
+    <div class="card leaderboard-card">
+      <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Harvest Leaderboard</h5>
+      </div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush">
+          {% for entry in leaderboard %}
+            <li class="list-group-item d-flex justify-content-between align-items-center {% if entry.user_id == current_user.id %}bg-light{% endif %}">
+              <div class="d-flex align-items-center">
+                <span class="me-3 fw-bold rank-{{ loop.index }}">
+                  {% if loop.index == 1 %}👑{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+                </span>
+                <span>{{ entry.username }}</span>
+              </div>
+              <span class="badge bg-primary rounded-pill">{{ entry.total_points }} pts</span>
+            </li>
+          {% else %}
+            <li class="list-group-item text-center text-muted">No data available yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% if current_user_rank %}
+      <div class="card-footer bg-light d-flex justify-content-between align-items-center">
+        <span class="fw-bold text-primary">Your Rank: #{{ current_user_rank.rank }}</span>
+        <span class="badge bg-secondary">{{ current_user_rank.total_points }} pts</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Shop Modal -->
+<div class="modal fade" id="shopModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-shop me-2"></i>Farm Shop</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <ul class="nav nav-tabs mb-3" id="shopTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#seeds-tab" type="button">Seeds</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#items-tab" type="button">Items</button>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="seeds-tab">
+            <div class="row g-3">
+              {% for seed in shop_seeds %}
+              <div class="col-md-4">
+                <div class="card h-100">
+                  <div class="card-body text-center">
+                    <div class="fs-1 mb-2">🌰</div>
+                    <h6>{{ seed.name }}</h6>
+                    <p class="small text-muted">{{ seed.description }}</p>
+                    <p class="mb-2"><i class="bi bi-clock me-1"></i>{{ seed.growth_time_hours }}h</p>
+                    <button class="btn btn-sm btn-primary w-100" onclick="buyItem('seed', {{ seed.id }}, {{ seed.price }})">
+                      <i class="bi bi-coin me-1"></i>{{ seed.price }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="tab-pane fade" id="items-tab">
+            <div class="row g-3">
+              {% for item in shop_items %}
+              <div class="col-md-4">
+                <div class="card h-100">
+                  <div class="card-body text-center">
+                    <div class="fs-1 mb-2">🧪</div>
+                    <h6>{{ item.name }}</h6>
+                    <p class="small text-muted">{{ item.description }}</p>
+                    <button class="btn btn-sm btn-primary w-100" onclick="buyItem('item', {{ item.id }}, {{ item.price }})">
+                      <i class="bi bi-coin me-1"></i>{{ item.price }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Inventory Modal -->
+<div class="modal fade" id="inventoryModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-box-seam me-2"></i>Inventory</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-group">
+          {% for inv in inventory %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                {% if inv.item_type == 'seed' %}🌰{% else %}🧪{% endif %}
+                {{ inv.seed_type.name if inv.item_type == 'seed' else inv.item.name }}
+              </div>
+              <span class="badge bg-primary rounded-pill">x{{ inv.quantity }}</span>
+            </li>
+          {% else %}
+            <li class="list-group-item text-center text-muted">Your inventory is empty.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Plant Modal -->
+<div class="modal fade" id="plantModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Plant a Seed</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="plantLandId">
+        <div class="list-group" id="plantSeedList">
+          {% for inv in inventory %}
+            {% if inv.item_type == 'seed' and inv.quantity > 0 %}
+              <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="plantSeed({{ inv.item_id }})">
+                <div>
+                  🌰 {{ inv.seed_type.name }}
+                  <small class="text-muted d-block">{{ inv.seed_type.growth_time_hours }}h growth time</small>
+                </div>
+                <span class="badge bg-primary rounded-pill">x{{ inv.quantity }}</span>
+              </button>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Accelerate Modal -->
+<div class="modal fade" id="accelerateModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Use Fertilizer</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="accelLandId">
+        <div class="list-group" id="accelItemList">
+          {% for inv in inventory %}
+            {% if inv.item_type == 'item' and inv.quantity > 0 %}
+              <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="useItem({{ inv.item_id }})">
+                <div>
+                  🧪 {{ inv.item.name }}
+                  <small class="text-muted d-block">{{ inv.item.description }}</small>
+                </div>
+                <span class="badge bg-primary rounded-pill">x{{ inv.quantity }}</span>
+              </button>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Initialize tooltips
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+  })
+
+  // Update progress bars and timers
+  function updateTimers() {
+    const now = Date.now() / 1000;
+    document.querySelectorAll('.progress-bar-custom').forEach(bar => {
+      const start = parseFloat(bar.dataset.start);
+      const end = parseFloat(bar.dataset.end);
+      const landId = bar.id.split('-')[1];
+      const timerEl = document.getElementById(`timer-${landId}`);
+      
+      if (now >= end) {
+        bar.style.width = '100%';
+        timerEl.textContent = 'Ready to harvest! Refreshing...';
+        setTimeout(() => location.reload(), 2000);
+      } else {
+        const total = end - start;
+        const elapsed = now - start;
+        const percent = Math.min(100, Math.max(0, (elapsed / total) * 100));
+        bar.style.width = `${percent}%`;
+        
+        const remaining = end - now;
+        const hours = Math.floor(remaining / 3600);
+        const minutes = Math.floor((remaining % 3600) / 60);
+        const seconds = Math.floor(remaining % 60);
+        timerEl.textContent = `${hours}h ${minutes}m ${seconds}s left`;
+      }
+    });
+  }
+
+  setInterval(updateTimers, 1000);
+  updateTimers();
+
+  // API Calls
+  async function buyItem(type, itemId, price) {
+    if (!confirm(`Buy this ${type} for ${price} coins?`)) return;
+    
+    try {
+      const res = await fetch('{{ url_for("orchard.buy_item") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_type: type, item_id: itemId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Purchase successful!');
+        location.reload();
+      } else {
+        alert(data.error || 'Purchase failed');
+      }
+    } catch (e) {
+      alert('An error occurred');
+    }
+  }
+
+  function openPlantModal(landId) {
+    document.getElementById('plantLandId').value = landId;
+    new bootstrap.Modal(document.getElementById('plantModal')).show();
+  }
+
+  async function plantSeed(seedId) {
+    const landId = document.getElementById('plantLandId').value;
+    try {
+      const res = await fetch('{{ url_for("orchard.plant_seed") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ land_id: landId, seed_id: seedId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        location.reload();
+      } else {
+        alert(data.error || 'Failed to plant seed');
+      }
+    } catch (e) {
+      alert('An error occurred');
+    }
+  }
+
+  function openAccelerateModal(landId) {
+    document.getElementById('accelLandId').value = landId;
+    new bootstrap.Modal(document.getElementById('accelerateModal')).show();
+  }
+
+  async function useItem(itemId) {
+    const landId = document.getElementById('accelLandId').value;
+    try {
+      const res = await fetch('{{ url_for("orchard.use_item") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ land_id: landId, item_id: itemId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        location.reload();
+      } else {
+        alert(data.error || 'Failed to use item');
+      }
+    } catch (e) {
+      alert('An error occurred');
+    }
+  }
+
+  async function harvest(landId) {
+    try {
+      const res = await fetch('{{ url_for("orchard.harvest") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ land_id: landId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        let msg = `Harvested ${data.fruit_name}! Earned ${data.points} points.`;
+        if (data.is_rare) {
+          msg += '\nRare fruit added to your showcase!';
+        }
+        alert(msg);
+        location.reload();
+      } else {
+        alert(data.error || 'Failed to harvest');
+      }
+    } catch (e) {
+      alert('An error occurred');
+    }
+  }
+</script>
+{% endblock %}

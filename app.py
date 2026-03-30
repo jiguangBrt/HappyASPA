@@ -44,6 +44,7 @@ def create_app():
     from blueprints.forum      import forum_bp
     from blueprints.listening  import listening_bp
     from blueprints.speaking   import speaking_bp
+    from blueprints.orchard    import orchard_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -51,6 +52,7 @@ def create_app():
     app.register_blueprint(forum_bp)
     app.register_blueprint(listening_bp)
     app.register_blueprint(speaking_bp)
+    app.register_blueprint(orchard_bp)
 
     # ── CLI Commands ─────────────────────────────────────────────────────────
     from add_default_data import add_default_data
