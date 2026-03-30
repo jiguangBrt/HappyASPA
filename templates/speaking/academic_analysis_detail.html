@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Scenario Analysis - {{ scenario.title }}{% endblock %}
+
+{% block head %}
+<style>
+    .scenario-analysis-hero {
+        background: linear-gradient(135deg, rgba(18, 53, 107, 0.08) 0%, rgba(255, 255, 255, 0.96) 100%);
+        border: 1px solid #d5e0ef;
+        border-radius: 1.5rem;
+    }
+    .scenario-analysis-panel {
+        border-top: 4px solid var(--app-primary);
+    }
+    .scenario-analysis-text {
+        line-height: 1.9;
+        white-space: pre-wrap;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="mb-4">
+        <a href="{{ url_for('speaking.academic_detail', scenario_id=scenario.id) }}" class="text-decoration-none text-muted fw-medium">
+            <i class="bi bi-arrow-left me-1"></i> Back to Scenario
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="scenario-analysis-hero p-4 p-md-5 shadow-sm mb-4">
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <div class="bg-primary bg-gradient text-white rounded-4 p-3 shadow-sm">
+                        <i class="bi bi-stars fs-2"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-1">Academic Scenario Report</h3>
+                        <p class="text-muted mb-0">Scenario: {{ scenario.title }} | Date: {{ formatted_time }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4 bg-light rounded-4">
+                    <h6 class="text-muted fw-bold mb-2"><i class="bi bi-person-workspace me-2"></i>Your Role</h6>
+                    <p class="mb-0 text-dark">{{ scenario.role }}</p>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4 text-center">
+                    <h6 class="text-muted fw-bold mb-3">Your Recording</h6>
+                    <audio controls class="w-100 shadow-sm rounded-pill" style="height: 40px; max-width: 500px;">
+                        <source src="{{ url_for('speaking.get_audio', filename=submission.audio_filename) }}" type="audio/webm">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm scenario-analysis-panel mb-5">
+                <div class="card-body p-4 p-md-5">
+                    <h5 class="fw-bold mb-4 text-primary"><i class="bi bi-robot me-2"></i>Detailed Feedback</h5>
+                    <div class="scenario-analysis-text text-dark fs-6">{{ submission.overall_feedback or 'No AI feedback generated yet.' }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

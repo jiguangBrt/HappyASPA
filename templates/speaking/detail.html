@@ -204,6 +204,7 @@
     let mediaRecorder;       
     let audioChunks = [];    
     let isRecording = false; 
+    let isUploading = false;
     let audioStream;         
 
     const recordBtn = document.getElementById('record-btn');
@@ -212,6 +213,13 @@
     const historyList = document.getElementById('history-list');
     const attemptCounter = document.getElementById('attempt-counter');
     const noRecordingsMsg = document.getElementById('no-recordings-msg');
+
+    window.addEventListener('beforeunload', function (event) {
+        if (isUploading) {
+            event.preventDefault();
+            event.returnValue = '';
+        }
+    });
     
     const currentUsername = "{{ current_user.username if current_user.is_authenticated else 'Guest' }}";
 
@@ -249,7 +257,8 @@
                 formData.append('exercise_id', '{{ exercise.id }}');
 
                 // 改变按钮为上传状态
-                recordText.textContent = "Saving...";
+                isUploading = true;
+                recordText.textContent = "Uploading and Analysing...";
                 recordBtn.classList.replace('btn-dark', 'btn-secondary');
                 recordBtn.classList.remove('animate__pulse', 'animate__infinite');
                 recordBtn.disabled = true;
@@ -307,6 +316,7 @@
                     console.error("Error:", error);
                     alert("Network error.");
                 } finally {
+                    isUploading = false;
                     recordBtn.disabled = false;
                     recordBtn.classList.remove('btn-secondary');
                     recordBtn.classList.add('btn-danger');

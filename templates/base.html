@@ -512,6 +512,10 @@
           const submitBtn = this.querySelector('button[type="submit"]');
           if (submitBtn && !submitBtn.disabled) {
             console.log("🚫 Disabling form button to prevent double submit...");
+            if (!submitBtn.dataset.originalHtml) {
+              submitBtn.dataset.originalHtml = submitBtn.innerHTML;
+            }
+            submitBtn.dataset.clickLocked = '1';
             submitBtn.disabled = true;
             submitBtn.classList.add('disabled', 'opacity-75');
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
@@ -527,8 +531,28 @@
             return;
           }
           console.log("🚫 Locking link button...");
+          if (!this.dataset.originalHtml) {
+            this.dataset.originalHtml = this.innerHTML;
+          }
+          this.dataset.clickLocked = '1';
           this.classList.add('disabled', 'opacity-75');
+          this.setAttribute('aria-disabled', 'true');
           this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Loading...';
+        });
+      });
+
+      // 浏览器返回（尤其是 bfcache）时恢复被锁定按钮，避免文案卡在 Loading...
+      window.addEventListener('pageshow', function() {
+        document.querySelectorAll('[data-click-locked="1"]').forEach(el => {
+          if (el.dataset.originalHtml) {
+            el.innerHTML = el.dataset.originalHtml;
+          }
+          el.classList.remove('disabled', 'opacity-75');
+          el.removeAttribute('aria-disabled');
+          if (el.tagName === 'BUTTON') {
+            el.disabled = false;
+          }
+          delete el.dataset.clickLocked;
         });
       });
     });

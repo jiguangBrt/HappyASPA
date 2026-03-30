@@ -1,69 +1,97 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ scenario.title }} - Academic Scenario</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <style>
-        body { background-color: #f8f9fa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-        .academic-border { border-left: 4px solid #0d6efd; }
-        .reference-box { background-color: #f1f3f5; border: 1px dashed #ced4da; }
-        .recording-row { border: 1px solid #e6ebf2; box-shadow: 0 4px 14px rgba(11, 37, 75, 0.06); }
-        .ai-feedback-card {
-            background: linear-gradient(135deg, #f6fbff 0%, #ecf4ff 100%);
-            border: 1px solid #cdddf4;
-            border-radius: 0.75rem;
-            padding: 0.85rem 0.95rem;
-        }
-        .ai-feedback-title {
-            color: #1f4e8c;
-            font-weight: 700;
-            letter-spacing: 0.2px;
-        }
-        .ai-feedback-text {
-            color: #24364d;
-            line-height: 1.55;
-            white-space: pre-line;
-            margin-top: 0.5rem;
-        }
-        .feedback-meta { color: #6c7f95; font-size: 0.78rem; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
-        .fast-blink { animation: blink 1s linear infinite; }
-        .transition { transition: all 0.3s ease; }
-        .tag {
-            background: rgba(18, 53, 107, 0.85);
-            color: #F8F9FA;
-            border: 1px solid rgba(18, 53, 107, 0.35);
-            border-radius: 999px;
-            padding: 4px 10px;
-            font-size: 12px;
-            letter-spacing: 0.3px;
-        }
-        .tag--cs { background: #2B2F36; }
-        .tag--civil { background: #2F5A52; }
-        .tag--math { background: #4B2C7A; }
-        .tag--mech { background: #7A3E28; }
-        .tag--traffic { background: #7A222F; }
-    </style>
-</head>
-<body>
+{% extends 'base.html' %}
+{% block title %}Academic Scenario - {{ scenario.title }}{% endblock %}
 
-<div class="container py-5">
-    
+{% block head %}
+<style>
+    .scenario-shell {
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+    }
+    .academic-border {
+        border-left: 4px solid var(--app-primary);
+    }
+    .reference-box {
+        background: linear-gradient(180deg, #f8fbff 0%, #eef3fb 100%);
+        border: 1px dashed #c7d4e5;
+    }
+    .recording-row {
+        border: 1px solid #d9e3f1;
+        border-radius: 1.25rem;
+        box-shadow: 0 10px 26px rgba(11, 37, 75, 0.08);
+        overflow: hidden;
+    }
+    .scenario-feed-card {
+        background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+    }
+    .scenario-feed-meta {
+        font-size: 0.82rem;
+        color: #6b7c93;
+    }
+    .scenario-ai-panel {
+        background: linear-gradient(135deg, #f4f9ff 0%, #edf4ff 100%);
+        border: 1px solid #cfdcf2;
+        border-radius: 1rem;
+        padding: 1rem;
+    }
+    .fade-in-card {
+        animation: fadeSlideIn 0.45s ease both;
+    }
+    .fade-out-card {
+        animation: fadeSlideOut 0.35s ease both;
+    }
+    .recorder-card {
+        top: 2rem;
+        border-radius: 1.5rem;
+    }
+    .recorder-btn {
+        width: 64px;
+        height: 64px;
+    }
+    @keyframes blink {
+        0% { opacity: 1; }
+        50% { opacity: 0; }
+        100% { opacity: 1; }
+    }
+    @keyframes fadeSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(18px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    @keyframes fadeSlideOut {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-14px);
+        }
+    }
+    .fast-blink {
+        animation: blink 1s linear infinite;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container scenario-shell">
     <div class="mb-4">
-        <a href="{{ url_for('speaking.index') }}#academic" class="text-decoration-none text-muted">
+        <a href="{{ url_for('speaking.index') }}#academic" class="text-decoration-none text-muted fw-medium">
             <i class="bi bi-arrow-left me-1"></i>Back to Scenario Library
         </a>
     </div>
 
-    <div class="d-flex justify-content-between align-items-end mb-4">
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
         <div>
-            <div class="d-flex gap-2 mb-2">
+            <div class="d-flex gap-2 mb-2 flex-wrap">
                 <span class="badge subject-tag" data-subject-tag data-subject="{{ scenario.category }}"><i class="bi bi-building me-1"></i>{{ scenario.category }}</span>
                 <span class="badge bg-danger bg-opacity-10 text-danger">
-                    {% for _ in range(scenario.difficulty) %}⭐{% endfor %} 
+                    {% for _ in range(scenario.difficulty) %}⭐{% endfor %}
                     {% if scenario.difficulty == 3 %}Hard{% elif scenario.difficulty == 2 %}Medium{% else %}Easy{% endif %}
                 </span>
             </div>
@@ -78,11 +106,11 @@
 
     <div class="row g-4">
         <div class="col-lg-8">
-            <div class="card shadow-sm border-0 mb-4 academic-border">
+            <div class="card border-0 mb-4 academic-border">
                 <div class="card-header bg-white border-0 pt-4 pb-0">
                     <h5 class="fw-bold"><i class="bi bi-clipboard-data me-2 text-primary"></i>Mission Briefing</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     <div class="mb-4">
                         <h6 class="fw-bold text-secondary text-uppercase" style="font-size: 0.85rem;">Background</h6>
                         <p class="mb-0">{{ scenario.background }}</p>
@@ -91,11 +119,11 @@
                         <h6 class="fw-bold text-secondary text-uppercase" style="font-size: 0.85rem;">Your Role</h6>
                         <p class="mb-0">{{ scenario.role }}</p>
                     </div>
-                    <div class="mb-2">
+                    <div class="mb-0">
                         <h6 class="fw-bold text-secondary text-uppercase" style="font-size: 0.85rem;">Your Task</h6>
                         <ul class="mb-0 text-dark">
                             {% for task in scenario.tasks %}
-                                <li>{{ task }}</li>
+                            <li>{{ task }}</li>
                             {% endfor %}
                         </ul>
                     </div>
@@ -103,82 +131,102 @@
             </div>
 
             {% if scenario.reference_material %}
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-body">
+            <div class="card border-0 mb-4">
+                <div class="card-body p-4">
                     <h6 class="fw-bold mb-3"><i class="bi bi-journal-text me-2"></i>Reference Material</h6>
-                    <div class="reference-box rounded p-3 text-muted small">
+                    <div class="reference-box rounded-4 p-3 text-muted small">
                         {{ scenario.reference_material | safe }}
                     </div>
                 </div>
             </div>
             {% endif %}
 
-            <div id="history-section" class="mt-5 mb-5 pt-3 border-top">
-                <h5 class="fw-bold mb-4"><i class="bi bi-clock-history me-2"></i>Your Past Recordings</h5>
-                
-                {% if submissions %}
-                    <div class="list-group shadow-sm">
-                        {% for sub in submissions %}
-                        <div class="list-group-item py-3 recording-row rounded mb-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <small class="text-muted"><i class="bi bi-calendar-event me-1"></i>{{ sub.submitted_at }}</small>
-                                <span class="badge bg-light text-dark border">Duration: {{ sub.duration }}s</span>
-                            </div>
-                            
-                            <audio controls class="w-100 mb-3" style="height: 40px;">
-                                <source src="{{ url_for('speaking.get_audio', filename=sub.audio_filename) }}" type="audio/webm">
-                            </audio>
+            <div id="history-section" class="mt-5 pt-3 border-top">
+                <div class="d-flex justify-content-between align-items-center mb-4 px-1 flex-wrap gap-2">
+                    <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-clock-history me-2 text-primary"></i>Your Past Recordings</h4>
+                    <span class="badge bg-dark rounded-pill fs-6 px-3" id="attempt-counter">{{ submissions|length }}</span>
+                </div>
 
-                            <div class="ai-feedback-card mt-2">
-                                <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
-                                    <div>
-                                        <span class="ai-feedback-title"><i class="bi bi-stars me-1"></i>AI Feedback</span>
-                                        <div class="feedback-meta mt-1">Evaluation based on your scenario response</div>
-                                    </div>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteScenarioSubmission('{{ sub.id }}')" title="Delete my recording">
-                                        <i class="bi bi-trash3"></i> Delete
-                                    </button>
-                                </div>
-                                <div class="ai-feedback-text">{{ sub.overall_feedback or 'AI feedback is being generated. Please refresh in a moment.' }}</div>
+                <div id="history-list" class="d-flex flex-column gap-3">
+                    {% for sub in submissions %}
+                    <div class="card border-0 scenario-feed-card recording-row p-4 fade-in-card" id="record-card-{{ sub.id }}">
+                        <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-wrap">
+                            <div>
+                                <div class="fw-bold text-dark">Academic Scenario Attempt</div>
+                                <div class="scenario-feed-meta mt-1"><i class="bi bi-calendar-event me-1"></i>{{ sub.submitted_at }}</div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge bg-light text-dark border">Duration: {{ sub.duration }}s</span>
+                                <button class="btn btn-light btn-sm rounded-circle text-danger shadow-sm border" onclick="deleteScenarioSubmission('{{ sub.id }}')" title="Delete my recording" style="width: 34px; height: 34px;">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
                             </div>
                         </div>
-                        {% endfor %}
+
+                        <div class="bg-white rounded-4 p-3 border mb-3">
+                            <audio controls class="w-100" style="height: 40px;">
+                                <source src="{{ url_for('speaking.get_audio', filename=sub.audio_filename) }}" type="audio/webm">
+                            </audio>
+                        </div>
+
+                        <div class="scenario-ai-panel d-flex justify-content-between align-items-center gap-3 flex-wrap" id="action-area-{{ sub.id }}">
+                            <div>
+                                <div class="fw-semibold text-primary"><i class="bi bi-stars me-1"></i>AI Review</div>
+                                {% if sub.overall_feedback %}
+                                <div class="scenario-feed-meta mt-1">Your scenario analysis is ready to view.</div>
+                                {% else %}
+                                <div class="scenario-feed-meta mt-1">Recording uploaded. Run AI review when you are ready.</div>
+                                {% endif %}
+                            </div>
+                            {% if sub.overall_feedback %}
+                            <a href="{{ url_for('speaking.scenario_analysis_detail', sub_id=sub.id) }}" class="btn btn-outline-primary btn-sm rounded-pill px-4 fw-medium border-2">
+                                <i class="bi bi-file-earmark-text-fill me-1"></i> View AI Analysis
+                            </a>
+                            {% else %}
+                            <button class="btn btn-primary btn-sm rounded-pill px-4 fw-medium" onclick="requestScenarioAIAnalysis('{{ sub.id }}', this)">
+                                <i class="bi bi-stars me-1"></i> Get AI Feedback
+                            </button>
+                            {% endif %}
+                        </div>
                     </div>
-                {% else %}
-                    <div class="alert alert-light border text-center text-muted py-4">
-                        <i class="bi bi-mic-mute fs-3 d-block mb-2"></i>
-                        No past recordings yet. Try your first simulation above!
-                    </div>
-                {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div id="no-recordings-msg" class="text-center py-5 bg-white rounded-4 shadow-sm border {% if submissions %}d-none{% endif %}">
+                    <i class="bi bi-mic-mute text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3 text-muted">No past recordings yet.</h5>
+                    <p class="text-muted small mb-0">Upload your first scenario response and request AI feedback when ready.</p>
+                </div>
             </div>
         </div>
 
         <div class="col-lg-4">
-            <div class="card shadow-sm border-0 mb-4 position-sticky" style="top: 2rem;">
-                <div class="card-body text-center py-5">
-                    <h5 class="fw-bold mb-4">Your Turn</h5>
-                    
+            <div class="card border-0 mb-4 position-sticky recorder-card">
+                <div class="card-body text-center py-5 px-4">
+                    <h5 class="fw-bold mb-2">Your Turn</h5>
+                    <p class="text-muted small mb-4">Record first, upload next, then request AI feedback when you choose.</p>
+
                     <div class="d-flex justify-content-center gap-3 mb-3">
-                        <button class="btn btn-primary rounded-circle" id="record-btn" onclick="startRecording()" style="width: 60px; height: 60px;">
+                        <button class="btn btn-primary rounded-circle recorder-btn" id="record-btn" onclick="startRecording()">
                             <i class="bi bi-mic-fill fs-4"></i>
                         </button>
-                        <button class="btn btn-outline-danger rounded-circle" id="stop-btn" onclick="stopRecording()" style="width: 60px; height: 60px;" disabled>
+                        <button class="btn btn-outline-danger rounded-circle recorder-btn" id="stop-btn" onclick="stopRecording()" disabled>
                             <i class="bi bi-stop-fill fs-4"></i>
                         </button>
                     </div>
 
                     <div id="audio-player-container" class="w-100 mb-3"></div>
 
-                    <div class="alert alert-light border small text-muted mb-0 transition" id="status-alert">
+                    <div class="alert alert-light border small text-muted mb-0" id="status-alert">
                         Read the briefing carefully before recording.
                     </div>
-                    
+
                     <a href="#history-section" class="btn btn-outline-primary w-100 mt-4 mb-2">
                         <i class="bi bi-clock-history me-1"></i>View Past Recordings
                     </a>
 
                     <button class="btn btn-success w-100 disabled" id="submit-btn" onclick="submitRecording()" disabled>
-                        <i class="bi bi-cloud-arrow-up me-2"></i>Submit for AI Review
+                        <i class="bi bi-cloud-arrow-up me-2"></i>Upload Recording
                     </button>
                     <button class="btn btn-outline-secondary w-100 mt-2 d-none" id="cancel-btn" onclick="cancelRecording()">
                         <i class="bi bi-x-circle me-1"></i>Cancel Recording
@@ -188,213 +236,303 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
     let mediaRecorder = null;
     let audioChunks = [];
     let audioUrl = null;
     let isCancelling = false;
-
-    // 🌟 修复变量：精准计时与状态追踪
+    let isUploading = false;
     let recordingStartTime = 0;
     let finalDuration = 0;
     let hasUnsavedRecording = false;
 
-    const scenarioId = '{{ scenario.id }}'; 
+    const scenarioId = '{{ scenario.id }}';
+    const recordBtn = document.getElementById('record-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const submitBtn = document.getElementById('submit-btn');
+    const statusAlert = document.getElementById('status-alert');
+    const audioPlayerContainer = document.getElementById('audio-player-container');
+    const historyList = document.getElementById('history-list');
+    const attemptCounter = document.getElementById('attempt-counter');
+    const noRecordingsMsg = document.getElementById('no-recordings-msg');
 
-    // 🌟 修复 Bug 1: 拦截页面刷新/离开
-    window.addEventListener('beforeunload', function (e) {
-        if (hasUnsavedRecording) {
-            e.preventDefault();
-            e.returnValue = ''; // 触发浏览器默认的警告框
+    window.addEventListener('beforeunload', function (event) {
+        if (hasUnsavedRecording || isUploading) {
+            event.preventDefault();
+            event.returnValue = '';
         }
     });
 
-    function startRecording() {
-        const recordBtn = document.getElementById('record-btn');
-        const stopBtn = document.getElementById('stop-btn');
-        const cancelBtn = document.getElementById('cancel-btn');
-        const statusAlert = document.getElementById('status-alert');
-        
+    function setStatus(message, className) {
+        statusAlert.innerHTML = message;
+        statusAlert.className = className;
+    }
+
+    async function startRecording() {
         recordBtn.disabled = true;
         stopBtn.disabled = false;
         cancelBtn.classList.remove('d-none');
         isCancelling = false;
         audioChunks = [];
 
-        statusAlert.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-record-circle fast-blink me-1"></i>Recording...</span>';
-        statusAlert.className = 'alert alert-danger border border-danger-subtle small mb-0';
+        setStatus(
+            '<span class="text-danger fw-bold"><i class="bi bi-record-circle fast-blink me-1"></i>Recording...</span>',
+            'alert alert-danger border border-danger-subtle small mb-0'
+        );
 
-        navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(stream => {
-                mediaRecorder = new MediaRecorder(stream);
-                
-                mediaRecorder.onstart = () => {
-                    recordingStartTime = Date.now(); // 🌟 记录开始物理时间
-                };
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
 
-                mediaRecorder.ondataavailable = (e) => { audioChunks.push(e.data); };
-                
-                mediaRecorder.onstop = () => {
-                    stream.getTracks().forEach(track => track.stop());
-                    
-                    if (isCancelling) {
-                        restoreUI();
-                        return;
-                    }
+            mediaRecorder.onstart = () => {
+                recordingStartTime = Date.now();
+            };
 
-                    // 🌟 修复 Bug 2: 手动计算时长，避免 Infinity
-                    finalDuration = ((Date.now() - recordingStartTime) / 1000).toFixed(1);
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
+            };
 
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    audioUrl = URL.createObjectURL(audioBlob);
-                    
-                    document.getElementById('audio-player-container').innerHTML = `
-                        <audio controls class="w-100" style="height: 40px;" id="preview-audio">
-                            <source src="${audioUrl}" type="audio/webm">
-                        </audio>
-                        <div class="text-muted small mt-1 text-center">Measured Duration: ${finalDuration}s</div>
-                    `;
-                    
-                    const submitBtn = document.getElementById('submit-btn');
-                    submitBtn.classList.remove('disabled');
-                    submitBtn.disabled = false;
-                    
-                    // 标记为有未保存数据
-                    hasUnsavedRecording = true;
+            mediaRecorder.onstop = () => {
+                stream.getTracks().forEach(track => track.stop());
 
-                    statusAlert.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>Ready to submit.';
-                    statusAlert.className = 'alert alert-success border border-success-subtle small mb-0 text-success';
-                };
-                mediaRecorder.start();
-            })
-            .catch(err => {
-                alert('Microphone access denied: ' + err.message);
-                restoreUI();
-            });
+                if (isCancelling) {
+                    restoreUI();
+                    return;
+                }
+
+                finalDuration = Number(((Date.now() - recordingStartTime) / 1000).toFixed(1));
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+
+                if (audioUrl) {
+                    URL.revokeObjectURL(audioUrl);
+                }
+
+                audioUrl = URL.createObjectURL(audioBlob);
+                audioPlayerContainer.innerHTML = `
+                    <audio controls class="w-100" style="height: 40px;" id="preview-audio">
+                        <source src="${audioUrl}" type="audio/webm">
+                    </audio>
+                    <div class="text-muted small mt-1 text-center">Measured Duration: ${finalDuration.toFixed(1)}s</div>
+                `;
+
+                submitBtn.classList.remove('disabled');
+                submitBtn.disabled = false;
+                hasUnsavedRecording = true;
+
+                setStatus(
+                    '<i class="bi bi-check-circle-fill text-success me-1"></i>Recording ready. Upload it when you are ready.',
+                    'alert alert-success border border-success-subtle small mb-0 text-success'
+                );
+            };
+
+            mediaRecorder.start();
+        } catch (error) {
+            alert('Microphone access denied: ' + error.message);
+            restoreUI();
+        }
     }
 
     function stopRecording() {
         isCancelling = false;
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
             mediaRecorder.stop();
-            document.getElementById('record-btn').disabled = false;
-            document.getElementById('stop-btn').disabled = true;
+            recordBtn.disabled = false;
+            stopBtn.disabled = true;
         }
     }
 
     function cancelRecording() {
-        if (confirm("Cancel current recording?")) {
-            isCancelling = true;
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-            } else {
-                restoreUI();
-            }
+        if (!confirm('Cancel current recording?')) {
+            return;
+        }
+
+        isCancelling = true;
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        } else {
+            restoreUI();
         }
     }
 
-    function restoreUI() {
+    function restoreUI(statusMessage, statusClassName) {
         audioChunks = [];
-        audioUrl = null;
-        hasUnsavedRecording = false; // 重置状态
-        
-        document.getElementById('record-btn').disabled = false;
-        document.getElementById('stop-btn').disabled = true;
-        
-        const submitBtn = document.getElementById('submit-btn');
+        hasUnsavedRecording = false;
+        finalDuration = 0;
+
+        if (audioUrl) {
+            URL.revokeObjectURL(audioUrl);
+            audioUrl = null;
+        }
+
+        recordBtn.disabled = false;
+        stopBtn.disabled = true;
         submitBtn.classList.add('disabled');
         submitBtn.disabled = true;
-        
-        document.getElementById('cancel-btn').classList.add('d-none');
-        document.getElementById('audio-player-container').innerHTML = '';
-        
-        const statusAlert = document.getElementById('status-alert');
-        statusAlert.innerHTML = 'Read the briefing carefully before recording.';
-        statusAlert.className = 'alert alert-light border small text-muted mb-0';
+        submitBtn.innerHTML = '<i class="bi bi-cloud-arrow-up me-2"></i>Upload Recording';
+        cancelBtn.classList.add('d-none');
+        audioPlayerContainer.innerHTML = '';
+
+        setStatus(
+            statusMessage || 'Read the briefing carefully before recording.',
+            statusClassName || 'alert alert-light border small text-muted mb-0'
+        );
     }
 
-    function submitRecording() {
-        if (!audioUrl) return alert('No recording found!');
-        
-        const submitBtn = document.getElementById('submit-btn');
+    function buildScenarioCard(submissionId, audioFilename, submittedAt, duration, feedbackReady) {
+        const actionHtml = feedbackReady
+            ? `<a href="/speaking/scenario-analysis-detail/${submissionId}" class="btn btn-outline-primary btn-sm rounded-pill px-4 fw-medium border-2"><i class="bi bi-file-earmark-text-fill me-1"></i> View AI Analysis</a>`
+            : `<button class="btn btn-primary btn-sm rounded-pill px-4 fw-medium" onclick="requestScenarioAIAnalysis('${submissionId}', this)"><i class="bi bi-stars me-1"></i> Get AI Feedback</button>`;
+
+        const metaHtml = feedbackReady
+            ? 'Your scenario analysis is ready to view.'
+            : 'Recording uploaded. Run AI review when you are ready.';
+
+        return `
+            <div class="card border-0 scenario-feed-card recording-row p-4 fade-in-card" id="record-card-${submissionId}">
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-wrap">
+                    <div>
+                        <div class="fw-bold text-dark">Academic Scenario Attempt</div>
+                        <div class="scenario-feed-meta mt-1"><i class="bi bi-calendar-event me-1"></i>${submittedAt}</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge bg-light text-dark border">Duration: ${Number(duration).toFixed(1)}s</span>
+                        <button class="btn btn-light btn-sm rounded-circle text-danger shadow-sm border" onclick="deleteScenarioSubmission('${submissionId}')" title="Delete my recording" style="width: 34px; height: 34px;">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="bg-white rounded-4 p-3 border mb-3">
+                    <audio controls class="w-100" style="height: 40px;">
+                        <source src="/speaking/audio/${audioFilename}" type="audio/webm">
+                    </audio>
+                </div>
+                <div class="scenario-ai-panel d-flex justify-content-between align-items-center gap-3 flex-wrap" id="action-area-${submissionId}">
+                    <div>
+                        <div class="fw-semibold text-primary"><i class="bi bi-stars me-1"></i>AI Review</div>
+                        <div class="scenario-feed-meta mt-1">${metaHtml}</div>
+                    </div>
+                    ${actionHtml}
+                </div>
+            </div>
+        `;
+    }
+
+    async function submitRecording() {
+        if (!audioUrl) {
+            alert('No recording found!');
+            return;
+        }
+
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Uploading...';
+        isUploading = true;
 
-        fetch(audioUrl)
-            .then(res => res.blob())
-            .then(blob => {
-                const formData = new FormData();
-                formData.append('audio_file', blob, `scenario_${scenarioId}_${Date.now()}.webm`);
-                formData.append('scenario_id', scenarioId);
-                
-                // 🌟 使用手动计算的时长提交
-                formData.append('duration', finalDuration);
-                
-                return fetch('/speaking/upload-scenario-audio', { 
-                    method: 'POST', 
-                    body: formData 
-                });
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    hasUnsavedRecording = false; // 提交成功，解除拦截
-                    window.location.reload(); 
-                } else {
-                    throw new Error(data.message || 'Server error');
-                }
-            })
-            .catch(err => {
-                alert('❌ Upload failed: ' + err.message);
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="bi bi-cloud-arrow-up me-2"></i>Submit for AI Review';
+        try {
+            const blobResponse = await fetch(audioUrl);
+            const blob = await blobResponse.blob();
+
+            const formData = new FormData();
+            formData.append('audio_file', blob, `scenario_${scenarioId}_${Date.now()}.webm`);
+            formData.append('scenario_id', scenarioId);
+            formData.append('duration', finalDuration.toFixed(1));
+
+            const response = await fetch('/speaking/upload-scenario-audio', {
+                method: 'POST',
+                body: formData
             });
+            const data = await response.json();
+
+            if (data.status !== 'success') {
+                throw new Error(data.message || 'Server error');
+            }
+
+            noRecordingsMsg.classList.add('d-none');
+            historyList.insertAdjacentHTML(
+                'afterbegin',
+                buildScenarioCard(data.submission_id, data.filename, data.submitted_at, data.duration, false)
+            );
+            attemptCounter.textContent = String(parseInt(attemptCounter.textContent, 10) + 1);
+
+            restoreUI(
+                '<i class="bi bi-cloud-check-fill text-success me-1"></i>Upload complete. You can request AI feedback from the card below.',
+                'alert alert-success border border-success-subtle small mb-0 text-success'
+            );
+        } catch (error) {
+            alert('Upload failed: ' + error.message);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-cloud-arrow-up me-2"></i>Upload Recording';
+            setStatus(
+                '<i class="bi bi-exclamation-triangle-fill text-danger me-1"></i>Upload failed. Please try again.',
+                'alert alert-danger border border-danger-subtle small mb-0 text-danger'
+            );
+        } finally {
+            isUploading = false;
+        }
     }
 
-    function deleteScenarioSubmission(subId) {
-        if (confirm("Are you sure you want to delete this recording?")) {
-            fetch(`/speaking/delete-scenario-submission/${subId}`, {
+    async function requestScenarioAIAnalysis(subId, btnElement) {
+        const originalHtml = btnElement.innerHTML;
+        btnElement.disabled = true;
+        btnElement.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Analyzing...';
+
+        try {
+            const response = await fetch(`/speaking/analyze-scenario-audio/${subId}`, { method: 'POST' });
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                window.location.href = `/speaking/scenario-analysis-detail/${subId}`;
+            } else {
+                alert('AI Analysis failed: ' + data.message);
+                btnElement.disabled = false;
+                btnElement.innerHTML = originalHtml;
+            }
+        } catch (error) {
+            console.error('Analysis Error:', error);
+            alert('Network error during AI analysis.');
+            btnElement.disabled = false;
+            btnElement.innerHTML = originalHtml;
+        }
+    }
+
+    async function deleteScenarioSubmission(subId) {
+        if (!confirm('Are you sure you want to delete this recording?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/speaking/delete-scenario-submission/${subId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    window.location.reload(); 
-                } else {
-                    alert('Failed to delete: ' + (data.message || 'Unknown error'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred.');
             });
+            const data = await response.json();
+
+            if (data.status !== 'success') {
+                throw new Error(data.message || 'Unknown error');
+            }
+
+            const card = document.getElementById(`record-card-${subId}`);
+            if (card) {
+                card.classList.remove('fade-in-card');
+                card.classList.add('fade-out-card');
+                setTimeout(() => {
+                    card.remove();
+                    const currentCount = historyList.querySelectorAll('.recording-row').length;
+                    attemptCounter.textContent = String(currentCount);
+                    if (currentCount === 0) {
+                        noRecordingsMsg.classList.remove('d-none');
+                    }
+                }, 300);
+            }
+        } catch (error) {
+            console.error('Delete Error:', error);
+            alert('Failed to delete: ' + error.message);
         }
     }
 </script>
-
-<script>
-  (function () {
-    function matchAny(haystack, keywords) {
-      return keywords.some(k => haystack.includes(k));
-    }
-    function tagClassFor(subject) {
-      const name = (subject || '').toLowerCase();
-      if (name.includes('computer science')) return 'tag--cs';
-      if (name.includes('civil engineering')) return 'tag--civil';
-      if (name.includes('applied mathematics')) return 'tag--math';
-      if (name.includes('mechanical engineering')) return 'tag--mech';
-      if (name.includes('traffic control')) return 'tag--traffic';
-      return 'tag--cs';
-    }
-    document.querySelectorAll('[data-subject-tag]').forEach(el => {
-      const subject = el.dataset.subject || el.textContent || '';
-      el.classList.add('tag');
-      el.classList.add(tagClassFor(subject));
-    });
-  })();
-</script>
-
-</body>
-</html>
+{% endblock %}

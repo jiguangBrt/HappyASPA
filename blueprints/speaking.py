@@ -196,6 +196,7 @@ def text_evaluation(text, topic_context_text=""):
 
                                                             First, tell me what the learner had said in the audio, and what the current topic is. Then, give them specific feedback on their speaking performance, covering these aspects:
                                                             Evaluate their speaking based on:
+                                                            - Mark the overall performance with a score out of 100, and give a brief reason for the score.
                                                             - Clarity & pronunciation
                                                             - Fluency & natural rhythm
                                                             - Grammar & vocabulary choice
@@ -345,14 +346,23 @@ def get_audio(filename):
 @speaking_bp.route('/upload-audio', methods=['POST'])
 @login_required
 def upload_audio():
+    filepath = None
+    submission_committed = False
     try:
         if 'audio_file' not in request.files:
             return jsonify({'status': 'error', 'message': 'No file part'}), 400
         
         file = request.files['audio_file']
-        exercise_id = request.form.get('exercise_id')
+        exercise_id_raw = request.form.get('exercise_id')
+
+        try:
+            exercise_id = int(exercise_id_raw)
+        except (TypeError, ValueError):
+            return jsonify({'status': 'error', 'message': 'Invalid exercise'}), 400
         
-        if not exercise_id or not SpeakingExercise.query.get(exercise_id):
+        exercise = SpeakingExercise.query.get(exercise_id)
+        
+        if not exercise:
             return jsonify({'status': 'error', 'message': 'Invalid exercise'}), 400
         if file.filename == '':
             return jsonify({'status': 'error', 'message': 'No selected file'}), 400
@@ -363,8 +373,8 @@ def upload_audio():
         
         if file and allowed_file(file.filename):
             ext = file.filename.rsplit('.', 1)[1].lower()
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"user_{current_user.id}_ex_{exercise_id}_{timestamp}.{ext}"
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            filename = f"user_{current_user.id}_ex_{exercise_id}_{timestamp}_{uuid.uuid4().hex[:8]}.{ext}"
             
             filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
             os.makedirs(current_app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -381,9 +391,10 @@ def upload_audio():
                 duration_seconds=float(duration) if duration else 0.0
             )
             db.session.add(submission)
-            db.session.flush()  # 获取ID
+            db.session.commit()
+            submission_committed = True
+
             # === AI 自动点评 ===
-            exercise = SpeakingExercise.query.get(exercise_id)
             topic_context = {
                 "type": "English Corner",
                 "title": exercise.title if exercise else "",
@@ -391,10 +402,16 @@ def upload_audio():
                 "difficulty": exercise.difficulty if exercise else None,
                 "prompt": exercise.prompt if exercise else ""
             }
-            ai_result = ai_evaluate_audio(tos_url, topic_context=topic_context)
-            submission.feedback = ai_result.get('feedback', '')
-            # 可选：如需评分，可在 text_evaluation 返回结构中解析分数
-            db.session.commit()
+
+            if tos_url:
+                try:
+                    ai_result = ai_evaluate_audio(tos_url, topic_context=topic_context)
+                    submission.feedback = ai_result.get('feedback', '')
+                    db.session.commit()
+                except Exception as ai_error:
+                    db.session.rollback()
+                    current_app.logger.error(f"AI evaluation error for submission {submission.id}: {str(ai_error)}")
+
             return jsonify({
                 'status': 'success',
                 'message': 'Audio saved successfully!',
@@ -405,6 +422,11 @@ def upload_audio():
             return jsonify({'status': 'error', 'message': 'File type not allowed'}), 400
     except Exception as e:
         db.session.rollback()
+        if filepath and not submission_committed and os.path.exists(filepath):
+            try:
+                os.remove(filepath)
+            except OSError:
+                current_app.logger.warning(f"Failed to remove orphaned upload file: {filepath}")
         current_app.logger.error(f"Upload audio error: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Server error, please try again'}), 500
 
@@ -582,69 +604,136 @@ def academic_detail(scenario_id):
 @speaking_bp.route('/upload-scenario-audio', methods=['POST'])
 @login_required
 def upload_scenario_audio():
+    filepath = None
+    submission_committed = False
     try:
         if 'audio_file' not in request.files:
             return jsonify({'status': 'error', 'message': 'No file part'}), 400
         
         file = request.files['audio_file']
-        scenario_id = request.form.get('scenario_id')
+        scenario_id_raw = request.form.get('scenario_id')
         duration = request.form.get('duration', 0)
-        
-        if not scenario_id:
-            return jsonify({'status': 'error', 'message': 'Invalid scenario ID'}), 400
 
+        try:
+            scenario_id = int(scenario_id_raw)
+        except (TypeError, ValueError):
+            return jsonify({'status': 'error', 'message': 'Invalid scenario ID'}), 400
+        
         scenario = AcademicScenario.query.get(scenario_id)
         if not scenario:
             return jsonify({'status': 'error', 'message': 'Scenario not found'}), 404
         
         if file and allowed_file(file.filename):
             ext = file.filename.rsplit('.', 1)[1].lower()
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"user_{current_user.id}_scenario_{scenario_id}_{timestamp}.{ext}"
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            filename = f"user_{current_user.id}_scenario_{scenario_id}_{timestamp}_{uuid.uuid4().hex[:8]}.{ext}"
             
             filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
             os.makedirs(current_app.config['UPLOAD_FOLDER'], exist_ok=True)
             
             file.save(filepath)
-            # 解耦上传 TOS（不影响原有逻辑）
-            file.seek(0)
-            tos_url = upload_audio_to_tos(file, filename,filepath)
             
             new_sub = UserScenarioSubmission(
                 user_id=current_user.id,
                 scenario_id=scenario_id,
                 audio_filename=filename,
-                duration_seconds=float(duration)
+                duration_seconds=float(duration) if duration else 0.0
             )
             db.session.add(new_sub)
-            db.session.flush()
-            # === AI 自动点评 ===
-            topic_context = {
-                "type": "Academic Scenario",
-                "title": scenario.title,
-                "category": scenario.category,
-                "difficulty": scenario.difficulty,
-                "background": scenario.background,
-                "role": scenario.role,
-                "tasks": scenario.tasks,
-                "reference_material": scenario.reference_material
-            }
-            ai_result = ai_evaluate_audio(tos_url, topic_context=topic_context)
-            new_sub.overall_feedback = ai_result.get('feedback', '')
             db.session.commit()
+            submission_committed = True
+
+            utc_time = new_sub.submitted_at
+            local_time = utc_time.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+
             return jsonify({
                 'status': 'success',
-                'message': 'Scenario Audio uploaded & evaluated!',
+                'message': 'Scenario recording uploaded successfully!',
+                'submission_id': new_sub.id,
                 'filename': filename,
-                'feedback': new_sub.overall_feedback
+                'submitted_at': local_time.strftime('%Y-%m-%d %H:%M'),
+                'duration': round(new_sub.duration_seconds or 0, 1)
             }), 200
         else:
             return jsonify({'status': 'error', 'message': 'File type not allowed'}), 400
             
     except Exception as e:
         db.session.rollback()
+        if filepath and not submission_committed and os.path.exists(filepath):
+            try:
+                os.remove(filepath)
+            except OSError:
+                current_app.logger.warning(f"Failed to remove orphaned scenario upload: {filepath}")
         current_app.logger.error(f"Upload scenario audio error: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Server error, please try again'}), 500
+
+# 10.1 按需触发学术情景 AI 分析
+@speaking_bp.route('/analyze-scenario-audio/<int:sub_id>', methods=['POST'])
+@login_required
+def analyze_scenario_audio(sub_id):
+    submission = UserScenarioSubmission.query.get_or_404(sub_id)
+
+    if submission.user_id != current_user.id:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+
+    if submission.overall_feedback:
+        return jsonify({'status': 'success', 'message': 'Already analyzed'})
+
+    scenario = AcademicScenario.query.get(submission.scenario_id)
+    if not scenario:
+        return jsonify({'status': 'error', 'message': 'Scenario not found'}), 404
+
+    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], submission.audio_filename)
+    if not os.path.exists(filepath):
+        return jsonify({'status': 'error', 'message': 'Audio file not found'}), 404
+
+    try:
+        tos_url = upload_audio_to_tos(None, submission.audio_filename, filepath)
+        if not tos_url:
+            return jsonify({'status': 'error', 'message': 'Audio upload failed'}), 500
+
+        topic_context = {
+            "type": "Academic Scenario",
+            "title": scenario.title,
+            "category": scenario.category,
+            "difficulty": scenario.difficulty,
+            "background": scenario.background,
+            "role": scenario.role,
+            "tasks": scenario.tasks,
+            "reference_material": scenario.reference_material
+        }
+
+        ai_result = ai_evaluate_audio(tos_url, topic_context=topic_context)
+        submission.overall_feedback = ai_result.get('feedback', 'No feedback generated.')
+
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'AI analysis complete!'})
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Scenario AI analysis error: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'AI Analysis failed. Please try again.'}), 500
+
+# 10.2 学术情景 AI 点评详情页
+@speaking_bp.route('/scenario-analysis-detail/<int:sub_id>')
+@login_required
+def scenario_analysis_detail(sub_id):
+    submission = UserScenarioSubmission.query.get_or_404(sub_id)
+
+    if submission.user_id != current_user.id:
+        return "Access denied", 403
+
+    scenario = AcademicScenario.query.get_or_404(submission.scenario_id)
+
+    utc_time = submission.submitted_at
+    local_time = utc_time.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+    formatted_time = local_time.strftime('%Y-%m-%d %H:%M')
+
+    return render_template(
+        'speaking/academic_analysis_detail.html',
+        submission=submission,
+        scenario=scenario,
+        formatted_time=formatted_time
+    )
 
 # 11. 删除学术情景录音记录
 @speaking_bp.route('/delete-scenario-submission/<int:sub_id>', methods=['POST'])
