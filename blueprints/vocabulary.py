@@ -53,26 +53,8 @@ def next_word():
         return jsonify({'error': 'Category not found'}), 404
 
     # 随机选择一个单词
-    # 获取当前分类下所有单词
-    words = VocabularyWord.query.filter_by(category=category).all()
-
-    available_words = []
-
-# 筛选未掌握的单词
-    for word in words:
-        progress = UserVocabularyProgress.query.filter_by(
-            user_id=current_user.id, word_id=word.id
-        ).first()
-
-        if not progress or progress.status != 'mastered':
-            available_words.append(word)
-
-# 全部学完则复习所有单词
-    if not available_words:
-        available_words = words
-
-# 随机选择一个单词
-    word = random.choice(available_words)
+    word = random.choice(words)
+    
     progress = UserVocabularyProgress.query.filter_by(
         user_id=current_user.id, word_id=word.id
     ).first()
@@ -90,6 +72,7 @@ def record_choice():
     data = request.get_json()
     word_id = data.get('word_id')
     known = data.get('known')
+    completed_set = data.get('completed_set', False)
 
     if word_id is None or known is None:
         return jsonify({'error': 'Missing word_id or known'}), 400
@@ -126,6 +109,17 @@ def record_choice():
         progress.status = 'new'
 
     progress.last_reviewed_at = datetime.utcnow()
+
+# ⭐ 每5个词奖励1 coin
+    if completed_set:
+        if current_user.coins is None:
+            current_user.coins = 0
+        current_user.coins += 1
+
     db.session.commit()
 
-    return jsonify({'success': True, 'new_status': progress.status})
+    return jsonify({
+        'success': True,
+        'new_status': progress.status,
+        'coins': current_user.coins
+    })
