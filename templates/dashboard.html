@@ -16,20 +16,31 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
-    border: 1px solid rgba(255,255,255,0.4);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
   }
 
-  .card-hover { transition: transform .15s ease, box-shadow .15s ease; cursor: pointer; }
-  .card-hover:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(5, 10, 20, 0.32) !important; }
+  .card-hover {
+    transition: transform .15s ease, box-shadow .15s ease;
+    cursor: pointer;
+  }
 
-  .overall-guidance-right { max-width: 520px; }
+  .card-hover:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(5, 10, 20, 0.32) !important;
+  }
+
+  .overall-guidance-right {
+    max-width: 520px;
+  }
+
   .overall-guidance-panel {
     background-image: url("/static/pictures/dashboard-background.png");
     background-size: cover;
     background-position: center;
     border: 1px solid #1E3558;
   }
+
   .overall-guidance-list {
     display: flex;
     flex-direction: column;
@@ -38,12 +49,20 @@
     overflow-y: auto;
     padding-right: 6px;
   }
-  .overall-guidance-list::-webkit-scrollbar { width: 8px; }
+
+  .overall-guidance-list::-webkit-scrollbar {
+    width: 8px;
+  }
+
   .overall-guidance-list::-webkit-scrollbar-thumb {
     background: rgba(18, 53, 107, 0.45);
     border-radius: 999px;
   }
-  .overall-guidance-mini-card { flex: 0 0 auto; }
+
+  .overall-guidance-mini-card {
+    flex: 0 0 auto;
+  }
+
   .guidance-icon-teams.bg-primary {
     background: rgba(13, 110, 253, 0.12) !important;
   }
@@ -56,57 +75,72 @@
     position: relative;
     overflow: hidden;
   }
+
   .journey-title {
     font-family: 'Spectral', serif;
     letter-spacing: .02em;
   }
+
   .journey-meta {
     font-family: 'Space Grotesk', sans-serif;
     font-size: .85rem;
     color: #6B7688;
   }
+
   .journey-canvas {
     position: relative;
     margin-top: 14px;
     background: #FFFFFF;
+    padding: 20px 12px;
     border-radius: 16px;
     padding: 12px;
     border: 1px solid rgba(30, 64, 122, 0.1);
     overflow-x: auto;
+    overflow-y: hidden;
+    overflow-x: auto;
   }
+
   .journey-svg {
     display: block;
-    height: 180px;
+    height: 200px;
   }
+
   .journey-tooltip {
     position: absolute;
     pointer-events: none;
-    background: rgba(255, 255, 255, 0.86);
-    border: 1px solid rgba(30, 64, 122, 0.18);
-    box-shadow: 0 10px 24px rgba(10, 20, 40, 0.08);
-    backdrop-filter: blur(8px);
-    border-radius: 12px;
-    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(4px);
+    border-radius: 8px;
+    padding: 8px 12px;
     font-size: .85rem;
     opacity: 0;
-    transform: translateY(6px);
-    transition: opacity .12s ease, transform .12s ease;
-    min-width: 160px;
-    z-index: 10;
+    transform: translateY(5px);
+    transition: all 0.2s;
+    z-index: 100;
   }
+
   .journey-tooltip.is-visible {
     opacity: 1;
     transform: translateY(0);
   }
+
+  .marker-glow {
+    filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.1));
+  }
+
   .journey-tooltip .label {
     font-weight: 600;
     color: #101828;
   }
+
   .journey-tooltip .date {
     font-size: .75rem;
     color: #6B7688;
     margin-top: 2px;
   }
+
   .journey-add-btn {
     position: absolute;
     right: 18px;
@@ -124,13 +158,16 @@
     box-shadow: 0 8px 18px rgba(18, 53, 107, 0.12);
     transition: transform .15s ease, box-shadow .15s ease;
   }
+
   .journey-head {
     padding-right: 64px;
   }
+
   .journey-add-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 12px 24px rgba(18, 53, 107, 0.16);
   }
+
   .journey-panel {
     position: absolute;
     right: 24px;
@@ -147,29 +184,35 @@
     transition: transform .2s ease, opacity .2s ease;
     pointer-events: none;
   }
+
   .journey-panel.is-open {
     transform: translateY(0);
     opacity: 1;
     pointer-events: auto;
   }
+
   .journey-panel h6 {
     font-family: 'Spectral', serif;
     margin-bottom: 6px;
   }
+
   .journey-panel .meta {
     font-size: .75rem;
     color: #6B7688;
   }
+
   .journey-panel .value {
     font-family: 'Space Grotesk', sans-serif;
     font-weight: 600;
     margin: 8px 0;
   }
+
   .journey-panel .notes {
     font-size: .88rem;
     color: #1D2939;
     line-height: 1.5;
   }
+
   .journey-panel .close-btn {
     border: none;
     background: transparent;
@@ -185,17 +228,73 @@
     text-align: center;
   }
 
-  .schedule-calendar { table-layout: fixed; }
-  .schedule-calendar td { height: 88px; padding: 0; cursor: pointer; vertical-align: top; }
-  .schedule-calendar td:hover { background: rgba(18, 53, 107, 0.18); }
-  .schedule-calendar td.is-outside { background: #FFFFFF; color: #FFFFFF; cursor: not-allowed; }
-  .schedule-calendar td.is-outside:hover { background: #FFFFFF; }
-  .schedule-calendar td.is-selected { outline: 2px solid rgba(143, 178, 230, 0.6); outline-offset: -2px; }
-  .schedule-cell { height: 88px; padding: 6px; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
-  .schedule-day { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
-  .schedule-day .date { font-weight: 700; font-size: .9rem; }
-  .schedule-day .meta { font-size: .75rem; color: #9AA9BF; }
-  .schedule-badges { flex: 1 1 auto; min-height: 0; display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; align-content: flex-start; overflow: hidden; }
+  .schedule-calendar {
+    table-layout: fixed;
+  }
+
+  .schedule-calendar td {
+    height: 88px;
+    padding: 0;
+    cursor: pointer;
+    vertical-align: top;
+  }
+
+  .schedule-calendar td:hover {
+    background: rgba(18, 53, 107, 0.18);
+  }
+
+  .schedule-calendar td.is-outside {
+    background: #FFFFFF;
+    color: #FFFFFF;
+    cursor: not-allowed;
+  }
+
+  .schedule-calendar td.is-outside:hover {
+    background: #FFFFFF;
+  }
+
+  .schedule-calendar td.is-selected {
+    outline: 2px solid rgba(143, 178, 230, 0.6);
+    outline-offset: -2px;
+  }
+
+  .schedule-cell {
+    height: 88px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow: hidden;
+  }
+
+  .schedule-day {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4px;
+  }
+
+  .schedule-day .date {
+    font-weight: 700;
+    font-size: .9rem;
+  }
+
+  .schedule-day .meta {
+    font-size: .75rem;
+    color: #9AA9BF;
+  }
+
+  .schedule-badges {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+    align-content: flex-start;
+    overflow: hidden;
+  }
+
   .schedule-badges .badge {
     max-width: 100%;
     overflow: hidden;
@@ -203,12 +302,31 @@
     white-space: nowrap;
     color: #FFFFFF !important;
   }
-  .schedule-badges .badge.bg-info { background: #2B5C9A !important; }
-  .schedule-badges .badge.bg-primary { background: #1F5A3A !important; }
-  .schedule-badges .badge.bg-success { background: #7A2E3A !important; }
-  .schedule-badges .badge.bg-secondary { background: #5A2F7A !important; }
-  .schedule-item--deleted { opacity: .6; text-decoration: line-through; }
-  .schedule-item--draft { background: rgba(18, 53, 107, 0.18); }
+
+  .schedule-badges .badge.bg-info {
+    background: #2B5C9A !important;
+  }
+
+  .schedule-badges .badge.bg-primary {
+    background: #1F5A3A !important;
+  }
+
+  .schedule-badges .badge.bg-success {
+    background: #7A2E3A !important;
+  }
+
+  .schedule-badges .badge.bg-secondary {
+    background: #5A2F7A !important;
+  }
+
+  .schedule-item--deleted {
+    opacity: .6;
+    text-decoration: line-through;
+  }
+
+  .schedule-item--draft {
+    background: rgba(18, 53, 107, 0.18);
+  }
 
   .schedule-reminder {
     position: fixed;
@@ -225,26 +343,28 @@
 
 
 
-<div class="p-4 mb-4 bg-primary text-white rounded-3 shadow-sm d-flex flex-wrap justify-content-between align-items-center gap-3">
+<div
+  class="p-4 mb-4 bg-primary text-white rounded-3 shadow-sm d-flex flex-wrap justify-content-between align-items-center gap-3">
   <div class="d-flex align-items-center gap-3">
     <i class="bi bi-mortarboard-fill" style="font-size: 2.5rem;"></i>
     <div>
       <h2 class="fw-bold mb-0 d-flex align-items-center gap-2 flex-wrap">
         Hello, {{ current_user.username }}! 👋
-        
+
         {% if current_user.is_guide_qualified %}
-          <span class="badge-guide-expert" title="Guide Forum Qualified">
-            <i class="bi bi-patch-check-fill"></i> Guidance Area Certification
-          </span>
+        <span class="badge-guide-expert" title="Guide Forum Qualified">
+          <i class="bi bi-patch-check-fill"></i> Guidance Area Certification
+        </span>
         {% endif %}
       </h2>
       <p class="mb-0 opacity-75">Keep up the great work on your academic English journey.</p>
     </div>
   </div>
 
-  <div class="bg-white bg-opacity-10 p-3 rounded-4 text-center border border-light border-opacity-25" style="min-width: 140px;">
+  <div class="bg-white bg-opacity-10 p-3 rounded-4 text-center border border-light border-opacity-25"
+    style="min-width: 140px;">
     <div class="mb-2 d-flex align-items-center justify-content-center gap-1">
-      <i class="bi bi-coin text-warning fs-5"></i> 
+      <i class="bi bi-coin text-warning fs-5"></i>
       <span class="fw-bold fs-4" id="userCoinsDisplay">{{ current_user.coins or 0 }}</span>
     </div>
     <button id="checkinBtn" class="btn btn-sm btn-light fw-bold text-primary w-100 rounded-pill shadow-sm">
@@ -271,11 +391,12 @@
           <div class="overall-guidance-list">
             {% for card in overall_guidance_cards %}
             <a href="{% if card.url %}{{ card.url }}{% else %}{{ url_for('dashboard.guidance_page', card_key=card.key) }}{% endif %}"
-               {% if card.url %}target="_blank" rel="noopener noreferrer"{% endif %}
-               class="overall-guidance-mini-card text-decoration-none">
+              {% if card.url %}target="_blank" rel="noopener noreferrer" {% endif %}
+              class="overall-guidance-mini-card text-decoration-none">
               <div class="card border-0 shadow-sm card-hover">
                 <div class="card-body d-flex align-items-center gap-3 py-3 px-3">
-                  <div class="rounded-3 bg-{{ card.color }} bg-opacity-10 p-2 guidance-icon {% if card.key == 'teams' %}guidance-icon-teams{% endif %}">
+                  <div
+                    class="rounded-3 bg-{{ card.color }} bg-opacity-10 p-2 guidance-icon {% if card.key == 'teams' %}guidance-icon-teams{% endif %}">
                     <i class="bi {{ card.icon }} text-{{ card.color }}" style="font-size: 1.25rem;"></i>
                   </div>
                   <div class="min-w-0">
@@ -301,7 +422,8 @@
       <div class="journey-title fw-semibold">The Minimalist Path</div>
       <div class="journey-meta">Learning is a journey. Click any marker to open the journal.</div>
     </div>
-    <div class="journey-meta">Streak: <span class="fw-semibold" id="journeyStreak">{{ streak_count }}</span> day(s)</div>
+    <div class="journey-meta">Streak: <span class="fw-semibold" id="journeyStreak">{{ streak_count }}</span> day(s)
+    </div>
   </div>
 
   <button type="button" class="journey-add-btn" id="journeyAddBtn" aria-label="Add custom log">+</button>
@@ -384,7 +506,8 @@
   <div class="calendar-tip text-muted small px-3 py-2">
     <span class="badge rounded-pill bg-warning text-dark me-2">!</span>
     <span class="fw-semibold text-primary">Why You Should Use a Calendar:</span>
-    During your studies at DIICSU, deadlines are of paramount importance; all assigned tasks must be completed within the specified timeframe, or you may face penalties.
+    During your studies at DIICSU, deadlines are of paramount importance; all assigned tasks must be completed within
+    the specified timeframe, or you may face penalties.
     Making effective use of a calendar can help you cultivate a strong sense of time awareness.
   </div>
 </div>
@@ -397,11 +520,13 @@
     {% endif %}
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
       <div class="d-flex align-items-center gap-2">
-        <button type="button" class="btn btn-sm btn-outline-secondary" id="schedulePrevMonthBtn" aria-label="Previous month">
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="schedulePrevMonthBtn"
+          aria-label="Previous month">
           <span aria-hidden="true">&lt;</span>
         </button>
         <div class="fw-semibold text-muted small" id="scheduleRangeLabel"></div>
-        <button type="button" class="btn btn-sm btn-outline-secondary" id="scheduleNextMonthBtn" aria-label="Next month">
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="scheduleNextMonthBtn"
+          aria-label="Next month">
           <span aria-hidden="true">&gt;</span>
         </button>
       </div>
@@ -470,14 +595,14 @@
 
 
 <script>
-  const calendarStartIso = {{ calendar_start|tojson }};
-  const scheduleItems = {{ schedule_items|tojson }};
-  const todaySchedule = {{ today_schedule|tojson }};
-  const todayIso = {{ today_iso|tojson }};
-  const scheduleTableReady = {{ schedule_table_ready|tojson }};
-  const growthMilestones = {{ growth_milestones|tojson }};
-  const growthCustomLogs = {{ growth_custom_logs|tojson }};
-  const streakCount = {{ streak_count|tojson }};
+  const calendarStartIso = {{ calendar_start| tojson }};
+  const scheduleItems = {{ schedule_items| tojson }};
+  const todaySchedule = {{ today_schedule| tojson }};
+  const todayIso = {{ today_iso| tojson }};
+  const scheduleTableReady = {{ schedule_table_ready| tojson }};
+  const growthMilestones = {{ growth_milestones| tojson }};
+  const growthCustomLogs = {{ growth_custom_logs| tojson }};
+  const streakCount = {{ streak_count| tojson }};
 
   const scheduleModalEl = document.getElementById('scheduleModal');
   const scheduleModal = window.bootstrap ? new bootstrap.Modal(scheduleModalEl) : null;
@@ -532,6 +657,15 @@
   let journeyEditingId = null;
   let activeJourneyEvent = null;
 
+  const KIND_CONFIG = {
+    'vocabulary': { color: '#10B981', label: 'Vocab' },      // 翡翠绿
+    'listening': { color: '#3B82F6', label: 'Listening' },  // 宝石蓝
+    'speaking': { color: '#6366F1', label: 'Speaking' },   // 靛青紫 (Indigo)
+    'scenario': { color: '#F43F5E', label: 'Scenario' },   // 胭脂红 (Rose)
+    'shadowing': { color: '#F59E0B', label: 'Shadowing' },  // 琥珀橙 (Amber)
+    'custom': { color: '#C89F5B', label: 'Journal' }     // 默认金色
+  };
+
   function pad2(n) { return String(n).padStart(2, '0'); }
   function toIsoDate(d) {
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -542,14 +676,10 @@
     return next;
   }
 
-  function formatDisplayDate(iso) {
-    if (!iso) return '';
-    try {
-      return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' })
-        .format(new Date(`${iso}T00:00:00`));
-    } catch (_) {
-      return iso;
-    }
+  function formatDisplayDate(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    return parts.length >= 3 ? `${parts[1]}/${parts[2]}` : dateStr;
   }
 
   function escapeHtml(str) {
@@ -559,6 +689,11 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  function getEventUI(event) {
+    if (event.color && event.color.startsWith('#')) return event.color;
+    return KIND_CONFIG[event.kind]?.color || KIND_CONFIG['custom'].color;
   }
 
   function renderMarkdown(text) {
@@ -583,8 +718,25 @@
   }
 
   function buildJourneyData() {
+    const builtIn = (growthMilestones || [])
+      .map((item, index) => {
+        const val = typeof item.value === 'number' ? item.value : Number(item.value || 0);
+        return {
+          // 修正 ID 冲突：使用 key + date 组合，确保同一内容不同天是两个独立的 ID
+          id: `sys_${item.key}_${item.event_date || index}`,
+          title: item.title,
+          kind: item.kind || 'system', // 使用数据本身的类型，不再强制设为 'system'
+          value: val,
+          unit: item.unit || '',
+          notes: item.notes || 'Daily progress record.',
+          event_date: item.event_date || todayIso,
+          order: 1000 + index
+        };
+      })
+      .filter(item => item.value > 0);
+
     const custom = (growthCustomLogs || []).map(item => ({
-      id: item.id,
+      id: item.id || `custom_${Math.random()}`,
       title: item.title,
       kind: item.kind || 'custom',
       value: typeof item.value === 'number' ? item.value : null,
@@ -595,33 +747,11 @@
       created_at: item.created_at || ''
     }));
 
-    custom.sort((a, b) => {
-      if (a.event_date === b.event_date) return (a.created_at || '').localeCompare(b.created_at || '');
-      return (a.event_date || '').localeCompare(b.event_date || '');
-    });
+    const combined = [...builtIn, ...custom];
 
-    const builtIn = (growthMilestones || []).map((item, index) => ({
-      id: `system_${item.key}`,
-      title: item.title,
-      kind: 'system',
-      value: typeof item.value === 'number' ? item.value : Number(item.value || 0),
-      unit: item.unit || '',
-      notes: 'System milestone summary.',
-      color: '#1C4A73',
-      event_date: item.event_date || todayIso,
-      created_at: `${item.event_date || todayIso}T23:59:59`,
-      order: 1000 + index
-    }));
-
-    const combined = custom.concat(builtIn);
     combined.sort((a, b) => {
-      if (a.event_date === b.event_date) {
-        const ao = a.order || 0;
-        const bo = b.order || 0;
-        if (ao !== bo) return ao - bo;
-        return (a.created_at || '').localeCompare(b.created_at || '');
-      }
-      return (a.event_date || '').localeCompare(b.event_date || '');
+      if (a.event_date !== b.event_date) return a.event_date.localeCompare(b.event_date);
+      return a.kind.localeCompare(b.kind);
     });
     return combined;
   }
@@ -633,118 +763,156 @@
 
   function radiusFromValue(value) {
     if (!value || value <= 0) return 5;
-    const scaled = Math.log10(value + 1);
-    return Math.min(18, 5 + scaled * 6);
+    let radius = 6 + (value * 0.7);
+    return Math.min(60, radius);
   }
 
   function renderJourney() {
-    if (!journeyCanvas || !journeySvg) return;
-    journeySvg.innerHTML = '';
+    const container = document.getElementById('journeyCanvas');
+    const svg = document.getElementById('journeySvg');
+    if (!container || !svg) return;
 
-    const events = journeyEvents;
-    const height = 180;
+    svg.innerHTML = '';
+
+    const events = buildJourneyData();
+    const height = 200;
     const midY = 100;
-    const spacing = 140;
+    const spacing = 90;
     const padding = 60;
-    const minWidth = journeyCanvas.clientWidth - 24;
-    const width = Math.max(minWidth, padding * 2 + Math.max(0, events.length - 1) * spacing + 120);
 
-    journeySvg.setAttribute('width', width);
-    journeySvg.setAttribute('height', height);
-    journeySvg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    // 计算总宽度
+    const minWidth = container.clientWidth - 24;
+    const width = Math.max(minWidth, (events.length * spacing) + (padding * 2));
+
+    svg.setAttribute('width', width);
+    svg.setAttribute('height', height);
+    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
 
     const ns = 'http://www.w3.org/2000/svg';
-    const path = document.createElementNS(ns, 'path');
-    const pathColor = journeyColorFromStreak(journeyStreakValue);
-    path.setAttribute('d', `M ${padding} ${midY} L ${width - padding} ${midY}`);
-    path.setAttribute('stroke', pathColor);
-    path.setAttribute('stroke-width', '2');
-    path.setAttribute('fill', 'none');
-    path.setAttribute('stroke-linecap', 'round');
-    path.setAttribute('stroke-dasharray', `${width}`);
-    path.setAttribute('stroke-dashoffset', `${width}`);
-    journeySvg.appendChild(path);
 
-    requestAnimationFrame(() => {
-      path.style.transition = 'stroke-dashoffset .9s ease';
-      path.style.strokeDashoffset = '0';
-    });
+    // A. 绘制基准轴
+    const axis = document.createElementNS(ns, 'line');
+    axis.setAttribute('x1', 0);
+    axis.setAttribute('y1', midY);
+    axis.setAttribute('x2', width);
+    axis.setAttribute('y2', midY);
+    axis.setAttribute('stroke', '#E2E8F0');
+    axis.setAttribute('stroke-width', '2');
+    svg.appendChild(axis);
 
-    if (!events.length) {
+    if (events.length === 0) {
       const emptyText = document.createElementNS(ns, 'text');
-      emptyText.textContent = 'Add your first journal marker';
+      emptyText.textContent = 'No learning records yet.';
       emptyText.setAttribute('x', padding);
-      emptyText.setAttribute('y', midY - 12);
-      emptyText.setAttribute('fill', '#6B7688');
+      emptyText.setAttribute('y', midY - 15);
+      emptyText.setAttribute('fill', '#A0AEC0');
       emptyText.setAttribute('font-size', '12');
-      journeySvg.appendChild(emptyText);
+      svg.appendChild(emptyText);
       return;
     }
 
+    // B. 绘制事件点
     events.forEach((event, index) => {
       const x = padding + index * spacing;
-      const isSystem = event.kind === 'system';
-      const markerColor = event.color || (isSystem ? '#1C4A73' : '#C89F5B');
+      const color = getEventUI(event);
+      const isSystem = event.id.toString().startsWith('sys_');
       const radius = radiusFromValue(event.value);
-      const group = document.createElementNS(ns, 'g');
-      group.setAttribute('data-id', event.id);
-      group.style.cursor = 'pointer';
+      const isUp = index % 2 === 0; // 上下交错排列，防止拥挤
 
-      if (!isSystem) {
-        const line = document.createElementNS(ns, 'line');
-        const flagOffset = index % 2 === 0 ? -34 : 34;
-        line.setAttribute('x1', x);
-        line.setAttribute('y1', midY);
-        line.setAttribute('x2', x);
-        line.setAttribute('y2', midY + flagOffset);
-        line.setAttribute('stroke', markerColor);
-        line.setAttribute('stroke-width', '2');
-        line.setAttribute('stroke-linecap', 'round');
-        group.appendChild(line);
-
-        const ring = document.createElementNS(ns, 'circle');
-        ring.setAttribute('cx', x);
-        ring.setAttribute('cy', midY + flagOffset);
-        ring.setAttribute('r', radius);
-        ring.setAttribute('fill', '#FFFFFF');
-        ring.setAttribute('stroke', markerColor);
-        ring.setAttribute('stroke-width', '2');
-        group.appendChild(ring);
+      let pointY;
+      if (isSystem) {
+        // 系统数据：直接在轴上
+        pointY = midY;
       } else {
-        const dot = document.createElementNS(ns, 'circle');
-        dot.setAttribute('cx', x);
-        dot.setAttribute('cy', midY);
-        dot.setAttribute('r', radius);
-        dot.setAttribute('fill', markerColor);
-        dot.setAttribute('opacity', '0.88');
-        group.appendChild(dot);
+        // 自定义数据：交错在轴外 (上方或下方)
+        const isUp = index % 2 === 0;
+        pointY = isUp ? midY - 50 : midY + 50;
+
+        // 只有轴外的点才画连接线
+        const connector = document.createElementNS(ns, 'line');
+        connector.setAttribute('x1', x);
+        connector.setAttribute('y1', midY);
+        connector.setAttribute('x2', x);
+        connector.setAttribute('y2', pointY);
+        connector.setAttribute('stroke', color);
+        connector.setAttribute('stroke-width', '1');
+        connector.setAttribute('stroke-dasharray', '3,3');
+        svg.appendChild(connector);
       }
 
-      const hit = document.createElementNS(ns, 'circle');
-      hit.setAttribute('cx', x);
-      hit.setAttribute('cy', isSystem ? midY : (midY + (index % 2 === 0 ? -34 : 34)));
-      hit.setAttribute('r', radius + 10);
-      hit.setAttribute('fill', 'transparent');
-      group.appendChild(hit);
+      const group = document.createElementNS(ns, 'g');
+      group.style.cursor = 'pointer';
 
+      // 2. 绘制发光外圈 (Halo)
+      const ring = document.createElementNS(ns, 'circle');
+      ring.setAttribute('cx', x);
+      ring.setAttribute('cy', pointY);
+      ring.setAttribute('r', radius + 4);
+      ring.setAttribute('fill', color);
+      ring.setAttribute('fill-opacity', '0.15');
+      group.appendChild(ring);
+
+      // 3. 绘制核心圆点
+      const dot = document.createElementNS(ns, 'circle');
+      dot.setAttribute('cx', x);
+      dot.setAttribute('cy', pointY);
+      dot.setAttribute('r', radius);
+      dot.setAttribute('fill', color);
+      dot.setAttribute('stroke', '#FFFFFF');
+      dot.setAttribute('stroke-width', '2');
+      group.appendChild(dot);
+
+      // 4. 绘制日期标签
+      const dTxt = document.createElementNS(ns, 'text');
+      dTxt.setAttribute('x', x);
+      dTxt.setAttribute('y', midY + (isUp ? 18 : -8));
+      dTxt.setAttribute('text-anchor', 'middle');
+      dTxt.setAttribute('font-size', '10');
+      dTxt.setAttribute('font-weight', '500');
+      dTxt.setAttribute('fill', '#94A3B8');
+      dTxt.textContent = formatDisplayDate(event.event_date);
+      svg.appendChild(dTxt);
+
+      // 5. 交互逻辑
       group.addEventListener('mouseenter', (e) => {
-        if (!journeyTooltip) return;
-        journeyTooltipLabel.textContent = event.title;
-        journeyTooltipDate.textContent = formatDisplayDate(event.event_date);
-        journeyTooltip.classList.add('is-visible');
-        positionTooltip(e);
-      });
-      group.addEventListener('mousemove', positionTooltip);
-      group.addEventListener('mouseleave', () => {
-        journeyTooltip?.classList.remove('is-visible');
-      });
-      group.addEventListener('click', () => {
-        openJourneyPanel(event);
+        const tip = document.getElementById('journeyTooltip');
+        if (!tip) return;
+        document.getElementById('journeyTooltipLabel').textContent = event.title;
+        document.getElementById('journeyTooltipDate').textContent = event.event_date;
+        tip.classList.add('is-visible');
+
+        // 定位 Tooltip
+        const rect = container.getBoundingClientRect();
+        tip.style.left = (e.pageX - rect.left + 10) + 'px';
+        tip.style.top = (e.pageY - rect.top - 30) + 'px';
       });
 
-      journeySvg.appendChild(group);
+      group.addEventListener('mouseleave', () => {
+        document.getElementById('journeyTooltip')?.classList.remove('is-visible');
+      });
+
+      group.addEventListener('click', () => {
+        // 调用你原有的打开详情面板函数
+        if (typeof openJourneyPanel === 'function') {
+          openJourneyPanel(event);
+        } else {
+          // 回退逻辑
+          const panel = document.getElementById('journeyPanel');
+          document.getElementById('journeyPanelTitle').textContent = event.title;
+          document.getElementById('journeyPanelDate').textContent = event.event_date;
+          document.getElementById('journeyPanelValue').textContent = event.value ? `${event.value} ${event.unit}` : '';
+          document.getElementById('journeyPanelNotes').innerHTML = (event.notes || 'No extra notes recorded.').replace(/\n/g, '<br>');
+          panel.classList.add('is-open');
+        }
+      });
+
+      svg.appendChild(group);
     });
   }
+
+  // 初始化执行
+  window.addEventListener('load', renderJourney);
+  window.addEventListener('resize', renderJourney);
 
   function positionTooltip(e) {
     if (!journeyTooltip || !journeyCanvas) return;
@@ -1002,8 +1170,8 @@
       <div class="text-muted small mb-2">Changes are saved only when you click <span class="fw-semibold">Save changes</span>.</div>
       <div class="list-group">
         ${existing.map(item => {
-          const marked = pendingDeletes.has(item.id);
-          return `
+      const marked = pendingDeletes.has(item.id);
+      return `
             <div class="list-group-item d-flex justify-content-between align-items-center gap-2 ${marked ? 'schedule-item--deleted' : ''}">
               <div class="min-w-0">
                 <span class="badge rounded-pill ${kindBadgeClass(item.kind)} me-2">${kindLabel(item.kind)}</span>
@@ -1016,7 +1184,7 @@
               </button>
             </div>
           `;
-        }).join('')}
+    }).join('')}
         ${drafts.map(draft => `
           <div class="list-group-item d-flex justify-content-between align-items-center gap-2 schedule-item--draft">
             <div class="min-w-0">
@@ -1198,7 +1366,7 @@
 
   function updateTodayReminder() {
     if (todayReminderEl) {
-      try { todayReminderEl.remove(); } catch (_) {}
+      try { todayReminderEl.remove(); } catch (_) { }
       todayReminderEl = null;
     }
 
@@ -1276,7 +1444,7 @@
   const coinsDisplay = document.getElementById('userCoinsDisplay');
 
   if (checkinBtn) {
-    checkinBtn.addEventListener('click', async function() {
+    checkinBtn.addEventListener('click', async function () {
       // 防止重复点击
       this.disabled = true;
       const originalText = this.innerHTML;
@@ -1287,16 +1455,16 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' }
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
           // 签到成功：数字跳动，按钮变灰
           coinsDisplay.textContent = data.coins;
           this.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Signed in';
           this.classList.replace('btn-light', 'btn-secondary');
           this.classList.replace('text-primary', 'text-white');
-          alert('🎉 ' + data.message); 
+          alert('🎉 ' + data.message);
         } else {
           // 已经签到过了或报错
           this.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Today has been signed.';
