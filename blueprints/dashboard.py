@@ -268,19 +268,19 @@ def index():
     
     for d, c in daily_listening:
         if d and c > 0: 
-            growth_milestones.append({"kind": "listening", "title": "Listening Practice", "value": c, "unit": "items", "event_date": safe_iso(d)})
+            growth_milestones.append({"kind": "listening", "title": "Listening Practice", "value": c, "unit": "sessions", "event_date": safe_iso(d)})
 
     for d, c in daily_speaking:
         if d and c > 0: 
-            growth_milestones.append({"kind": "speaking", "title": "English Corner", "value": c, "unit": "times", "event_date": safe_iso(d)})
+            growth_milestones.append({"kind": "speaking", "title": "English Corner", "value": c, "unit": "exercises", "event_date": safe_iso(d)})
 
     for d, c in daily_scenarios:
         if d and c > 0: 
-            growth_milestones.append({"kind": "scenario", "title": "Academic Scenario", "value": c, "unit": "times", "event_date": safe_iso(d)})
+            growth_milestones.append({"kind": "scenario", "title": "Academic Scenario", "value": c, "unit": "sessions", "event_date": safe_iso(d)})
 
     for d, c in daily_shadowing:
         if d and c > 0: 
-            growth_milestones.append({"kind": "shadowing", "title": "Shadowing Practice", "value": c, "unit": "times", "event_date": safe_iso(d)})
+            growth_milestones.append({"kind": "shadowing", "title": "Shadowing Practice", "value": c, "unit": "exercises", "event_date": safe_iso(d)})
 
     streak_count = calculate_streak([m.event_date for m in journal_markers])
 
