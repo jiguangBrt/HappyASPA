@@ -133,7 +133,7 @@ This sprint successfully completed the basic setup and optimization of the core 
 </table>
 
 
-## Specific Incremental Details
+## Feedback Captured
 <table>
   <thead>
     <tr>
