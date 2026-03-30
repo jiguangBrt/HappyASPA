@@ -1,7 +1,7 @@
-
 from flask import Blueprint, render_template, request, jsonify, current_app, url_for, redirect, flash
 from flask_login import login_required, current_user
-from models import db, UserActivityLog, SpeakingExercise, UserSpeakingSubmission, User, AcademicScenario, UserScenarioSubmission
+from models import db, UserActivityLog, SpeakingExercise, UserSpeakingSubmission, User, AcademicScenario, UserScenarioSubmission, ShadowingExercise, ShadowingAudio, UserShadowingRecord
+from werkzeug.utils import secure_filename 
 from flask import send_from_directory
 from datetime import datetime, timezone, timedelta
 import os
@@ -11,11 +11,8 @@ import requests
 import base64
 from volcenginesdkarkruntime import Ark
 
-
-
 speaking_bp = Blueprint('speaking', __name__, url_prefix='/speaking')
 
-# 工具函数：验证文件扩展名
 # 工具函数：验证文件扩展名
 def allowed_file(filename):
     return '.' in filename and \
@@ -275,13 +272,17 @@ def index():
     raw_submissions = UserSpeakingSubmission.query.filter_by(user_id=current_user.id).all()
     user_submissions_dict = {sub.exercise_id: sub for sub in raw_submissions}
     
-    # 🌟 NEW: 查出 Academic Scenarios 的数据！
+    # 查出 Academic Scenarios 的数据
     scenarios = AcademicScenario.query.order_by(AcademicScenario.created_at.desc()).all()
+    
+    # 查出所有跟读练习的数据
+    shadowing_practices = ShadowingExercise.query.order_by(ShadowingExercise.id.asc()).all()
     
     return render_template('speaking/index.html', 
                            exercises=exercises, 
                            user_submissions=user_submissions_dict,
-                           scenarios=scenarios) # 🌟 别忘了把 scenarios 传给前端
+                           scenarios=scenarios,
+                           shadowing_practices=shadowing_practices)
 
 # 2. 新建口语练习（GET 展示表单 / POST 创建）
 @speaking_bp.route('/new', methods=['GET', 'POST'])
@@ -306,7 +307,7 @@ def new_exercise():
                 prompt=prompt,
                 difficulty=difficulty,
                 category=category or None,
-                creator_id=current_user.id  # 绑定创建者
+                creator_id=current_user.id
             )
             db.session.add(exercise)
             db.session.flush()
@@ -319,24 +320,21 @@ def new_exercise():
             
     return render_template('speaking/new_exercise.html')
 
-# 3. 提供音频文件访问 (升级版：支持普通口语和学术情景两张表)
+# 3. 提供音频文件访问
 @speaking_bp.route('/audio/<filename>')
 @login_required
 def get_audio(filename):
-    # 先在普通口语表里找
     submission = UserSpeakingSubmission.query.filter_by(audio_filename=filename).first()
-    
-    # 如果没找到，再去新的学术情景表里找
     if not submission:
         submission = UserScenarioSubmission.query.filter_by(audio_filename=filename).first()
-        
-    # 如果两张表里都没有，说明有人在乱猜文件名，拒绝访问
+    if not submission:
+        submission = UserShadowingRecord.query.filter_by(audio_path=filename).first()
     if not submission:
         return "Access denied", 403
         
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
 
-# 4. 上传录音接口
+# 4. 上传录音接口 (修改：仅保存录音，不再自动调用 AI)
 @speaking_bp.route('/upload-audio', methods=['POST'])
 @login_required
 def upload_audio():
@@ -352,7 +350,6 @@ def upload_audio():
         if file.filename == '':
             return jsonify({'status': 'error', 'message': 'No selected file'}), 400
         
-        # 文件大小限制（50MB）
         MAX_FILE_SIZE = 50 * 1024 * 1024
         if file.content_length and file.content_length > MAX_FILE_SIZE:
             return jsonify({'status': 'error', 'message': 'File too large (max 50MB)'}), 413
@@ -393,17 +390,64 @@ def upload_audio():
             db.session.commit()
             return jsonify({
                 'status': 'success',
-                'message': 'Audio uploaded & evaluated!',
+                'message': 'Audio saved successfully!',
                 'submission_id': submission.id,
-                'filename': filename,
-                'feedback': submission.feedback
+                'filename': filename
             }), 200
         else:
-            return jsonify({'status': 'error', 'message': 'File type not allowed (only mp3/wav/ogg/webm)'}), 400
+            return jsonify({'status': 'error', 'message': 'File type not allowed'}), 400
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Upload audio error: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Server error, please try again'}), 500
+
+# 4.1 🌟 NEW: 专门用于触发 AI 分析的接口
+@speaking_bp.route('/analyze-audio/<int:sub_id>', methods=['POST'])
+@login_required
+def analyze_audio(sub_id):
+    submission = UserSpeakingSubmission.query.get_or_404(sub_id)
+    
+    # 权限校验：只能分析自己的录音
+    if submission.user_id != current_user.id:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+        
+    # 如果已经分析过了，直接返回成功
+    if submission.feedback:
+        return jsonify({'status': 'success', 'message': 'Already analyzed'})
+
+    try:
+        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], submission.audio_filename)
+        if not os.path.exists(filepath):
+            return jsonify({'status': 'error', 'message': 'Audio file not found'}), 404
+            
+        # 调用火山引擎 AI 自动点评
+        ai_result = ai_evaluate_audio(filepath)
+        submission.feedback = ai_result.get('feedback', 'No feedback generated.')
+        
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'AI analysis complete!'})
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"AI analysis error: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'AI Analysis failed. Please try again.'}), 500
+
+# 4.2 🌟 NEW: AI 点评详情页路由
+@speaking_bp.route('/analysis-detail/<int:sub_id>')
+@login_required
+def analysis_detail(sub_id):
+    submission = UserSpeakingSubmission.query.get_or_404(sub_id)
+    exercise = SpeakingExercise.query.get(submission.exercise_id)
+    
+    # 格式化时间
+    utc_time = submission.submitted_at       
+    local_time = utc_time.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+    formatted_time = local_time.strftime('%Y-%m-%d %H:%M')
+    
+    return render_template('speaking/analysis_detail.html', 
+                           submission=submission, 
+                           exercise=exercise,
+                           formatted_time=formatted_time)
 
 # 5. 删除录音记录
 @speaking_bp.route('/delete-submission/<int:sub_id>', methods=['POST'])
@@ -489,33 +533,27 @@ def delete_exercise(exercise_id):
         return redirect(url_for('speaking.index'))
 
 # ==========================================
-# 🎓 NEW: 学术情景模拟 (Academic Scenarios) 专属路由
+# 🎓 学术情景模拟 (Academic Scenarios) 专属路由
 # ==========================================
 
 # 8. 学术情景库（列表页）
 @speaking_bp.route('/academic-scenarios')
 @login_required
 def academic_index():
-    # 从数据库获取所有情景，按创建时间倒序排列
     scenarios = AcademicScenario.query.order_by(AcademicScenario.created_at.desc()).all()
-    
-    # 把查出来的数据传给前端模板
     return render_template('speaking/academic_index.html', scenarios=scenarios)
 
 # 9. 学术情景模拟室（动态读取数据库）
 @speaking_bp.route('/academic-scenarios/<int:scenario_id>')
 @login_required
 def academic_detail(scenario_id):
-    # 1. 查询真实的情景题目数据
     scenario = AcademicScenario.query.get_or_404(scenario_id)
     
-    # 2. 查询当前用户在这个题目下的所有历史录音
     submissions = UserScenarioSubmission.query.filter_by(
         user_id=current_user.id, 
         scenario_id=scenario_id
     ).order_by(UserScenarioSubmission.submitted_at.desc()).all()
     
-    # 3. 格式化提交记录的时间
     submission_list = []
     for sub in submissions:
         utc_time = sub.submitted_at       
@@ -533,7 +571,7 @@ def academic_detail(scenario_id):
         
     return render_template('speaking/academic_detail.html', scenario=scenario, submissions=submission_list)
 
-# 10. 上传学术情景录音接口 (真实写入数据库版)
+# 10. 上传学术情景录音接口
 @speaking_bp.route('/upload-scenario-audio', methods=['POST'])
 @login_required
 def upload_scenario_audio():
@@ -560,13 +598,11 @@ def upload_scenario_audio():
             filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
             os.makedirs(current_app.config['UPLOAD_FOLDER'], exist_ok=True)
             
-            # 1. 保存物理文件
             file.save(filepath)
             # 解耦上传 TOS（不影响原有逻辑）
             file.seek(0)
             tos_url = upload_audio_to_tos(file, filename,filepath)
             
-            # 2. 🌟 写入数据库！
             new_sub = UserScenarioSubmission(
                 user_id=current_user.id,
                 scenario_id=scenario_id,
@@ -607,13 +643,11 @@ def upload_scenario_audio():
 @speaking_bp.route('/delete-scenario-submission/<int:sub_id>', methods=['POST'])
 @login_required
 def delete_scenario_submission(sub_id):
-    # 确保只能删除当前登录用户自己的录音
     submission = UserScenarioSubmission.query.filter_by(id=sub_id, user_id=current_user.id).first()
     
     if not submission:
         return jsonify({'status': 'error', 'message': 'Submission not found or unauthorized'}), 404
     
-    # 1. 从硬盘上删除物理音频文件
     filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], submission.audio_filename)
     if os.path.exists(filepath):
         try:
@@ -621,8 +655,127 @@ def delete_scenario_submission(sub_id):
         except Exception as e:
             current_app.logger.error(f"Error deleting file {filepath}: {str(e)}")
     
-    # 2. 从数据库中删除记录
     db.session.delete(submission)
     db.session.commit()
     
     return jsonify({'status': 'success', 'message': 'Scenario submission deleted'}), 200
+
+# ==========================================
+# 🎙️ NEW: 沉浸式跟读练习 (Shadowing Practice)
+# ==========================================
+
+# 12. 沉浸式跟读练习舱 (Practice Detail) - 包含历史记录
+@speaking_bp.route('/practice/<int:practice_id>')
+@login_required
+def practice_detail(practice_id):
+    practice = ShadowingExercise.query.get_or_404(practice_id)
+    audio_dict = {audio.accent_code: audio.audio_url for audio in practice.audios}
+    
+    practice_data = {
+        'id': practice.id,
+        'title': practice.title,
+        'focus': practice.focus,
+        'text': practice.text,
+        'audio': audio_dict
+    }
+    
+    # 查询该用户在此题目的录音历史
+    records = UserShadowingRecord.query.filter_by(
+        user_id=current_user.id, 
+        exercise_id=practice_id
+    ).order_by(UserShadowingRecord.attempt_number.desc()).all()
+    
+    # 格式化给前端渲染
+    history_list = []
+    for r in records:
+        local_time = r.created_at.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+        history_list.append({
+            'id': r.id,
+            'attempt': r.attempt_number,
+            'audio_url': url_for('speaking.get_audio', filename=r.audio_path),
+            'created_at': local_time.strftime("%H:%M:%S")
+        })
+    
+    return render_template('speaking/practice_detail.html', practice=practice_data, history=history_list)
+
+# 13. 上传跟读录音接口
+@speaking_bp.route('/practice/<int:practice_id>/upload_record', methods=['POST'])
+@login_required
+def upload_shadowing_record(practice_id):
+    try:
+        # 1. 检查文件是否存在
+        if 'audio' not in request.files:
+            return jsonify({'success': False, 'message': '没有找到音频文件'}), 400
+        
+        file = request.files['audio']
+        if file.filename == '':
+            return jsonify({'success': False, 'message': '未选择文件'}), 400
+            
+        if file and allowed_file(file.filename):
+            # 2. 生成安全文件名并保存
+            ext = file.filename.rsplit('.', 1)[1].lower()
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"user_{current_user.id}_shadow_{practice_id}_{timestamp}.{ext}"
+            
+            filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+            os.makedirs(current_app.config['UPLOAD_FOLDER'], exist_ok=True)
+            file.save(filepath)
+            
+            # 3. 计算这次是第几次尝试
+            last_record = UserShadowingRecord.query.filter_by(
+                user_id=current_user.id, 
+                exercise_id=practice_id
+            ).order_by(UserShadowingRecord.attempt_number.desc()).first()
+            
+            next_attempt = (last_record.attempt_number + 1) if last_record else 1
+            
+            # 4. 写入数据库
+            new_record = UserShadowingRecord(
+                user_id=current_user.id,
+                exercise_id=practice_id,
+                audio_path=filename,
+                attempt_number=next_attempt
+            )
+            db.session.add(new_record)
+            db.session.commit()
+            
+            # 5. 返回给前端渲染
+            local_time = new_record.created_at.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+            
+            return jsonify({
+                'success': True,
+                'message': '录音保存成功！',
+                'audio_url': url_for('speaking.get_audio', filename=filename),
+                'attempt': next_attempt,
+                'created_at': local_time.strftime("%H:%M:%S"),
+                'record_id': new_record.id
+            })
+        else:
+            return jsonify({'success': False, 'message': '文件类型不被允许'}), 400
+            
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Upload shadowing record error: {str(e)}")
+        return jsonify({'success': False, 'message': '服务器处理失败'}), 500
+
+# 14. 删除某条跟读录音记录接口
+@speaking_bp.route('/delete-shadowing-record/<int:record_id>', methods=['POST'])
+@login_required
+def delete_shadowing_record(record_id):
+    record = UserShadowingRecord.query.filter_by(id=record_id, user_id=current_user.id).first()
+    if not record:
+        return jsonify({'success': False, 'message': '未找到记录或无权限删除'}), 404
+        
+    # 删除物理文件
+    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], record.audio_path)
+    if os.path.exists(filepath):
+        try:
+            os.remove(filepath)
+        except Exception as e:
+            current_app.logger.error(f"Error deleting shadowing file {filepath}: {str(e)}")
+            
+    # 删除数据库记录
+    db.session.delete(record)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': '记录已删除'})

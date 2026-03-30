@@ -1,8 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, timezone
 
 db = SQLAlchemy()
 
@@ -20,6 +19,22 @@ class User(UserMixin, db.Model):
     created_at     = db.Column(db.DateTime, default=datetime.utcnow)
     last_login_at  = db.Column(db.DateTime, nullable=True)
 
+    # ==========================================
+    # 💰 NEW: 经济系统与每日任务字段
+    # ==========================================
+    coins                 = db.Column(db.Integer, default=0)
+    last_checkin_date     = db.Column(db.Date, nullable=True)
+    last_post_reward_date = db.Column(db.Date, nullable=True)
+
+    # ==========================================
+    # 🎓 NEW: 英语成绩认证与权限字段
+    # ==========================================
+    gaokao_score       = db.Column(db.Float, nullable=True)   # 高考英语
+    ielts_score        = db.Column(db.Float, nullable=True)   # 雅思
+    toefl_score        = db.Column(db.Integer, nullable=True) # 托福
+    gre_score          = db.Column(db.Integer, nullable=True) # GRE
+    is_guide_qualified = db.Column(db.Boolean, default=False) # 指导区发帖资格标签
+
     # relationships
     vocab_progress      = db.relationship('UserVocabularyProgress', backref='user', lazy=True)
     flashcard_progress  = db.relationship('UserFlashcardProgress',  backref='user', lazy=True)
@@ -32,9 +47,19 @@ class User(UserMixin, db.Model):
     activity_logs       = db.relationship('UserActivityLog',        backref='user',   lazy=True)
     created_flashcards  = db.relationship('Flashcard', backref='creator', lazy=True)
     schedule_items      = db.relationship('UserScheduleItem',       backref='user',   lazy=True)
+    journal_markers     = db.relationship('UserJournalMarker',      backref='user',   lazy=True)
     
-    # 👇 NEW: 关联用户的学术情景录音提交
+    # 关联用户的学术情景录音提交
     scenario_submissions = db.relationship('UserScenarioSubmission', backref='user', lazy=True)
+    
+    # 🌟 NEW: 关联用户的跟读练习录音记录
+    shadowing_records    = db.relationship('UserShadowingRecord',    backref='user', lazy=True)
+
+    # 累计正确题目数（首次做对计数的题目总数）
+    total_correct_questions = db.Column(db.Integer, default=0, nullable=False)
+    
+    # 累计学习时长（秒）
+    total_listening_duration = db.Column(db.Integer, default=0, nullable=False)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -44,7 +69,7 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return f'<User {self.username}>'
-
+    
 # ─────────────────────────────────────────────
 # Vocabulary
 # ─────────────────────────────────────────────
@@ -111,10 +136,15 @@ class ForumPost(db.Model):
     title      = db.Column(db.String(200), nullable=False)
     content    = db.Column(db.Text,        nullable=False)
     category   = db.Column(db.String(50),  nullable=True)
+    # 👇 NEW: 新增一个字段专门管大分区（默认发到交流区 discussion）
+    board      = db.Column(db.String(50),  default='discussion')
     views      = db.Column(db.Integer,     default=0)
     created_at = db.Column(db.DateTime,    default=datetime.utcnow)
     updated_at = db.Column(db.DateTime,    default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    image_url = db.Column(db.String(256), nullable=True) # 👈 存图片路径
+    audio_url = db.Column(db.String(256), nullable=True) # 👈 存语音路径
+    
     comments  = db.relationship('ForumComment', backref='post', lazy=True, cascade='all, delete-orphan')
     likes     = db.relationship('ForumLike',    backref='post', lazy=True, cascade='all, delete-orphan')
     favorites = db.relationship('ForumFavorite', backref='post', lazy=True, cascade='all, delete-orphan') 
@@ -151,7 +181,6 @@ class ForumComment(db.Model):
     content    = db.Column(db.Text,     nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # 👇 保留的高级功能：楼中楼
     parent_id  = db.Column(db.Integer, db.ForeignKey('forum_comments.id'), nullable=True)
 
     replies    = db.relationship(
@@ -235,6 +264,7 @@ class ListeningExercise(db.Model):
     duration_seconds = db.Column(db.Integer,      nullable=True)
     created_at       = db.Column(db.DateTime,     default=datetime.utcnow)
     subtitle_url     = db.Column(db.String(256),  nullable=True)
+    accent = db.Column(db.String(50), nullable=True)
     questions = db.Column(db.JSON, nullable=True)  
 
     progress = db.relationship('UserListeningProgress', backref='exercise', lazy=True)
@@ -247,14 +277,19 @@ class UserListeningProgress(db.Model):
     user_id         = db.Column(db.Integer, db.ForeignKey('users.id'),                nullable=False)
     exercise_id     = db.Column(db.Integer, db.ForeignKey('listening_exercises.id'),  nullable=False)
     completed       = db.Column(db.Boolean, default=False)
-    score           = db.Column(db.Float,   nullable=True)
+    # score           = db.Column(db.Float,   nullable=True)
     attempts        = db.Column(db.Integer, default=0)
     last_attempt_at = db.Column(db.DateTime, nullable=True)
 
-    # new colomn：to store user listening practise progress
     last_position   = db.Column(db.Float, nullable=True)           # current play position
-    two_thirds_count = db.Column(db.Integer, default=0)           # count of finishing exercises (Which reachs 2/3 progress of the whole exercise)
+    # two_thirds_count = db.Column(db.Integer, default=0)           # count of finishing exercises
     answers         = db.Column(db.JSON, nullable=True)           # record of answer result
+
+    # 永久记录：已做过的题目索引列表（无论对错，永不重置）
+    permanent_answered = db.Column(db.JSON, default=lambda: list())
+
+    # 永久记录：已正确答对的题目索引列表（首次正确才记录）
+    permanent_correct = db.Column(db.JSON, default=lambda: list())
     
 # ─────────────────────────────────────────────
 # Writing
@@ -278,7 +313,7 @@ class UserWritingSubmission(db.Model):
     __tablename__ = 'user_writing_submissions'
 
     id           = db.Column(db.Integer, primary_key=True)
-    user_id      = db.Column(db.Integer, db.ForeignKey('users.id'),               nullable=False)
+    user_id      = db.Column(db.Integer, db.ForeignKey('users.id'),                nullable=False)
     exercise_id  = db.Column(db.Integer, db.ForeignKey('writing_exercises.id'),  nullable=False)
     content      = db.Column(db.Text,    nullable=False)
     word_count   = db.Column(db.Integer, nullable=True)
@@ -318,7 +353,7 @@ class UserSpeakingSubmission(db.Model):
 
 
 # ==========================================
-# 🎓 NEW: Academic Scenarios (学术情景模拟)
+# 🎓 Academic Scenarios (学术情景模拟)
 # ==========================================
 class AcademicScenario(db.Model):
     __tablename__ = 'academic_scenarios'
@@ -330,7 +365,7 @@ class AcademicScenario(db.Model):
     
     background = db.Column(db.Text, nullable=False)         # 情景背景
     role = db.Column(db.Text, nullable=False)               # 你的角色
-    tasks = db.Column(db.JSON, nullable=True)               # 需要完成的任务清单 (用 JSON 存列表最方便)
+    tasks = db.Column(db.JSON, nullable=True)               # 需要完成的任务清单
     reference_material = db.Column(db.Text, nullable=True)  # 参考资料/线索
     prep_time_seconds = db.Column(db.Integer, default=120)  # 建议准备时间
     
@@ -350,12 +385,54 @@ class UserScenarioSubmission(db.Model):
     duration_seconds = db.Column(db.Float, nullable=True)  
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # AI 评估专属字段（比普通的 Speaking 更详细）
+    # AI 评估专属字段
     score_vocabulary = db.Column(db.Float, nullable=True)
     score_logic = db.Column(db.Float, nullable=True)
     score_politeness = db.Column(db.Float, nullable=True)
     overall_feedback = db.Column(db.Text, nullable=True)
 
+
+# ==========================================
+# 🎙️ NEW: 跟读练习模型 (Shadowing Practice)
+# ==========================================
+class ShadowingExercise(db.Model):
+    __tablename__ = 'shadowing_exercises'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(150), nullable=False)
+    focus = db.Column(db.Text, nullable=False)
+    text = db.Column(db.Text, nullable=False)
+    duration_str = db.Column(db.String(20)) # e.g., "~0:30"
+    word_count = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    audios = db.relationship('ShadowingAudio', backref='exercise', lazy=True, cascade='all, delete-orphan')
+    
+    # 🌟 NEW: 关联用户的录音记录
+    records = db.relationship('UserShadowingRecord', backref='exercise', lazy=True, cascade='all, delete-orphan')
+
+class ShadowingAudio(db.Model):
+    __tablename__ = 'shadowing_audios'
+    id = db.Column(db.Integer, primary_key=True)
+    exercise_id = db.Column(db.Integer, db.ForeignKey('shadowing_exercises.id'), nullable=False)
+    accent_code = db.Column(db.String(10), nullable=False) # 'us', 'gb', 'au'
+    audio_url = db.Column(db.String(255), nullable=False)  # '/static/audio/shadowing/...'
+
+# 🌟 NEW: 用户跟读录音表
+class UserShadowingRecord(db.Model):
+    __tablename__ = 'user_shadowing_records'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    exercise_id = db.Column(db.Integer, db.ForeignKey('shadowing_exercises.id'), nullable=False)
+    
+    # 录音文件存放路径
+    audio_path = db.Column(db.String(255), nullable=False)
+    
+    # 记录这是用户的第几次尝试，方便前端排序展示
+    attempt_number = db.Column(db.Integer, default=1)
+    
+    # 录音时间
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # ─────────────────────────────────────────────
 # Activity Log（学习轨迹核心）
@@ -381,3 +458,18 @@ class UserScheduleItem(db.Model):
     title          = db.Column(db.String(200), nullable=False)
     notes          = db.Column(db.Text, nullable=True)
     created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+
+# Dashboard journal markers (custom log)
+class UserJournalMarker(db.Model):
+    __tablename__ = 'user_journal_markers'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    title      = db.Column(db.String(200), nullable=False)
+    kind       = db.Column(db.String(30), default='custom')
+    value      = db.Column(db.Float, nullable=True)
+    unit       = db.Column(db.String(20), nullable=True)
+    notes      = db.Column(db.Text, nullable=True)
+    color      = db.Column(db.String(20), nullable=True)
+    event_date = db.Column(db.Date, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

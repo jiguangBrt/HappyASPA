@@ -32,6 +32,20 @@
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
         .fast-blink { animation: blink 1s linear infinite; }
         .transition { transition: all 0.3s ease; }
+        .tag {
+            background: rgba(18, 53, 107, 0.85);
+            color: #F8F9FA;
+            border: 1px solid rgba(18, 53, 107, 0.35);
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 12px;
+            letter-spacing: 0.3px;
+        }
+        .tag--cs { background: #2B2F36; }
+        .tag--civil { background: #2F5A52; }
+        .tag--math { background: #4B2C7A; }
+        .tag--mech { background: #7A3E28; }
+        .tag--traffic { background: #7A222F; }
     </style>
 </head>
 <body>
@@ -47,7 +61,7 @@
     <div class="d-flex justify-content-between align-items-end mb-4">
         <div>
             <div class="d-flex gap-2 mb-2">
-                <span class="badge bg-primary bg-opacity-10 text-primary"><i class="bi bi-building me-1"></i>{{ scenario.category }}</span>
+                <span class="badge subject-tag" data-subject-tag data-subject="{{ scenario.category }}"><i class="bi bi-building me-1"></i>{{ scenario.category }}</span>
                 <span class="badge bg-danger bg-opacity-10 text-danger">
                     {% for _ in range(scenario.difficulty) %}⭐{% endfor %} 
                     {% if scenario.difficulty == 3 %}Hard{% elif scenario.difficulty == 2 %}Medium{% else %}Easy{% endif %}
@@ -358,6 +372,28 @@
             });
         }
     }
+</script>
+
+<script>
+  (function () {
+    function matchAny(haystack, keywords) {
+      return keywords.some(k => haystack.includes(k));
+    }
+    function tagClassFor(subject) {
+      const name = (subject || '').toLowerCase();
+      if (name.includes('computer science')) return 'tag--cs';
+      if (name.includes('civil engineering')) return 'tag--civil';
+      if (name.includes('applied mathematics')) return 'tag--math';
+      if (name.includes('mechanical engineering')) return 'tag--mech';
+      if (name.includes('traffic control')) return 'tag--traffic';
+      return 'tag--cs';
+    }
+    document.querySelectorAll('[data-subject-tag]').forEach(el => {
+      const subject = el.dataset.subject || el.textContent || '';
+      el.classList.add('tag');
+      el.classList.add(tagClassFor(subject));
+    });
+  })();
 </script>
 
 </body>

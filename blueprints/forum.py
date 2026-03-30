@@ -4,6 +4,63 @@ from sqlalchemy import func  # <--- 新增：用于统计点赞数
 from datetime import datetime
 from models import db, ForumPost, ForumComment, ForumLike, ForumFavorite, CommentLike, CommentFavorite
 
+import os
+import uuid
+
+# 允许上传的文件后缀白名单
+ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_AUDIO_EXTENSIONS = {'mp3', 'wav', 'ogg', 'm4a'}
+
+def allowed_file(filename, allowed_set):
+    """检查文件后缀是否在白名单内"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_set
+
+# ==========================================
+# 💰 NEW: 每日首次互动金币奖励小助手
+# ==========================================
+# 🔍 检查用户今天是否已经完成互动的工具函数
+def has_user_interacted_today():
+    now = datetime.utcnow()
+    today_start = datetime(now.year, now.month, now.day)
+    
+    # 只要发帖数 + 评论数 > 0，就说明今天任务已完成
+    posts_count = ForumPost.query.filter(ForumPost.user_id == current_user.id, ForumPost.created_at >= today_start).count()
+    comments_count = ForumComment.query.filter(ForumComment.user_id == current_user.id, ForumComment.created_at >= today_start).count()
+    
+    return (posts_count + comments_count) > 0
+
+def reward_daily_forum_coin():
+    """
+    检查用户今天是否是第一次发帖或评论。
+    因为这个函数会在刚才的帖子/评论保存到数据库 *之后* 调用，
+    所以如果今天的总数刚好等于 1，就说明刚刚那条是今天的首发！
+    """
+    now = datetime.utcnow()
+    # 获取今天 UTC 时间的零点
+    today_start = datetime(now.year, now.month, now.day)
+    
+    # 统计今天该用户发了多少帖
+    posts_today = ForumPost.query.filter(
+        ForumPost.user_id == current_user.id,
+        ForumPost.created_at >= today_start
+    ).count()
+    
+    # 统计今天该用户发了多少评论
+    comments_today = ForumComment.query.filter(
+        ForumComment.user_id == current_user.id,
+        ForumComment.created_at >= today_start
+    ).count()
+    
+    # 如果两者加起来刚好等于 1，说明触发了“今日首发”成就！
+    if (posts_today + comments_today) == 1:
+        if current_user.coins is None:
+            current_user.coins = 0  # 兜底旧账号
+        current_user.coins += 1
+        db.session.commit()
+        return True
+        
+    return False
+
 forum_bp = Blueprint('forum', __name__, url_prefix='/forum')
 @forum_bp.context_processor
 def inject_category_colors():
@@ -44,53 +101,60 @@ def calculate_hot_score(post):
 def index():
     tab = request.args.get('tab', 'all')
     category_filter = request.args.get('category')
-    # 👇 新增 1：获取前端传来的排序方式，默认设为 'hot'
     sort_by = request.args.get('sort_by', 'hot') 
+    board = request.args.get('board', 'discussion') 
+    
     saved_comments = []
 
     # 初始化基础查询
     post_query = db.session.query(ForumPost)
 
     if tab == 'saved':
+        # 👇 NEW: 在查询收藏帖子时，加上 .filter(ForumPost.board == board) 强隔离！
         post_query = post_query.join(ForumFavorite, ForumPost.id == ForumFavorite.post_id)\
             .filter(ForumFavorite.user_id == current_user.id)\
+            .filter(ForumPost.board == board)\
             .order_by(ForumFavorite.created_at.desc())
             
+        # 👇 NEW: 收藏的评论同样要 join 帖子表，并根据帖子所在的 board 进行强隔离！
         comment_query = db.session.query(ForumComment)\
             .join(CommentFavorite, ForumComment.id == CommentFavorite.comment_id)\
-            .filter(CommentFavorite.user_id == current_user.id)
+            .join(ForumPost, ForumComment.post_id == ForumPost.id)\
+            .filter(CommentFavorite.user_id == current_user.id)\
+            .filter(ForumPost.board == board)
             
         if category_filter:
-            comment_query = comment_query.join(ForumPost, ForumComment.post_id == ForumPost.id)\
-                .filter(ForumPost.category == category_filter)
+            comment_query = comment_query.filter(ForumPost.category == category_filter)
                 
         saved_comments = comment_query.order_by(CommentFavorite.created_at.desc()).all()
         
     else:
-        pass 
+        # 常规列表下的分区过滤
+        post_query = post_query.filter(ForumPost.board == board)
 
-    # 无论哪个 tab，处理分类过滤
+    # 无论哪个 tab，处理小标签分类过滤 (Vocabulary/Grammar等)
     if category_filter:
         post_query = post_query.filter(ForumPost.category == category_filter)
 
     posts = post_query.all()
 
-    # 👇 新增 2：根据 sort_by 进行不同的排序 👇
+    # 根据 sort_by 进行排序
     if tab != 'saved' and posts:
         if sort_by == 'new':
-            # 按时间倒序（最新的在前面）
             posts.sort(key=lambda p: p.created_at, reverse=True)
         else:
-            # 默认：按我们写好的热度算法排序
             posts.sort(key=calculate_hot_score, reverse=True)
 
-    # 👇 新增 3：把 sort_by 传给前端模板
+    daily_done = has_user_interacted_today()  # 调用刚才写的检查函数
+
     return render_template('forum/index.html', 
                            posts=posts, 
                            tab=tab, 
                            saved_comments=saved_comments,
                            current_category=category_filter,
-                           sort_by=sort_by)
+                           sort_by=sort_by,
+                           daily_done=daily_done,
+                           board=board)
 
 @forum_bp.route('/post/<int:post_id>')
 @login_required
@@ -104,27 +168,88 @@ def post_detail(post_id):
 @forum_bp.route('/new', methods=['GET', 'POST'])
 @login_required
 def new_post():
+    # 接收前端传来的 board 参数，用于告诉发帖页面“默认选中哪个区”
+    current_board = request.args.get('board', 'discussion')
+    
     if request.method == 'POST':
         title    = request.form.get('title',    '').strip()
         content  = request.form.get('content',  '').strip()
         category = request.form.get('category', '').strip()
+        board    = request.form.get('board', 'discussion').strip() 
+
+        # 🛡️ THE GUARD (发帖守卫核心逻辑)
+        if board == 'guide' and not current_user.is_guide_qualified:
+            flash('Post submission failed: Your English score has not yet reached the guideline standard. Please go to your personal center to complete the verification first!', 'danger')
+            return redirect(url_for('forum.index', board='discussion'))
 
         if not title or not content:
             flash('Title and content are required.', 'danger')
+            return redirect(url_for('forum.new_post', board=board))
+
+        # ==========================================
+        # 📷🎙️ THE WAREHOUSE (多媒体接收与保存逻辑) - 之前你漏掉了这里！
+        # ==========================================
+        image_url = None
+        audio_url = None
+        
+        # 定义保存路径 (会自动在 static 目录下建文件夹)
+        base_upload_dir = os.path.join('static', 'uploads', 'forum')
+        img_dir = os.path.join(base_upload_dir, 'images')
+        audio_dir = os.path.join(base_upload_dir, 'audio')
+        os.makedirs(img_dir, exist_ok=True)
+        os.makedirs(audio_dir, exist_ok=True)
+
+        # 1. 拦截并处理图片
+        image_file = request.files.get('image')
+        if image_file and image_file.filename != '':
+            if allowed_file(image_file.filename, ALLOWED_IMAGE_EXTENSIONS):
+                # 用 UUID 重命名，防止中文名乱码或文件覆盖
+                ext = image_file.filename.rsplit('.', 1)[1].lower()
+                safe_filename = f"{uuid.uuid4().hex}.{ext}"
+                file_path = os.path.join(img_dir, safe_filename)
+                image_file.save(file_path)
+                image_url = f"/static/uploads/forum/images/{safe_filename}" # 存入数据库的路径
+            else:
+                flash("Invalid image format. Allowed: JPG, PNG, GIF.", "danger")
+                return redirect(request.url)
+
+        # 2. 拦截并处理语音
+        audio_file = request.files.get('audio')
+        if audio_file and audio_file.filename != '':
+            if allowed_file(audio_file.filename, ALLOWED_AUDIO_EXTENSIONS):
+                ext = audio_file.filename.rsplit('.', 1)[1].lower()
+                safe_filename = f"{uuid.uuid4().hex}.{ext}"
+                file_path = os.path.join(audio_dir, safe_filename)
+                audio_file.save(file_path)
+                audio_url = f"/static/uploads/forum/audio/{safe_filename}"
+            else:
+                flash("Invalid audio format. Allowed: MP3, WAV, M4A, OGG.", "danger")
+                return redirect(request.url)
+
+        # ==========================================
+        # 存入数据库
+        # ==========================================
+        post = ForumPost(
+            user_id=current_user.id,
+            title=title,
+            content=content,
+            category=category,
+            board=board,
+            image_url=image_url,  # 👈 这次肯定装上车了！
+            audio_url=audio_url   # 👈 语音也装上车了！
+        )
+        db.session.add(post)
+        db.session.commit()
+
+        # 发放金币奖励
+        if reward_daily_forum_coin():
+            flash('Post published! 🎉 [Daily First] You earned 1 Coin!', 'success')
         else:
-            post = ForumPost(
-                user_id=current_user.id,
-                title=title,
-                content=content,
-                category=category
-            )
-            db.session.add(post)
-            db.session.commit()
-
             flash('Post created!', 'success')
-            return redirect(url_for('forum.post_detail', post_id=post.id))
+            
+        return redirect(url_for('forum.post_detail', post_id=post.id))
 
-    return render_template('forum/new_post.html')
+    return render_template('forum/new_post.html', current_board=current_board)
 
 
 @forum_bp.route('/post/<int:post_id>/comment', methods=['POST'])
@@ -152,7 +277,12 @@ def add_comment(post_id):
         )
         db.session.add(comment)
         db.session.commit()
-        flash('Comment added!', 'success')
+        
+        # 👇 检查并发放奖励
+        if reward_daily_forum_coin():
+            flash('Post published! 🎉 [Daily First] You earned 1 Coin!', 'success')
+        else:
+            flash('Comment added!', 'success')
     else:
         flash('Comment cannot be empty.', 'danger')
 
