@@ -317,19 +317,28 @@ async function submitFinal(known) {
   clearError();
 
   try {
+    // ⭐ 1️⃣ 先更新已背诵计数（必须在前）
+    if (known) {
+      wordsReviewedCount++;
+    }
+
+    // ⭐ 2️⃣ 判断是否完成一组（5个词）
+    const isCompletedSet = known && wordsReviewedCount % 5 === 0;
+
+    // ⭐ 3️⃣ 发送给后端（新增 completed_set）
     const response = await fetch('/vocabulary/api/record', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ word_id: currentWordId, known: known })
+      body: JSON.stringify({ 
+        word_id: currentWordId, 
+        known: known,
+        completed_set: isCompletedSet   // ⭐ 关键新增
+      })
     });
+
     if (!response.ok) throw new Error('提交失败');
 
-    // 只有 Known 按钮才增加已背诵单词计数
-    if (known) {
-      wordsReviewedCount++; // 只在已知时计数
-    }
-
-    // 记录这5个词
+    // ⭐ 4️⃣ 记录这5个词（用于拼写）
     if (known) {
       currentBatch.push({
         id: currentWordId,
@@ -338,12 +347,13 @@ async function submitFinal(known) {
       });
     }
 
-    // 检查是否达到5个已知词，达到则显示弹窗
-   if (known && wordsReviewedCount % 5 === 0) {
-  encouragementModal.show();
-}
+    // ⭐ 5️⃣ 弹窗（用新变量）
+    if (isCompletedSet) {
+      encouragementModal.show();
+    }
 
     await loadNextWord();
+
   } catch (error) {
     showError(error.message);
     resetButtons();
