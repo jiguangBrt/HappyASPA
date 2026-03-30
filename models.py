@@ -492,6 +492,7 @@ class SeedType(db.Model):
     growth_hours = db.Column(db.Integer, default=4)               # 生长时间（小时）
     is_mystery = db.Column(db.Boolean, default=False)             # 是否为盲盒种子
     available = db.Column(db.Boolean, default=True)               # 是否可购买
+    plant_image_url = db.Column(db.String(256), nullable=True)    # 成熟时的植物图片
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # 关联可能产出的果实
@@ -513,6 +514,7 @@ class FruitType(db.Model):
     drop_rate = db.Column(db.Float, default=0.5)                  # 掉落概率（0-1）
     is_showcase_worthy = db.Column(db.Boolean, default=False)     # 是否值得展示（SR/SSR自动true）
     academic_element = db.Column(db.String(100), nullable=True)   # 学术元素（如"戴学士帽的苹果"）
+    image_url = db.Column(db.String(256), nullable=True)          # 果实图片路径
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
