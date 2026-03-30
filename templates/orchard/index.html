@@ -47,9 +47,20 @@
   }
   
   .fruit-ssr { border: 3px solid #ffd700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
-  .fruit-sr { border: 3px solid #c0c0c0; }
-  .fruit-r { border: 3px solid #cd7f32; }
-  .fruit-n { border: 1px solid #dee2e6; }
+  .fruit-sr { border: 3px solid #ffd700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
+  .fruit-r { border: 3px solid #8a2be2; box-shadow: 0 0 10px rgba(138, 43, 226, 0.5); }
+  .fruit-n { border: 3px solid #007bff; box-shadow: 0 0 10px rgba(0, 123, 255, 0.5); }
+  
+  .fruit-stars {
+    position: absolute;
+    bottom: -12px;
+    font-size: 0.6rem;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    padding: 0 4px;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
   
   .farmland-grid {
     display: grid;
@@ -59,38 +70,33 @@
   }
   
   .land-plot {
-    background: #8b5a2b;
-    border-radius: 8px;
-    height: 150px;
+    background: transparent;
+    border: none;
+    height: 180px;
     position: relative;
-    cursor: pointer;
-    transition: filter 0.2s;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     align-items: center;
     padding-bottom: 10px;
-    border: 4px solid #654321;
   }
   
-  .land-plot:hover {
-    filter: brightness(1.1);
-  }
-  
-  .land-plot.empty::after {
-    content: '+';
-    font-size: 3rem;
-    color: rgba(255,255,255,0.3);
+  .land-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    top: 0;
+    left: 0;
+    z-index: 1;
   }
-  
-  .plant-sprite {
-    font-size: 4rem;
-    line-height: 1;
-    animation: float 3s ease-in-out infinite;
+
+  .land-actions {
+    position: absolute;
+    bottom: -15px;
+    z-index: 2;
+    display: flex;
+    gap: 5px;
   }
   
   @keyframes float {
@@ -158,10 +164,23 @@
         <div class="showcase-container">
           {% if showcase_fruits %}
             {% for fruit in showcase_fruits %}
-              <div class="fruit-item fruit-{{ fruit.fruit_type.rarity|lower }}" 
+              <div class="fruit-item fruit-{{ fruit.harvested_fruit.fruit_type.rarity|lower }}"
                    data-bs-toggle="tooltip" data-bs-html="true"
-                   title="<b>{{ fruit.fruit_type.name }}</b><br>Rarity: {{ fruit.fruit_type.rarity }}<br>Harvested: {{ fruit.harvested_at.strftime('%Y-%m-%d') }}<br><i>{{ fruit.fruit_type.description }}</i>">
-                {{ fruit.fruit_type.image_url | default('🍎') }}
+                   title="<b>{{ fruit.harvested_fruit.fruit_type.name }}</b><br>Rarity: {{ fruit.harvested_fruit.fruit_type.rarity }}<br>Harvested: {{ fruit.harvested_fruit.harvested_at.strftime('%Y-%m-%d') }}<br><i>{{ fruit.harvested_fruit.fruit_type.description }}</i>">
+                {% if fruit.harvested_fruit.fruit_type.image_url %}
+                  <img src="{{ fruit.harvested_fruit.fruit_type.image_url }}" alt="{{ fruit.harvested_fruit.fruit_type.name }}" style="width: 60px; height: 60px; object-fit: contain;">
+                {% else %}
+                  {{ fruit.harvested_fruit.fruit_type.icon | default('🍎') }}
+                {% endif %}
+                <div class="fruit-stars">
+                  {% if fruit.harvested_fruit.fruit_type.rarity == 'N' %}
+                    ⭐
+                  {% elif fruit.harvested_fruit.fruit_type.rarity == 'R' %}
+                    ⭐⭐
+                  {% elif fruit.harvested_fruit.fruit_type.rarity in ['SR', 'SSR'] %}
+                    ⭐⭐⭐
+                  {% endif %}
+                </div>
               </div>
             {% endfor %}
           {% else %}
@@ -183,25 +202,32 @@
       </div>
       <div class="card-body">
         <div class="farmland-grid">
-          {% for land in user_lands %}
-            {% if land.status == 'empty' %}
-              <div class="land-plot empty" onclick="openPlantModal({{ land.id }})">
-                <div class="text-white-50 small mt-auto mb-1">{{ land.land_type.name }}</div>
-              </div>
-            {% elif land.status == 'growing' %}
-              <div class="land-plot" onclick="openAccelerateModal({{ land.id }})">
-                <div class="plant-sprite">🌱</div>
-                <div class="progress-container">
-                  <div class="progress-bar-custom" id="progress-{{ land.id }}" data-start="{{ land.planted_at.timestamp() }}" data-end="{{ land.expected_harvest_time.timestamp() }}"></div>
+          {% for land in lands %}
+            <div class="land-plot">
+              {% if land.plant_status == 'idle' %}
+                <img src="{{ url_for('static', filename='orchard/soild/soil_empty.png') }}" class="land-image" alt="Empty Land">
+                <div class="land-actions">
+                  <button class="btn btn-sm btn-success" onclick="openPlantModal({{ land.id }})">Plant</button>
                 </div>
-                <div class="text-white small mt-1" id="timer-{{ land.id }}">Calculating...</div>
-              </div>
-            {% elif land.status == 'mature' %}
-              <div class="land-plot" onclick="harvest({{ land.id }})">
-                <div class="plant-sprite">{{ land.seed_type.fruit_type.image_url | default('🍎') }}</div>
-                <div class="badge bg-success mt-2 mb-1">Ready!</div>
-              </div>
-            {% endif %}
+              {% elif land.plant_status == 'growing' %}
+                <img src="{{ url_for('static', filename='orchard/soild/soil_planted.png') }}" class="land-image" alt="Planted Land">
+                <div class="land-actions" style="bottom: 10px; flex-direction: column; align-items: center; width: 100%;">
+                  <div class="progress-container" style="width: 90%; margin-bottom: 5px;">
+                    <div class="progress-bar-custom" id="progress-{{ land.id }}" data-start="{{ land.planted_at.timestamp() }}" data-end="{{ land.matures_at.timestamp() }}"></div>
+                  </div>
+                  <div class="text-white small mb-1" id="timer-{{ land.id }}" style="text-shadow: 1px 1px 2px black;">Calculating...</div>
+                  <div>
+                    <button class="btn btn-sm btn-info" onclick="openAccelerateModal({{ land.id }}, 'water')">Water</button>
+                    <button class="btn btn-sm btn-warning" onclick="openAccelerateModal({{ land.id }}, 'fertilizer')">Fertilize</button>
+                  </div>
+                </div>
+              {% elif land.plant_status == 'mature' %}
+                <img src="{{ land.current_seed.plant_image_url | default(url_for('static', filename='orchard/soild/soild_ripened_1.png')) }}" class="land-image" alt="Mature Plant">
+                <div class="land-actions">
+                  <button class="btn btn-sm btn-primary" onclick="harvest({{ land.id }})">Harvest</button>
+                </div>
+              {% endif %}
+            </div>
           {% endfor %}
         </div>
       </div>
@@ -261,14 +287,14 @@
         <div class="tab-content">
           <div class="tab-pane fade show active" id="seeds-tab">
             <div class="row g-3">
-              {% for seed in shop_seeds %}
+              {% for seed in seeds %}
               <div class="col-md-4">
                 <div class="card h-100">
                   <div class="card-body text-center">
                     <div class="fs-1 mb-2">🌰</div>
                     <h6>{{ seed.name }}</h6>
                     <p class="small text-muted">{{ seed.description }}</p>
-                    <p class="mb-2"><i class="bi bi-clock me-1"></i>{{ seed.growth_time_hours }}h</p>
+                    <p class="mb-2"><i class="bi bi-clock me-1"></i>{{ seed.growth_hours }}h</p>
                     <button class="btn btn-sm btn-primary w-100" onclick="buyItem('seed', {{ seed.id }}, {{ seed.price }})">
                       <i class="bi bi-coin me-1"></i>{{ seed.price }}
                     </button>
@@ -280,7 +306,7 @@
           </div>
           <div class="tab-pane fade" id="items-tab">
             <div class="row g-3">
-              {% for item in shop_items %}
+              {% for item in items %}
               <div class="col-md-4">
                 <div class="card h-100">
                   <div class="card-body text-center">
@@ -312,17 +338,21 @@
       </div>
       <div class="modal-body">
         <ul class="list-group">
-          {% for inv in inventory %}
+          {% for inv in seed_inventory.values() %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
-              <div>
-                {% if inv.item_type == 'seed' %}🌰{% else %}🧪{% endif %}
-                {{ inv.seed_type.name if inv.item_type == 'seed' else inv.item.name }}
-              </div>
+              <div>🌰 {{ inv.seed.name }}</div>
               <span class="badge bg-primary rounded-pill">x{{ inv.quantity }}</span>
             </li>
-          {% else %}
-            <li class="list-group-item text-center text-muted">Your inventory is empty.</li>
           {% endfor %}
+          {% for inv in item_inventory.values() %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>🧪 {{ inv.item.name }}</div>
+              <span class="badge bg-primary rounded-pill">x{{ inv.quantity }}</span>
+            </li>
+          {% endfor %}
+          {% if not seed_inventory and not item_inventory %}
+            <li class="list-group-item text-center text-muted">Your inventory is empty.</li>
+          {% endif %}
         </ul>
       </div>
     </div>
@@ -340,12 +370,12 @@
       <div class="modal-body">
         <input type="hidden" id="plantLandId">
         <div class="list-group" id="plantSeedList">
-          {% for inv in inventory %}
-            {% if inv.item_type == 'seed' and inv.quantity > 0 %}
-              <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="plantSeed({{ inv.item_id }})">
+          {% for inv in seed_inventory.values() %}
+            {% if inv.quantity > 0 %}
+              <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="plantSeed({{ inv.seed.id }})">
                 <div>
-                  🌰 {{ inv.seed_type.name }}
-                  <small class="text-muted d-block">{{ inv.seed_type.growth_time_hours }}h growth time</small>
+                  🌰 {{ inv.seed.name }}
+                  <small class="text-muted d-block">{{ inv.seed.growth_hours }}h growth time</small>
                 </div>
                 <span class="badge bg-primary rounded-pill">x{{ inv.quantity }}</span>
               </button>
@@ -362,15 +392,15 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Use Fertilizer</h5>
+        <h5 class="modal-title">Use Item</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="accelLandId">
         <div class="list-group" id="accelItemList">
-          {% for inv in inventory %}
-            {% if inv.item_type == 'item' and inv.quantity > 0 %}
-              <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="useItem({{ inv.item_id }})">
+          {% for inv in item_inventory.values() %}
+            {% if inv.quantity > 0 %}
+              <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center accel-item" data-type="{{ inv.item.item_type }}" onclick="useItem({{ inv.item.id }})">
                 <div>
                   🧪 {{ inv.item.name }}
                   <small class="text-muted d-block">{{ inv.item.description }}</small>
@@ -472,8 +502,21 @@
     }
   }
 
-  function openAccelerateModal(landId) {
+  function openAccelerateModal(landId, itemType) {
     document.getElementById('accelLandId').value = landId;
+    
+    // Hide all items first
+    document.querySelectorAll('.accel-item').forEach(el => {
+      el.classList.remove('d-flex');
+      el.style.display = 'none';
+    });
+    
+    // Show only items of the requested type
+    document.querySelectorAll(`.accel-item[data-type="${itemType}"]`).forEach(el => {
+      el.style.display = 'flex';
+      el.classList.add('d-flex');
+    });
+    
     new bootstrap.Modal(document.getElementById('accelerateModal')).show();
   }
 
@@ -505,8 +548,8 @@
       });
       const data = await res.json();
       if (data.success) {
-        let msg = `Harvested ${data.fruit_name}! Earned ${data.points} points.`;
-        if (data.is_rare) {
+        let msg = `Harvested ${data.fruit.name}! Earned ${data.fruit.points} points.`;
+        if (data.fruit.auto_showcase) {
           msg += '\nRare fruit added to your showcase!';
         }
         alert(msg);

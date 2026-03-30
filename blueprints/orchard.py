@@ -474,7 +474,7 @@ def use_item():
         db.session.delete(inventory)
     
     # 应用效果（加速）
-    if item.item_type == 'fertilizer' and land.matures_at:
+    if item.item_type in ['fertilizer', 'water'] and land.matures_at:
         speed_hours = item.effect_value
         land.matures_at -= timedelta(hours=speed_hours)
         
@@ -496,48 +496,6 @@ def use_item():
     })
 
 
-@orchard_bp.route('/api/upgrade-land', methods=['POST'])
-@login_required
-def upgrade_land():
-    """升级土地"""
-    data = request.get_json()
-    land_id = data.get('land_id')
-    
-    land = UserLand.query.get(land_id)
-    if not land:
-        return jsonify({'success': False, 'message': 'Land not found'}), 404
-    
-    orchard = get_or_create_user_orchard(current_user.id)
-    if land.orchard_id != orchard.id:
-        return jsonify({'success': False, 'message': 'Not your land'}), 403
-    
-    # 获取下一级土地
-    current_level = land.land_type.level if land.land_type else 1
-    next_land_type = LandType.query.filter(LandType.level == current_level + 1).first()
-    
-    if not next_land_type:
-        return jsonify({'success': False, 'message': 'Already max level'}), 400
-    
-    if current_user.coins < next_land_type.upgrade_cost:
-        return jsonify({'success': False, 'message': 'Not enough coins'}), 400
-    
-    # 扣除金币并升级
-    current_user.coins -= next_land_type.upgrade_cost
-    land.land_type_id = next_land_type.id
-    
-    db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'message': f'Upgraded to {next_land_type.name}!',
-        'coins': current_user.coins,
-        'land': {
-            'id': land.id,
-            'type_name': next_land_type.name,
-            'type_icon': next_land_type.icon,
-            'level': next_land_type.level
-        }
-    })
 
 
 @orchard_bp.route('/api/showcase/add', methods=['POST'])
