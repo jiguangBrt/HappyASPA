@@ -1,6 +1,40 @@
 {% extends 'base.html' %}
 {% block title %}English Corner - {{ exercise.title }}{% endblock %}
 
+{% block head %}
+<style>
+    .recording-row {
+        border: 1px solid #e6ebf2;
+        box-shadow: 0 4px 14px rgba(11, 37, 75, 0.06);
+    }
+
+    .ai-feedback-card {
+        background: linear-gradient(135deg, #f6fbff 0%, #ecf4ff 100%);
+        border: 1px solid #cdddf4;
+        border-radius: 0.75rem;
+        padding: 0.85rem 0.95rem;
+    }
+
+    .ai-feedback-title {
+        color: #1f4e8c;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+    }
+
+    .ai-feedback-text {
+        color: #24364d;
+        line-height: 1.55;
+        white-space: pre-line;
+        margin-top: 0.5rem;
+    }
+
+    .feedback-meta {
+        color: #6c7f95;
+        font-size: 0.78rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <style>
     /* 自定义样式：提升高级感 */

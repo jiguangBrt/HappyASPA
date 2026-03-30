@@ -249,6 +249,38 @@
     border-color: var(--subject-color);
   }
 </style>
+<style>
+/* 英语板块专属浅色标签样式 (果冻色系) */
+
+/* 1. Vocabulary (词汇) -> 对应 success： 浅绿色 */
+.badge-soft-success { background-color: #d1e7dd !important; color: #0f5132 !important; }
+
+/* 2. Listening (听力) -> 对应 info： 浅蓝色/青色 */
+.badge-soft-info { background-color: #cff4fc !important; color: #055160 !important; }
+
+/* 3. Grammar (语法) -> 对应 primary： 浅紫色 (完美避开浅蓝色) */
+.badge-soft-primary { background-color: #e2d9f3 !important; color: #432874 !important; }
+
+/* 4. Speaking (口语) -> 对应 warning： 浅黄色/亮橘色 */
+.badge-soft-warning { background-color: #fff3cd !important; color: #664d03 !important; }
+
+/* 5. Writing (写作) -> 对应 danger： 浅粉色/浅红色 */
+.badge-soft-danger { background-color: #f8d7da !important; color: #842029 !important; }
+
+/* 6. Reading (阅读) 或通用 -> 对应 secondary/dark： 浅灰色 */
+.badge-soft-secondary { background-color: #e2e3e5 !important; color: #41464b !important; }
+.badge-soft-dark { background-color: #d3d3d4 !important; color: #1b1e21 !important; }
+
+/* 这里保留你原本的指南专家徽章样式，千万别删哦 */
+.badge-guide-expert {
+  background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%);
+  color: #fff; padding: 0.15rem 0.5rem; border-radius: 50rem;
+  font-size: 0.75rem; font-weight: 700; box-shadow: 0 2px 4px rgba(255, 140, 0, 0.3);
+  display: inline-flex; align-items: center; gap: 2px;
+}
+.transition-hover { transition: all 0.2s ease-in-out; }
+.transition-hover:hover { transform: translateY(-3px); }
+</style>
 </head>
 
 <body>
