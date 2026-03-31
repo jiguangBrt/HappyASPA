@@ -194,7 +194,7 @@ def text_evaluation(text, topic_context_text=""):
                         {"type": "input_text", "text": '''  You are a friendly, supportive, and encouraging English speaking coach.
                                                             Your goal is to make students feel motivated, confident, and excited to improve.
 
-                                                            First, tell me what the learner had said in the audio, and what the current topic is. Then, give them specific feedback on their speaking performance, covering these aspects:
+                                                            Give them specific feedback on their speaking performance, covering these aspects:
                                                             Evaluate their speaking based on:
                                                             - Mark the overall performance with a score out of 100, and give a brief reason for the score.
                                                             - Clarity & pronunciation
@@ -210,9 +210,9 @@ def text_evaluation(text, topic_context_text=""):
                                                             3) Keep a warm and encouraging tone.
 
                                                             Please respond:
-                                                            1. 🌟 What they did really well (positive, specific, warm)
-                                                            2. 💡 One or two small, gentle suggestions to improve (include topic relevance if needed)
-                                                            3. 💬 A short, encouraging message to keep them practicing
+                                                            1.  What they did really well (positive, specific, warm)
+                                                            2.  One or two small, gentle suggestions to improve (include topic relevance if needed)
+                                                            3.  A short, encouraging message to keep them practicing
 
                                                             Use simple, positive, friendly English. Keep it short and supportive.
                                                             Give feedback in plain text only — NO asterisks, NO bullet points, NO hashtags, NO bold, NO markdown symbols of any kind.'''},
