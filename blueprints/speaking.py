@@ -24,8 +24,8 @@ def upload_audio_to_tos(file_storage, filename,file_path):
     独立纯函数：只上传文件到TOS，返回公网URL
     不依赖任何业务，不修改任何数据
     """
-    AK = "AKLTNDZmNzZjNWY0NDY3NGMxYjgyN2FiYzA5NjA4OGMxOTM"
-    SK = "WkRjeU5USmtOR1JsTmpjNU5ESmxZVGszTVdRd1l6VXdaRGRsWkROak5tTQ=="
+    AK = os.environ.get("VOLC_TOS_AK", "")
+    SK = os.environ.get("VOLC_TOS_SK", "")
     BUCKET = "english-practice-audio"
     ENDPOINT = "tos-cn-beijing.volces.com"
     REGION = "cn-beijing"
@@ -91,9 +91,9 @@ def audio_to_text(tos_public_url):
     import uuid
     import requests
 
-    # 直接用官方的配置
-    appid = "2401097724"
-    token = "FRVUrCiYhwku-7ZX66HvB248g8pxkITr"
+    # 从环境变量读取，避免密钥硬编码在源码中
+    appid = os.environ.get("VOLC_ASR_APPID", "")
+    token = os.environ.get("VOLC_ASR_TOKEN", "")
     submit_url = "https://openspeech-direct.zijieapi.com/api/v3/auc/bigmodel/submit"
     query_url = "https://openspeech-direct.zijieapi.com/api/v3/auc/bigmodel/query"
 
@@ -176,8 +176,7 @@ def audio_to_text(tos_public_url):
 
 def text_evaluation(text, topic_context_text=""):
     print("Evaluating text with AI, input length:", len(text))
-    api_key = "31720b1b-57b7-467d-9517-eab3ab9c1ec1"  # TODO: 建议改为配置项
-    print('api_key:', api_key)
+    api_key = os.environ.get("VOLC_ARK_API_KEY", "")
     if Ark is None:
         return "❌ 未安装volcenginesdkarkruntime"
     client = Ark(
