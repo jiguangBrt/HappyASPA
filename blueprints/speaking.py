@@ -342,7 +342,7 @@ def get_audio(filename):
         
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
 
-# 4. 上传录音接口 (修改：仅保存录音，不再自动调用 AI)
+# 4. 上传录音接口
 @speaking_bp.route('/upload-audio', methods=['POST'])
 @login_required
 def upload_audio():
@@ -379,9 +379,6 @@ def upload_audio():
             filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
             os.makedirs(current_app.config['UPLOAD_FOLDER'], exist_ok=True)
             file.save(filepath)
-            # 解耦上传 TOS（不影响原有逻辑）
-            file.seek(0)
-            tos_url = upload_audio_to_tos(file, filename,filepath)
             
             duration = request.form.get('duration', 0)
             submission = UserSpeakingSubmission(
@@ -394,29 +391,16 @@ def upload_audio():
             db.session.commit()
             submission_committed = True
 
-            # === AI 自动点评 ===
-            topic_context = {
-                "type": "English Corner",
-                "title": exercise.title if exercise else "",
-                "category": exercise.category if exercise else "",
-                "difficulty": exercise.difficulty if exercise else None,
-                "prompt": exercise.prompt if exercise else ""
-            }
-
-            if tos_url:
-                try:
-                    ai_result = ai_evaluate_audio(tos_url, topic_context=topic_context)
-                    submission.feedback = ai_result.get('feedback', '')
-                    db.session.commit()
-                except Exception as ai_error:
-                    db.session.rollback()
-                    current_app.logger.error(f"AI evaluation error for submission {submission.id}: {str(ai_error)}")
+            utc_time = submission.submitted_at
+            local_time = utc_time.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
 
             return jsonify({
                 'status': 'success',
                 'message': 'Audio saved successfully!',
                 'submission_id': submission.id,
-                'filename': filename
+                'filename': filename,
+                'submitted_at': local_time.strftime('%Y-%m-%d %H:%M'),
+                'duration': round(submission.duration_seconds or 0, 1)
             }), 200
         else:
             return jsonify({'status': 'error', 'message': 'File type not allowed'}), 400
@@ -444,13 +428,28 @@ def analyze_audio(sub_id):
     if submission.feedback:
         return jsonify({'status': 'success', 'message': 'Already analyzed'})
 
+    exercise = SpeakingExercise.query.get(submission.exercise_id)
+    if not exercise:
+        return jsonify({'status': 'error', 'message': 'Exercise not found'}), 404
+
     try:
         filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], submission.audio_filename)
         if not os.path.exists(filepath):
             return jsonify({'status': 'error', 'message': 'Audio file not found'}), 404
-            
-        # 调用火山引擎 AI 自动点评
-        ai_result = ai_evaluate_audio(filepath)
+
+        tos_url = upload_audio_to_tos(None, submission.audio_filename, filepath)
+        if not tos_url:
+            return jsonify({'status': 'error', 'message': 'Audio upload failed'}), 500
+
+        topic_context = {
+            "type": "English Corner",
+            "title": exercise.title,
+            "category": exercise.category,
+            "difficulty": exercise.difficulty,
+            "prompt": exercise.prompt
+        }
+
+        ai_result = ai_evaluate_audio(tos_url, topic_context=topic_context)
         submission.feedback = ai_result.get('feedback', 'No feedback generated.')
         
         db.session.commit()

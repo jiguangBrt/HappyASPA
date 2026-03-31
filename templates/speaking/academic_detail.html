@@ -267,6 +267,17 @@
         }
     });
 
+    window.addEventListener('pageshow', function (event) {
+        const navigationEntries = performance.getEntriesByType('navigation');
+        const isBackForwardNavigation = event.persisted || (
+            navigationEntries.length > 0 && navigationEntries[0].type === 'back_forward'
+        );
+
+        if (isBackForwardNavigation) {
+            window.location.reload();
+        }
+    });
+
     function setStatus(message, className) {
         statusAlert.innerHTML = message;
         statusAlert.className = className;
