@@ -2,7 +2,7 @@
 🌳 Academic Orchard Blueprint (我的家园)
 功能模块：荣誉果实陈列室、学识农田核心区、丰收排行榜
 """
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from flask_login import login_required, current_user
 from sqlalchemy import func, desc
@@ -116,7 +116,7 @@ def index():
     lands = UserLand.query.filter_by(orchard_id=orchard.id).order_by(UserLand.position).all()
     
     # 更新土地状态（检查是否已成熟）
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     for land in lands:
         if land.plant_status == 'growing' and land.matures_at and now >= land.matures_at:
             land.plant_status = 'mature'
@@ -162,11 +162,11 @@ def index():
     item_inventory = {}
     for inv in inventory:
         if inv.item_type == 'seed':
-            seed = SeedType.query.get(inv.item_id)
+            seed = db.session.get(SeedType, inv.item_id)
             if seed:
                 seed_inventory[seed.id] = {'seed': seed, 'quantity': inv.quantity}
         elif inv.item_type == 'item':
-            item = OrchardItem.query.get(inv.item_id)
+            item = db.session.get(OrchardItem, inv.item_id)
             if item:
                 item_inventory[item.id] = {'item': item, 'quantity': inv.quantity}
     
@@ -194,7 +194,7 @@ def index():
         seed_inventory=seed_inventory,
         item_inventory=item_inventory,
         available_rare_fruits=available_rare_fruits,
-        now=datetime.utcnow()
+    now=datetime.now(timezone.utc).replace(tzinfo=None)
     )
 
 
@@ -210,7 +210,7 @@ def buy_seed():
     seed_id = data.get('seed_id')
     quantity = data.get('quantity', 1)
     
-    seed = SeedType.query.get(seed_id)
+    seed = db.session.get(SeedType, seed_id)
     if not seed or not seed.available:
         return jsonify({'success': False, 'message': 'Seed not available'}), 400
     
@@ -255,7 +255,7 @@ def buy_item():
     item_id = data.get('item_id')
     quantity = data.get('quantity', 1)
     
-    item = OrchardItem.query.get(item_id)
+    item = db.session.get(OrchardItem, item_id)
     if not item or not item.available:
         return jsonify({'success': False, 'message': 'Item not available'}), 400
     
@@ -299,7 +299,7 @@ def plant_seed():
     seed_id = data.get('seed_id')
     
     # 验证土地
-    land = UserLand.query.get(land_id)
+    land = db.session.get(UserLand, land_id)
     if not land:
         return jsonify({'success': False, 'message': 'Land not found'}), 404
     
@@ -318,7 +318,7 @@ def plant_seed():
     if not inventory or inventory.quantity < 1:
         return jsonify({'success': False, 'message': 'No seeds in inventory'}), 400
     
-    seed = SeedType.query.get(seed_id)
+    seed = db.session.get(SeedType, seed_id)
     if not seed:
         return jsonify({'success': False, 'message': 'Seed not found'}), 404
     
@@ -328,7 +328,7 @@ def plant_seed():
         db.session.delete(inventory)
     
     # 更新土地状态
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     mature_delta = calculate_mature_time(seed, land)
     
     land.current_seed_id = seed_id
@@ -357,7 +357,7 @@ def harvest():
     data = request.get_json()
     land_id = data.get('land_id')
     
-    land = UserLand.query.get(land_id)
+    land = db.session.get(UserLand, land_id)
     if not land:
         return jsonify({'success': False, 'message': 'Land not found'}), 404
     
@@ -366,7 +366,7 @@ def harvest():
         return jsonify({'success': False, 'message': 'Not your land'}), 403
     
     # 检查是否已成熟
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     if land.plant_status == 'growing' and land.matures_at and now >= land.matures_at:
         land.plant_status = 'mature'
     
@@ -445,7 +445,7 @@ def use_item():
     land_id = data.get('land_id')
     item_id = data.get('item_id')
     
-    land = UserLand.query.get(land_id)
+    land = db.session.get(UserLand, land_id)
     if not land:
         return jsonify({'success': False, 'message': 'Land not found'}), 404
     
@@ -464,7 +464,7 @@ def use_item():
     if not inventory or inventory.quantity < 1:
         return jsonify({'success': False, 'message': 'No items in inventory'}), 400
     
-    item = OrchardItem.query.get(item_id)
+    item = db.session.get(OrchardItem, item_id)
     if not item:
         return jsonify({'success': False, 'message': 'Item not found'}), 404
     
@@ -479,7 +479,7 @@ def use_item():
         land.matures_at -= timedelta(hours=speed_hours)
         
         # 检查是否已经成熟
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
         if land.matures_at <= now:
             land.plant_status = 'mature'
     
@@ -513,7 +513,7 @@ def add_to_showcase():
         return jsonify({'success': False, 'message': 'Showcase is full'}), 400
     
     # 验证果实
-    harvested = UserHarvestedFruit.query.get(harvested_fruit_id)
+    harvested = db.session.get(UserHarvestedFruit, harvested_fruit_id)
     if not harvested or harvested.user_id != current_user.id:
         return jsonify({'success': False, 'message': 'Fruit not found'}), 404
     
@@ -547,7 +547,7 @@ def remove_from_showcase():
     
     orchard = get_or_create_user_orchard(current_user.id)
     
-    showcase_fruit = UserShowcaseFruit.query.get(showcase_id)
+    showcase_fruit = db.session.get(UserShowcaseFruit, showcase_id)
     if not showcase_fruit or showcase_fruit.orchard_id != orchard.id:
         return jsonify({'success': False, 'message': 'Not found'}), 404
     
@@ -567,7 +567,7 @@ def get_land_status():
     orchard = get_or_create_user_orchard(current_user.id)
     lands = UserLand.query.filter_by(orchard_id=orchard.id).order_by(UserLand.position).all()
     
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     land_data = []
     
     for land in lands:

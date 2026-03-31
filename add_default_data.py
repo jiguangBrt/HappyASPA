@@ -65,7 +65,7 @@ def add_default_data():
         added = 0
         updated = 0
         for item in words_data:
-            word = VocabularyWord.query.get(item['id'])
+            word = db.session.get(VocabularyWord, item['id'])
             if word:
                 if (word.word != item['word'] or
                         word.definition != item['meaning'] or  

@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+﻿from datetime import datetime, timezone
 
 from models import db, ForumPost, ForumComment, ForumLike, ForumFavorite, User
 from tests.conftest import login
@@ -12,7 +12,7 @@ def create_post(app, user_id, title="Hello", content="World", board="discussion"
             content=content,
             category="General",
             board=board,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
         db.session.add(post)
         db.session.commit()
@@ -135,4 +135,4 @@ def test_delete_post_only_author(client, make_user, app):
     assert response.status_code == 302
 
     with app.app_context():
-        assert ForumPost.query.get(post_id) is not None
+        assert db.session.get(ForumPost, post_id) is not None

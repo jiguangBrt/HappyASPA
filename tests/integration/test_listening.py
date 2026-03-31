@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+﻿from datetime import datetime, timezone
 
 from models import db, ListeningExercise, UserListeningProgress, User
 from tests.conftest import login
@@ -10,7 +10,7 @@ def create_exercise(app, questions=None):
             title="Test",
             description="desc",
             questions=questions or [{"answer": 1}, {"answer": 0}],
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
         db.session.add(ex)
         db.session.commit()

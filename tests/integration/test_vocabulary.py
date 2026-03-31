@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+﻿from datetime import datetime, timezone
 
 from models import db, VocabularyWord, UserVocabularyProgress
 from tests.conftest import login
@@ -10,7 +10,7 @@ def create_word(app, word, category="cs"):
             word=word,
             definition="meaning",
             category=category,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
         db.session.add(vw)
         db.session.commit()

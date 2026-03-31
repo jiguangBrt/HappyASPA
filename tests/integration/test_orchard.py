@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timedelta
+﻿from datetime import datetime, timedelta, timezone
 
 from models import (
     db,
@@ -89,8 +89,8 @@ def test_buy_seed_and_plant_harvest_flow(client, make_user, app):
     assert response.status_code == 200
 
     with app.app_context():
-        land = UserLand.query.get(land_id)
-        land.matures_at = datetime.utcnow() - timedelta(minutes=1)
+        land = db.session.get(UserLand, land_id)
+        land.matures_at = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=1)
         land.plant_status = "growing"
         db.session.commit()
 
@@ -135,8 +135,8 @@ def test_use_item_updates_maturity(client, make_user, app):
         land = UserLand.query.first()
         land.plant_status = "growing"
         land.current_seed_id = seed_id
-        land.planted_at = datetime.utcnow()
-        land.matures_at = datetime.utcnow() + timedelta(hours=5)
+        land.planted_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        land.matures_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=5)
         db.session.commit()
         land_id = land.id
         before = land.matures_at
@@ -145,7 +145,7 @@ def test_use_item_updates_maturity(client, make_user, app):
     assert response.status_code == 200
 
     with app.app_context():
-        land = UserLand.query.get(land_id)
+        land = db.session.get(UserLand, land_id)
         assert land.matures_at < before
 
 
