@@ -26,6 +26,8 @@ pydantic==2.12.5
 pydantic_core==2.41.5
 python-dateutil==2.9.0.post0
 requests==2.33.0
+playwright
+pytest-playwright
 six==1.17.0
 SQLAlchemy==2.0.48
 typing-inspection==0.4.2
