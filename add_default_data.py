@@ -18,9 +18,10 @@ from flask.cli import with_appcontext
 
 # 👇 确保导入了所有需要的模型，包括新增的 ShadowingExercise 和 ShadowingAudio
 from models import (
-    db, ListeningExercise, SpeakingExercise, VocabularyWord, 
-    AcademicScenario, User, ForumPost, ForumComment, 
-    ForumLike, ForumFavorite, ShadowingExercise, ShadowingAudio
+    db, ListeningExercise, SpeakingExercise, VocabularyWord,
+    AcademicScenario, User, ForumPost, ForumComment,
+    ForumLike, ForumFavorite, ShadowingExercise, ShadowingAudio,
+    LandType, SeedType, FruitType, OrchardItem
 )
 
 @click.command(name='add-default-data')
@@ -783,17 +784,17 @@ def add_default_data():
         u = User.query.filter_by(username=username).first()
         if not u:
             # 👇 新增：模拟真实生态，偶数ID是认证大神，奇数是普通小白
-            is_qualified = (i % 2 == 0) 
+            is_qualified = (i % 2 == 0)
             u = User(
-                username=username, 
+                username=username,
                 email=f'student{i}@happyaspa.com',
-                coins=10 * i, # 给点初始金币
+                coins=20 * i, # 给点初始金币
                 gaokao_score=140.0 if is_qualified else 110.0,
                 is_guide_qualified=is_qualified
             )
             u.set_password('123456')
             db.session.add(u)
-            db.session.flush() 
+            db.session.flush()
         dummy_users.append(u)
 
     old_posts = ForumPost.query.filter_by(user_id=tutor_user.id).all()
@@ -919,6 +920,159 @@ def add_default_data():
             print(f"  ✅ 已发布干货贴：{data['category']} - {data['title'][:20]}... (获赞:{data['likes']}, 收藏:{data['favorites']})")
         else:
              print(f"  ⏭️ 帖子已存在，跳过：{data['title'][:20]}...")
+
+# ─────────────────────────────────────────────
+    # 6. Orchard Default Data (我的家园) - 支持反复运行覆盖更新
+    # ─────────────────────────────────────────────
+    print("🍎 正在导入/更新 我的家园默认数据...")
+    
+    # Land Types
+    land_types = [
+        {'name': 'Common Dirt', 'name_en': 'Common Dirt', 'description': 'Basic land for planting.', 'growth_reduction': 0.0, 'rare_boost': 0.0, 'upgrade_cost': 0, 'level': 1}
+    ]
+    for data in land_types:
+        land = LandType.query.filter_by(name=data['name']).first()
+        if land:
+            for key, value in data.items(): setattr(land, key, value) # 如果存在，则更新所有字段
+        else:
+            db.session.add(LandType(**data)) # 不存在则创建
+            
+    # We need to create seeds first because FruitType has a foreign key to SeedType
+    seed_types = [
+        {'name': 'Apple Seed', 'name_en': 'Apple Seed', 'description': 'Grows into an Apple.', 'growth_hours': 1, 'price': 5, 'plant_image_url': '/static/orchard/soild/soild_ripened_1.png'},
+        {'name': 'Strawberry Seed', 'name_en': 'Strawberry Seed', 'description': 'Grows into a Strawberry.', 'growth_hours': 2, 'price': 10, 'plant_image_url': '/static/orchard/soild/soild_ripened_2.png'},
+        {'name': 'Pineapple Seed', 'name_en': 'Pineapple Seed', 'description': 'Grows into a Pineapple.', 'growth_hours': 4, 'price': 20, 'plant_image_url': '/static/orchard/soild/soild_ripened_3.png'}
+    ]
+    for data in seed_types:
+        seed = SeedType.query.filter_by(name=data['name']).first()
+        if seed:
+            for key, value in data.items(): setattr(seed, key, value)
+        else:
+            db.session.add(SeedType(**data))
+            
+    db.session.flush() # 先提交到内存获取种子ID，供下方FruitType使用
+    
+    apple_seed = SeedType.query.filter_by(name='Apple Seed').first()
+    strawberry_seed = SeedType.query.filter_by(name='Strawberry Seed').first()
+    pineapple_seed = SeedType.query.filter_by(name='Pineapple Seed').first()
+
+    # Fruit Types
+    fruit_types = [
+        {'name': 'Apple (Normal)', 'name_en': 'Apple (Normal)', 'description': 'A basic apple.', 'rarity': 'N', 'points': 10, 'icon': '🍎', 'image_url': '/static/orchard/fruits/fruits_1.png', 'drop_rate': 0.6, 'is_showcase_worthy': False, 'seed_name': 'Apple Seed'},
+        {'name': 'Apple (Rare)', 'name_en': 'Apple (Rare)', 'description': 'A rare apple.', 'rarity': 'R', 'points': 30, 'icon': '🍎', 'image_url': '/static/orchard/fruits/fruits_1.png', 'drop_rate': 0.3, 'is_showcase_worthy': True, 'seed_name': 'Apple Seed'},
+        {'name': 'Apple (Legendary)', 'name_en': 'Apple (Legendary)', 'description': 'A legendary apple.', 'rarity': 'SR', 'points': 100, 'icon': '🍎', 'image_url': '/static/orchard/fruits/fruits_1.png', 'drop_rate': 0.1, 'is_showcase_worthy': True, 'seed_name': 'Apple Seed'},
+        
+        {'name': 'Strawberry (Normal)', 'name_en': 'Strawberry (Normal)', 'description': 'A basic strawberry.', 'rarity': 'N', 'points': 15, 'icon': '🍓', 'image_url': '/static/orchard/fruits/fruits_2.png', 'drop_rate': 0.6, 'is_showcase_worthy': False, 'seed_name': 'Strawberry Seed'},
+        {'name': 'Strawberry (Rare)', 'name_en': 'Strawberry (Rare)', 'description': 'A rare strawberry.', 'rarity': 'R', 'points': 45, 'icon': '🍓', 'image_url': '/static/orchard/fruits/fruits_2.png', 'drop_rate': 0.3, 'is_showcase_worthy': True, 'seed_name': 'Strawberry Seed'},
+        {'name': 'Strawberry (Legendary)', 'name_en': 'Strawberry (Legendary)', 'description': 'A legendary strawberry.', 'rarity': 'SR', 'points': 150, 'icon': '🍓', 'image_url': '/static/orchard/fruits/fruits_2.png', 'drop_rate': 0.1, 'is_showcase_worthy': True, 'seed_name': 'Strawberry Seed'},
+        
+        {'name': 'Pineapple (Normal)', 'name_en': 'Pineapple (Normal)', 'description': 'A basic pineapple.', 'rarity': 'N', 'points': 20, 'icon': '🍍', 'image_url': '/static/orchard/fruits/fruits_3.png', 'drop_rate': 0.6, 'is_showcase_worthy': False, 'seed_name': 'Pineapple Seed'},
+        {'name': 'Pineapple (Rare)', 'name_en': 'Pineapple (Rare)', 'description': 'A rare pineapple.', 'rarity': 'R', 'points': 60, 'icon': '🍍', 'image_url': '/static/orchard/fruits/fruits_3.png', 'drop_rate': 0.3, 'is_showcase_worthy': True, 'seed_name': 'Pineapple Seed'},
+        {'name': 'Pineapple (Legendary)', 'name_en': 'Pineapple (Legendary)', 'description': 'A legendary pineapple.', 'rarity': 'SR', 'points': 200, 'icon': '🍍', 'image_url': '/static/orchard/fruits/fruits_3.png', 'drop_rate': 0.1, 'is_showcase_worthy': True, 'seed_name': 'Pineapple Seed'}
+    ]
+    
+    for data in fruit_types:
+        # 动态绑定对应的 seed_type_id
+        seed_name = data.pop('seed_name')
+        if seed_name == 'Apple Seed':
+            data['seed_type_id'] = apple_seed.id
+        elif seed_name == 'Strawberry Seed':
+            data['seed_type_id'] = strawberry_seed.id
+        else:
+            data['seed_type_id'] = pineapple_seed.id
+            
+        fruit = FruitType.query.filter_by(name=data['name']).first()
+        if fruit:
+            for key, value in data.items(): setattr(fruit, key, value)
+        else:
+            db.session.add(FruitType(**data))
+            
+    # Items
+    items = [
+        {'name': 'Time Fertilizer', 'name_en': 'Time Fertilizer', 'description': 'Reduces growth time by 2 hours.', 'item_type': 'fertilizer', 'effect_value': 2.0, 'price': 10},
+        {'name': 'Super Fertilizer', 'name_en': 'Super Fertilizer', 'description': 'Reduces growth time by 6 hours.', 'item_type': 'fertilizer', 'effect_value': 6.0, 'price': 25},
+        {'name': 'Water', 'name_en': 'Water', 'description': 'Reduces growth time by 1 hour.', 'item_type': 'water', 'effect_value': 1.0, 'price': 2}
+    ]
+    for data in items:
+        item = OrchardItem.query.filter_by(name=data['name']).first()
+        if item:
+            for key, value in data.items(): setattr(item, key, value)
+        else:
+            db.session.add(OrchardItem(**data))
+            
+    print("  ✅ 家园默认数据已创建/同步更新完成。")
+
+
+    # ─────────────────────────────────────────────
+    # 7. 为群演账号添加果园初始数据 (仅首次运行有效，防重置)
+    # ─────────────────────────────────────────────
+    print("🎁 正在为群演账号发放果园初始物资...")
+    from models import UserOrchard, UserLand, UserOrchardInventory, UserHarvestedFruit, UserShowcaseFruit
+    
+    # 确保种子和果实已经存在（刚刚在第6步可能被更新或创建）
+    db.session.flush()
+    apple_seed = SeedType.query.filter_by(name='Apple Seed').first()
+    strawberry_seed = SeedType.query.filter_by(name='Strawberry Seed').first()
+    pineapple_seed = SeedType.query.filter_by(name='Pineapple Seed').first()
+    
+    apple_fruit = FruitType.query.filter_by(name='Apple (Normal)').first()
+    strawberry_fruit = FruitType.query.filter_by(name='Strawberry (Rare)').first()
+    pineapple_fruit = FruitType.query.filter_by(name='Pineapple (Legendary)').first()
+    
+    water_item = OrchardItem.query.filter_by(name='Water').first()
+    fertilizer_item = OrchardItem.query.filter_by(name='Time Fertilizer').first()
+    
+    basic_land_type = LandType.query.filter_by(level=1).first()
+
+    for i, u in enumerate(dummy_users):
+        # 【核心修改】检测该群演是否已经有农场了
+        orchard = UserOrchard.query.filter_by(user_id=u.id).first()
+        if orchard:
+            print(f"  ⏭️ 用户 {u.username} 已拥有果园，跳过物资发放，防止重置。")
+            continue  # 如果有农场，直接跳过该用户的循环，不再执行下方任何覆盖操作！
+            
+        # 1. 创建农场 (既然走到这里，说明是全新的群演账号)
+        orchard = UserOrchard(user_id=u.id, total_points=100*i, weekly_points=50*i, total_harvests=5*i)
+        db.session.add(orchard)
+        db.session.flush() # 拿到 orchard.id
+        
+        # 2. 创建土地
+        for pos in range(3):
+            land = UserLand(orchard_id=orchard.id, land_type_id=basic_land_type.id, position=pos)
+            db.session.add(land)
+    
+        # 3. 发放背包物资 (因为是新农场，直接add即可)
+        inventories = [
+            {'item_type': 'seed', 'item_id': apple_seed.id, 'quantity': 5},
+            {'item_type': 'seed', 'item_id': strawberry_seed.id, 'quantity': 3},
+            {'item_type': 'seed', 'item_id': pineapple_seed.id, 'quantity': 1},
+            {'item_type': 'item', 'item_id': water_item.id, 'quantity': 10},
+            {'item_type': 'item', 'item_id': fertilizer_item.id, 'quantity': 5}
+        ]
+        for inv_data in inventories:
+            db.session.add(UserOrchardInventory(user_id=u.id, **inv_data))
+            
+        # 4. 发放已收获的果实 (用于展示柜测试)
+        showcase_count = 0
+        if i > 0: # 给部分用户发果实
+            harvested = UserHarvestedFruit(user_id=u.id, fruit_type_id=apple_fruit.id, points_earned=apple_fruit.points)
+            db.session.add(harvested)
+            db.session.flush()
+            
+            # 添加到展示柜
+            db.session.add(UserShowcaseFruit(orchard_id=orchard.id, harvested_fruit_id=harvested.id, position=0))
+            showcase_count += 1
+                
+        if i > 2: # 给高级用户发稀有果实
+            harvested_rare = UserHarvestedFruit(user_id=u.id, fruit_type_id=pineapple_fruit.id, points_earned=pineapple_fruit.points)
+            db.session.add(harvested_rare)
+            db.session.flush()
+            
+            # 添加到展示柜
+            db.session.add(UserShowcaseFruit(orchard_id=orchard.id, harvested_fruit_id=harvested_rare.id, position=1))
+            showcase_count += 1
+                
+        print(f"  ✅ 已为用户 {u.username} 首次发放果园物资 (种子/道具/展示柜)。")
 
     # ─────────────────────────────────────────────
     # 提交更改

@@ -473,3 +473,162 @@ class UserJournalMarker(db.Model):
     color      = db.Column(db.String(20), nullable=True)
     event_date = db.Column(db.Date, nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# ─────────────────────────────────────────────
+# 🌳 Academic Orchard (我的家园)
+# ─────────────────────────────────────────────
+
+# 种子定义表（管理员预设的种子类型）
+class SeedType(db.Model):
+    __tablename__ = 'orchard_seed_types'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)              # 种子名称
+    name_en = db.Column(db.String(100), nullable=False)           # 英文名
+    description = db.Column(db.Text, nullable=True)               # 描述
+    icon = db.Column(db.String(100), default='🌱')                # 图标/emoji
+    price = db.Column(db.Integer, default=10)                     # 购买价格（金币）
+    growth_hours = db.Column(db.Integer, default=4)               # 生长时间（小时）
+    is_mystery = db.Column(db.Boolean, default=False)             # 是否为盲盒种子
+    available = db.Column(db.Boolean, default=True)               # 是否可购买
+    plant_image_url = db.Column(db.String(256), nullable=True)    # 成熟时的植物图片
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # 关联可能产出的果实
+    possible_fruits = db.relationship('FruitType', backref='seed_type', lazy=True)
+
+
+# 果实定义表（管理员预设的果实类型）
+class FruitType(db.Model):
+    __tablename__ = 'orchard_fruit_types'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    seed_type_id = db.Column(db.Integer, db.ForeignKey('orchard_seed_types.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)              # 果实名称
+    name_en = db.Column(db.String(100), nullable=False)           # 英文名
+    description = db.Column(db.Text, nullable=True)               # 描述/专属文案
+    icon = db.Column(db.String(100), default='🍎')                # 图标/emoji
+    rarity = db.Column(db.String(20), default='N')                # 稀有度: N/R/SR/SSR
+    points = db.Column(db.Integer, default=10)                    # 转化积分
+    drop_rate = db.Column(db.Float, default=0.5)                  # 掉落概率（0-1）
+    is_showcase_worthy = db.Column(db.Boolean, default=False)     # 是否值得展示（SR/SSR自动true）
+    academic_element = db.Column(db.String(100), nullable=True)   # 学术元素（如"戴学士帽的苹果"）
+    image_url = db.Column(db.String(256), nullable=True)          # 果实图片路径
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# 土地等级定义表
+class LandType(db.Model):
+    __tablename__ = 'orchard_land_types'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)              # 土地名称（如：普通泥土、红壤、黑土）
+    name_en = db.Column(db.String(100), nullable=False)
+    level = db.Column(db.Integer, default=1)                      # 土地等级 1-5
+    icon = db.Column(db.String(100), default='🟫')                # 图标
+    upgrade_cost = db.Column(db.Integer, default=0)               # 升级到此等级的金币成本
+    rare_boost = db.Column(db.Float, default=0.0)                 # 稀有果实概率加成（百分比）
+    growth_reduction = db.Column(db.Float, default=0.0)           # 生长时间缩短比例（0-1）
+    description = db.Column(db.Text, nullable=True)
+
+
+# 道具定义表
+class OrchardItem(db.Model):
+    __tablename__ = 'orchard_items'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)              # 道具名称
+    name_en = db.Column(db.String(100), nullable=False)
+    item_type = db.Column(db.String(50), nullable=False)          # 道具类型: fertilizer/water/etc
+    icon = db.Column(db.String(100), default='💧')
+    price = db.Column(db.Integer, default=5)                      # 购买价格
+    effect_value = db.Column(db.Float, default=1.0)               # 效果数值（如加速1小时）
+    description = db.Column(db.Text, nullable=True)
+    available = db.Column(db.Boolean, default=True)
+
+
+# 用户农场数据表（用户的农场整体信息）
+class UserOrchard(db.Model):
+    __tablename__ = 'user_orchards'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, unique=True)
+    total_harvests = db.Column(db.Integer, default=0)             # 总收获次数
+    total_points = db.Column(db.Integer, default=0)               # 总积分
+    weekly_points = db.Column(db.Integer, default=0)              # 本周积分
+    last_weekly_reset = db.Column(db.Date, nullable=True)         # 上次周榜重置日期
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # 关系
+    user = db.relationship('User', backref=db.backref('orchard', uselist=False, lazy=True))
+    lands = db.relationship('UserLand', backref='orchard', lazy=True, cascade='all, delete-orphan')
+    showcase_fruits = db.relationship('UserShowcaseFruit', backref='orchard', lazy=True, cascade='all, delete-orphan')
+
+
+# 用户土地表（每个用户拥有的土地）
+class UserLand(db.Model):
+    __tablename__ = 'user_lands'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    orchard_id = db.Column(db.Integer, db.ForeignKey('user_orchards.id'), nullable=False)
+    land_type_id = db.Column(db.Integer, db.ForeignKey('orchard_land_types.id'), nullable=False)
+    position = db.Column(db.Integer, default=0)                   # 土地位置索引
+    
+    # 当前种植状态
+    current_seed_id = db.Column(db.Integer, db.ForeignKey('orchard_seed_types.id'), nullable=True)
+    plant_status = db.Column(db.String(20), default='idle')       # idle/planted/growing/mature
+    planted_at = db.Column(db.DateTime, nullable=True)            # 播种时间
+    matures_at = db.Column(db.DateTime, nullable=True)            # 成熟时间
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # 关系
+    land_type = db.relationship('LandType')
+    current_seed = db.relationship('SeedType')
+
+
+# 用户背包（存放种子和道具）
+class UserOrchardInventory(db.Model):
+    __tablename__ = 'user_orchard_inventory'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    item_type = db.Column(db.String(20), nullable=False)          # 'seed' 或 'item'
+    item_id = db.Column(db.Integer, nullable=False)               # SeedType.id 或 OrchardItem.id
+    quantity = db.Column(db.Integer, default=1)
+    
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'item_type', 'item_id', name='unique_user_item'),
+    )
+
+
+# 用户收获的果实（历史记录）
+class UserHarvestedFruit(db.Model):
+    __tablename__ = 'user_harvested_fruits'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    fruit_type_id = db.Column(db.Integer, db.ForeignKey('orchard_fruit_types.id'), nullable=False)
+    land_id = db.Column(db.Integer, db.ForeignKey('user_lands.id'), nullable=True)
+    harvested_at = db.Column(db.DateTime, default=datetime.utcnow)
+    points_earned = db.Column(db.Integer, default=0)              # 获得的积分
+    
+    # 关系
+    fruit_type = db.relationship('FruitType')
+    user = db.relationship('User', backref='harvested_fruits')
+
+
+# 用户展示柜中的果实
+class UserShowcaseFruit(db.Model):
+    __tablename__ = 'user_showcase_fruits'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    orchard_id = db.Column(db.Integer, db.ForeignKey('user_orchards.id'), nullable=False)
+    harvested_fruit_id = db.Column(db.Integer, db.ForeignKey('user_harvested_fruits.id'), nullable=False)
+    position = db.Column(db.Integer, default=0)                   # 展示位置
+    display_message = db.Column(db.Text, nullable=True)           # 自定义展示文案
+    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # 关系
+    harvested_fruit = db.relationship('UserHarvestedFruit')

@@ -329,6 +329,12 @@
               <i class="bi bi-chat-dots me-1"></i>Forum
             </a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.blueprint == 'orchard' %}active{% endif %}"
+               href="{{ url_for('orchard.index') }}">
+              <i class="bi bi-tree me-1"></i>My Orchard
+            </a>
+          </li>
         </ul>
 
         <ul class="navbar-nav ms-auto">
