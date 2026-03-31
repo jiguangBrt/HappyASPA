@@ -3,6 +3,9 @@ from flask import Flask
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from models import db, User
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def create_app():
