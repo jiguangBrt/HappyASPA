@@ -238,14 +238,21 @@
 
   // 返回分类选择
   function backToCategories() {
-    categorySection.style.display = 'block';
-    learningSection.style.display = 'none';
-    currentCategory = null;
-    currentWordId = null;
-    tempChoice = null;
-    wordsReviewedCount = 0; // 重置计数器
-    clearError();
-  }
+  categorySection.style.display = 'block';
+  learningSection.style.display = 'none';
+
+  currentCategory = null;
+  currentWordId = null;
+  tempChoice = null;
+  wordsReviewedCount = 0;
+
+  // ⭐⭐⭐ 关键新增
+  spellingMode = false;
+  currentBatch = [];
+  spellingIndex = 0;
+
+  clearError();
+}
 
   // 重置所有按钮显示状态
   function resetButtons() {
@@ -432,24 +439,90 @@ breakBtn.addEventListener('click', () => {
   function showSpellingWord() {
   const current = currentBatch[spellingIndex];
 
-  wordDisplay.innerText = "Spell this word"; // 显示拼写提示
-  meaningText.innerText = current.meaning;   // 显示中文释义
+  wordDisplay.classList.add("text-dark");
+
+  meaningText.innerText = current.meaning;
   meaningContainer.style.display = 'block';
 
   renderInputBox(current.word);
 }
 
   function renderInputBox(correctWord) {
-  const container = document.getElementById('buttonContainer');
+  const container = document.getElementById('wordDisplay');
+  const btnContainer = document.getElementById('buttonContainer');
+
+  // ⭐ 按钮在最下面（你想要的）
+  btnContainer.innerHTML = `
+    <div class="d-flex justify-content-center gap-3 mt-4">
+      <button class="btn btn-primary px-4" onclick="checkSpelling('${correctWord}')">Submit</button>
+      <button class="btn btn-outline-danger px-4" onclick="quitSpelling()">Quit</button>
+    </div>
+  `;
+
+  // ⭐ 上面：输入格子
+  let boxes = '';
+  for (let i = 0; i < correctWord.length; i++) {
+    boxes += `<span class="letter-box" id="letter-${i}">_</span>`;
+  }
 
   container.innerHTML = `
-    <input id="spellInput" class="form-control w-50 mx-auto" placeholder="Type here"/>
-    <button class="btn btn-primary mt-2" onclick="checkSpelling('${correctWord}')">Submit</button>
+    <div id="letterContainer" class="mb-3">${boxes}</div>
+
+    <input id="hiddenInput"
+      class="real-input"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+    />
   `;
+
+  initTyping(correctWord);
+}
+function initTyping(correctWord) {
+  const input = document.getElementById('hiddenInput');
+
+  input.value = '';
+
+  input.addEventListener('input', () => {
+  if (input.value.length > correctWord.length) {
+    input.value = input.value.slice(0, correctWord.length);
+  }
+  updateBoxes(input.value, correctWord);
+});
+
+  // ⭐ 强制聚焦（关键）
+  setTimeout(() => input.focus(), 0);
+
+  // ⭐ 点击任意地方都重新聚焦（核心体验）
+  document.addEventListener('click', () => {
+    input.focus();
+  });
+}
+function updateBoxes(value, correctWord) {
+  for (let i = 0; i < correctWord.length; i++) {
+    const box = document.getElementById(`letter-${i}`);
+
+    if (value[i]) {
+      box.innerText = value[i];
+
+      if (value[i].toLowerCase() === correctWord[i].toLowerCase()) {
+        box.classList.add('correct');
+        box.classList.remove('wrong');
+      } else {
+        box.classList.add('wrong');
+        box.classList.remove('correct');
+      }
+
+    } else {
+      box.innerText = '_';
+      box.classList.remove('correct', 'wrong');
+    }
+  }
 }
 
 function checkSpelling(correctWord) {
-  const input = document.getElementById('spellInput').value.trim();
+  const input = document.getElementById('hiddenInput').value.trim();
 
   if (input.toLowerCase() === correctWord.toLowerCase()) {
     spellingIndex++;
@@ -482,7 +555,7 @@ function finishSpelling() {
 }
 function restoreButtons() {
   const container = document.getElementById('buttonContainer');
-
+  wordDisplay.style.display = "block";
   container.innerHTML = `
     <button class="btn btn-success btn-lg" id="knownBtn">Known</button>
     <button class="btn btn-danger btn-lg" id="unknownBtn">Unknown</button>
@@ -508,6 +581,29 @@ mistakeBtn.addEventListener('click', () => {
   submitFinal(false);
 });
 }
+
+function quitSpelling() {
+  // ⭐ 1. 关闭拼写状态
+  spellingMode = false;
+
+  // ⭐ 2. 清空批次（防止残留）
+  currentBatch = [];
+
+  // ⭐ 3. 重置索引
+  spellingIndex = 0;
+
+  // ⭐ 4. UI恢复
+  meaningContainer.style.display = 'none';
+  tempChoice = null;
+
+  restoreButtons();
+  resetButtons();
+  setAllButtonsDisabled(false);
+
+  // ⭐ 5. 继续学习（关键）
+  loadNextWord();
+}
+
   // 页面加载
   loadCategories();
 </script>
@@ -525,9 +621,7 @@ mistakeBtn.addEventListener('click', () => {
     margin-bottom: 6px;
     font-weight: 600;
   }
-  #wordDisplay {
-    word-break: break-word;
-  }
+  
   #meaningContainer {
     animation: fadeIn 0.3s;
   }
@@ -538,5 +632,40 @@ mistakeBtn.addEventListener('click', () => {
   #buttonContainer {
     min-height: 70px;
   }
+  #wordDisplay {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100px;
+}
+
+#letterContainer {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.letter-box {
+  width: 45px;
+  height: 55px;
+  border-bottom: 3px solid #333;
+  font-size: 30px;
+  text-align: center;
+  line-height: 55px;
+  font-weight: bold;
+}
+
+.correct {
+  color: green;
+}
+
+.wrong {
+  color: red;
+}
+.real-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none; /* 防止挡住点击 */
+}
 </style>
 {% endblock %}
