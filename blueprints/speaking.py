@@ -21,25 +21,38 @@ def allowed_file(filename):
 
 
 def can_reward_audio_coin_today(user_id):
-    """检查用户今日是否还能通过提交音频获得金币（全 speaking 模块共享上限）。"""
+    """检查用户今日是否还能通过提交音频获得金币（按发放日志计数，删除录音不影响）。"""
     now = datetime.utcnow()
     today_start = datetime(now.year, now.month, now.day)
-
-    english_corner_count = UserSpeakingSubmission.query.filter(
-        UserSpeakingSubmission.user_id == user_id,
-        UserSpeakingSubmission.submitted_at >= today_start
+    rewarded_count_today = UserActivityLog.query.filter(
+        UserActivityLog.user_id == user_id,
+        UserActivityLog.module == 'speaking',
+        UserActivityLog.action == 'audio_coin_reward',
+        UserActivityLog.timestamp >= today_start
     ).count()
-    scenario_count = UserScenarioSubmission.query.filter(
-        UserScenarioSubmission.user_id == user_id,
-        UserScenarioSubmission.submitted_at >= today_start
-    ).count()
-    shadowing_count = UserShadowingRecord.query.filter(
-        UserShadowingRecord.user_id == user_id,
-        UserShadowingRecord.created_at >= today_start
-    ).count()
-
-    rewarded_count_today = english_corner_count + scenario_count + shadowing_count
     return rewarded_count_today < DAILY_AUDIO_COIN_LIMIT
+
+
+def reward_audio_coin_if_eligible(user):
+    """尝试发放 1 枚音频奖励金币，并记录日志用于每日上限控制。"""
+    coin_reward = 0
+    coin_message = "You have reached today's coin reward limit and cannot earn more."
+
+    if can_reward_audio_coin_today(user.id):
+        if user.coins is None:
+            user.coins = 0
+        user.coins += 1
+        db.session.add(
+            UserActivityLog(
+                user_id=user.id,
+                module='speaking',
+                action='audio_coin_reward'
+            )
+        )
+        coin_reward = 1
+        coin_message = 'Coin +1'
+
+    return coin_reward, coin_message
 
 # 工具函数：上传文件到TOS并返回URL（独立纯函数）
 def upload_audio_to_tos(file_storage, filename,file_path):
@@ -415,13 +428,9 @@ def upload_audio():
             db.session.add(submission)
 
             coin_reward = 0
-            coin_message = 'You have reached today\'s coin reward limit and cannot earn more.'
+            coin_message = "You have reached today's coin reward limit and cannot earn more."
             if can_reward_coin:
-                if current_user.coins is None:
-                    current_user.coins = 0
-                current_user.coins += 1
-                coin_reward = 1
-                coin_message = 'Coin +1'
+                coin_reward, coin_message = reward_audio_coin_if_eligible(current_user)
             db.session.commit()
             submission_committed = True
 
@@ -680,13 +689,9 @@ def upload_scenario_audio():
             db.session.add(new_sub)
 
             coin_reward = 0
-            coin_message = 'You have reached today\'s coin reward limit and cannot earn more.'
+            coin_message = "You have reached today's coin reward limit and cannot earn more."
             if can_reward_coin:
-                if current_user.coins is None:
-                    current_user.coins = 0
-                current_user.coins += 1
-                coin_reward = 1
-                coin_message = 'Coin +1'
+                coin_reward, coin_message = reward_audio_coin_if_eligible(current_user)
             db.session.commit()
             submission_committed = True
 
@@ -887,13 +892,9 @@ def upload_shadowing_record(practice_id):
             db.session.add(new_record)
 
             coin_reward = 0
-            coin_message = 'You have reached today\'s coin reward limit and cannot earn more.'
+            coin_message = "You have reached today's coin reward limit and cannot earn more."
             if can_reward_coin:
-                if current_user.coins is None:
-                    current_user.coins = 0
-                current_user.coins += 1
-                coin_reward = 1
-                coin_message = 'Coin +1'
+                coin_reward, coin_message = reward_audio_coin_if_eligible(current_user)
             db.session.commit()
             
             # 5. 返回给前端渲染
