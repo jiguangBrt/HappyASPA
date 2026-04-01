@@ -271,7 +271,7 @@
 .badge-soft-secondary { background-color: #e2e3e5 !important; color: #41464b !important; }
 .badge-soft-dark { background-color: #d3d3d4 !important; color: #1b1e21 !important; }
 
-/* 这里保留你原本的指南专家徽章样式，千万别删哦 */
+
 .badge-guide-expert {
   background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%);
   color: #fff; padding: 0.15rem 0.5rem; border-radius: 50rem;
@@ -478,9 +478,109 @@
   </div>
   {% endif %}
 
+<div class="modal fade" id="userProfileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content text-center border-0 shadow-lg">
+        <div class="modal-header border-0 pb-0 justify-content-end">
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body pt-0 pb-4">
+          
+          <div class="mb-3 d-flex justify-content-center">
+            <div id="modalAvatarTextWrap" class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center shadow-sm" style="width: 80px; height: 80px;">
+              <span class="fw-bold text-primary fs-2" id="modalAvatarText">...</span>
+            </div>
+            <img id="modalAvatarImg" src="" class="rounded-circle shadow-sm d-none" style="width: 80px; height: 80px; object-fit: cover;">
+          </div>
+          
+          <h5 class="fw-bold mb-1" id="modalUsername">加载中...</h5>
+          <div id="modalGuideBadge" class="mb-3 d-none">
+            <span class="badge-guide-expert"><i class="bi bi-patch-check-fill"></i> Expert</span>
+          </div>
+          
+          <div class="row g-2 text-start bg-light rounded-3 p-2 mb-3 mx-1">
+            <div class="col-6">
+              <div class="small text-muted"><i class="bi bi-coin text-warning"></i> Coins</div>
+              <div class="fw-bold fs-6" id="modalCoins">0</div>
+            </div>
+            <div class="col-6">
+              <div class="small text-muted"><i class="bi bi-check-circle text-success"></i> Solved</div>
+              <div class="fw-bold fs-6" id="modalCorrect">0</div>
+            </div>
+            <div class="col-6">
+              <div class="small text-muted"><i class="bi bi-clock text-info"></i> Time</div>
+              <div class="fw-bold fs-6"><span id="modalDuration">0</span>s</div>
+            </div>
+            <div class="col-6">
+              <div class="small text-muted"><i class="bi bi-tree text-success"></i> Orchard</div>
+              <div class="fw-bold fs-6" id="modalPoints">0</div>
+            </div>
+          </div>
+          
+          <button disabled class="btn btn-outline-primary w-100 btn-sm shadow-sm rounded-pill">
+            <i class="bi bi-person-plus me-1"></i> Invite to Team (Soon)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Bootstrap 5 JS — BootCDN（国内稳定，含 Popper.js） -->
   <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   {% block scripts %}{% endblock %}
+
+<script>
+    // === 全局唤起用户名片的函数 ===
+    window.showUserProfile = function(userId) {
+      // 获取并显示 Bootstrap 弹窗
+      const modalEl = document.getElementById('userProfileModal');
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      
+      // 初始化加载状态
+      document.getElementById('modalUsername').innerText = 'Loading...';
+      document.getElementById('modalGuideBadge').classList.add('d-none');
+      document.getElementById('modalAvatarTextWrap').classList.remove('d-none');
+      document.getElementById('modalAvatarText').innerText = '...';
+      document.getElementById('modalAvatarImg').classList.add('d-none');
+      
+      modal.show();
+
+      // 异步拉取后端数据
+      fetch(`/forum/api/user/${userId}/profile`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            const user = data.data;
+            document.getElementById('modalUsername').innerText = user.username;
+            
+            // 判断显示图片头像还是首字母头像
+            if (user.avatar_url) {
+              document.getElementById('modalAvatarImg').src = user.avatar_url;
+              document.getElementById('modalAvatarImg').classList.remove('d-none');
+              document.getElementById('modalAvatarTextWrap').classList.add('d-none');
+            } else {
+              document.getElementById('modalAvatarText').innerText = user.username.charAt(0).toUpperCase();
+            }
+
+            // 指南专家徽章
+            if (user.is_guide_qualified) {
+              document.getElementById('modalGuideBadge').classList.remove('d-none');
+            }
+
+            // 填充数据
+            document.getElementById('modalCoins').innerText = user.coins;
+            document.getElementById('modalCorrect').innerText = user.total_correct;
+            document.getElementById('modalDuration').innerText = user.study_duration;
+            document.getElementById('modalPoints').innerText = user.orchard_points;
+          }
+        })
+        .catch(err => {
+          console.error("Fetch profile failed:", err);
+          document.getElementById('modalUsername').innerText = 'Fetch failed';
+        });
+    };
+  </script>
+
   <script>
   (function () {
     // === 1. 学科标签工具函数 (原第二个脚本逻辑) ===

@@ -107,9 +107,11 @@
     <a href="{{ url_for('forum.post_detail', post_id=post.id) }}"
        class="list-group-item list-group-item-action border-0 border-bottom py-3">
       <div class="d-flex align-items-start gap-3">
-        <div class="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0" style="width:42px;height:42px;">
-          <span class="fw-bold text-danger">{{ post.author.username[0]|upper }}</span>
-        </div>
+       <div class="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0 transition-hover shadow-sm" 
+     style="width:42px;height:42px; cursor: pointer; position: relative; z-index: 2;" 
+     onclick="event.preventDefault(); window.location.href='{{ url_for('forum.public_profile', user_id=post.author.id) }}';">
+  <span class="fw-bold text-danger">{{ post.author.username[0]|upper }}</span>
+</div>
         <div class="flex-grow-1" style="min-width: 0;">
           <div class="d-flex justify-content-between align-items-center mb-1">
             <h6 class="fw-bold mb-0 text-truncate me-3" title="{{ post.title }}">{{ post.title }}</h6>
@@ -117,8 +119,10 @@
           </div>
           <p class="text-muted small mb-1 text-truncate" title="{{ post.content }}">{{ post.content }}</p>
           <div class="d-flex align-items-center gap-3">
-            <small class="text-muted d-flex align-items-center gap-1">
-  <i class="bi bi-person"></i>{{ post.author.username }}
+          <small class="text-muted d-flex align-items-center gap-1 transition-hover" 
+       style="cursor: pointer; position: relative; z-index: 2;" 
+       onclick="event.preventDefault(); window.location.href='{{ url_for('forum.public_profile', user_id=post.author.id) }}';">
+  <i class="bi bi-person"></i><span class="text-dark fw-semibold">{{ post.author.username }}</span>
   {% if post.author.is_guide_qualified %}
     <span class="badge-guide-expert ms-1" title="Guide Forum Qualified"><i class="bi bi-patch-check-fill"></i></span>
   {% endif %}
@@ -174,8 +178,11 @@
         <div class="flex-grow-1" style="min-width: 0;">
           <h6 class="fw-bold mb-1 text-truncate" title="{{ post.title }}">{{ post.title }}</h6>
           
-          <div class="d-flex align-items-center gap-3">
-            <small class="text-muted"><i class="bi bi-person me-1"></i>{{ post.author.username }}</small>
+          <small class="text-muted transition-hover" 
+       style="cursor: pointer; position: relative; z-index: 2;" 
+       onclick="event.preventDefault(); window.location.href='{{ url_for('forum.public_profile', user_id=post.author.id) }}';">
+  <i class="bi bi-person me-1"></i>{{ post.author.username }}
+</small>
             
             {% if post.category %}
   {% set bg_color = category_colors.get(post.category, 'secondary') if category_colors else 'secondary' %}
@@ -200,7 +207,11 @@
     <a href="{{ url_for('forum.post_detail', post_id=comment.post_id) }}#comment-{{ comment.id }}"
        class="list-group-item list-group-item-action border-0 border-bottom py-3">
       <div class="d-flex justify-content-between align-items-center mb-1">
-        <small class="text-muted fw-semibold"><i class="bi bi-person me-1"></i>{{ comment.author.username }}</small>
+        <small class="text-muted fw-semibold transition-hover" 
+       style="cursor: pointer; position: relative; z-index: 2;" 
+       onclick="event.preventDefault(); window.location.href='{{ url_for('forum.public_profile', user_id=comment.author.id) }}';">
+  <i class="bi bi-person me-1"></i>{{ comment.author.username }}
+</small>
         
         <div class="text-end">
           {% if comment.post.category %}
