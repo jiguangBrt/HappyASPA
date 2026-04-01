@@ -111,6 +111,11 @@ def add_default_data():
             'category': 'Motivation',
             'accent': 'American',
             'duration_seconds': 207,
+            "source_platform": "YouTube",
+            "source_author": "UniverseofKorede",
+            "license_type": "Creative Commons Attribution licence (reuse allowed)",
+            "source_url": "https://www.youtube.com/watch?v=eJU34nRlK5c",
+            "is_modified": True,
             'questions': [
                 {
                     "time": 47.0,
@@ -178,6 +183,11 @@ def add_default_data():
             "category": "Science",
             'accent': 'Dutch',
             "duration_seconds": 396,
+            "source_platform": "YouTube",
+            "source_author": "TEDTalentSearch",
+            "license_type": "Creative Commons Attribution licence (reuse allowed)",
+            "source_url": "https://www.youtube.com/watch?v=Nr3wgHJWRdQ",
+            "is_modified": True,
             "questions": [
                 {
                     "time": 90.0,
@@ -234,6 +244,11 @@ def add_default_data():
             "category": "Education",
             'accent': 'Australian',
             "duration_seconds": 379,
+            "source_platform": "YouTube",
+            "source_author": "TEDTalentSearch",
+            "license_type": "Creative Commons Attribution licence (reuse allowed)",
+            "source_url": "https://www.youtube.com/watch?v=RQaW2bFieo8",
+            "is_modified": True,
             "questions": [
                 {
                     "time": 90.0,
@@ -289,6 +304,11 @@ def add_default_data():
             "category": "Society",
             'accent': 'American',
             "duration_seconds": 510,
+            "source_platform": "YouTube",
+            "source_author": "TEDx Talks",
+            "license_type": "Creative Commons Attribution licence (reuse allowed)",
+            "source_url": "https://www.youtube.com/watch?v=9W-a14TQP9k",
+            "is_modified": True,
             "questions": [
                 {
                     "time": 15.0,
@@ -335,6 +355,11 @@ def add_default_data():
     "category": "Culture",
     "accent": "British",
     "duration_seconds": 690,
+    "source_platform": "YouTube",
+    "source_author": "UniverseofKorede",
+    "license_type": "Creative Commons Attribution licence (reuse allowed)",
+    "source_url": "https://www.youtube.com/watch?v=eJU34nRlK5c",
+    "is_modified": True,
     "questions": [
         {
             "time": 35.6,
@@ -411,6 +436,12 @@ def add_default_data():
     'category': 'Motivation',
     'accent': 'Chinese',
     'duration_seconds': 410,
+    "source_platform": "YouTube",
+    "source_author": "TEDTalentSearch",
+    "license_type": "Creative Commons Attribution licence (reuse allowed)",
+    "source_url": "https://www.youtube.com/watch?v=7sy1gVJcHlk",
+    "is_modified": True,
+            
     'questions': [
         {
             "time": 103.0,
@@ -465,6 +496,12 @@ def add_default_data():
     'category': 'Politics',
     'accent': 'Iranian',
     'duration_seconds': 207,
+    "source_platform": "YouTube",
+    "source_author": "World Policy “WPC TV” Conference TV",
+    "license_type": "Creative Commons Attribution licence (reuse allowed)",
+    "source_url": "https://www.youtube.com/watch?v=gTVKntka2Cg",
+    "is_modified": True,
+    
     'questions': [
         {
             "time": 52.0,
@@ -511,6 +548,11 @@ def add_default_data():
     "category": "Politics",
     "accent": "Indian",
     "duration_seconds": 282,
+    "source_platform": "YouTube",
+    "source_author": "V Sri",
+    "license_type": "Creative Commons Attribution licence (reuse allowed)",
+    "source_url": "https://www.youtube.com/watch?v=gJ22jqWbxwg",
+    "is_modified": True,
     "questions": [
         {
             "time": 120.0,
