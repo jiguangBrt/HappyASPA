@@ -93,10 +93,46 @@
 
   .land-actions {
     position: absolute;
-    bottom: -15px;
-    z-index: 2;
+    z-index: 3;
     display: flex;
     gap: 5px;
+  }
+
+  .land-action-center {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .land-plot:hover .land-action-center {
+    opacity: 0.7;
+    pointer-events: auto;
+  }
+
+  .plant-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 0.45rem 1rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    color: #ffffff;
+    background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+    box-shadow: 0 8px 18px rgba(46, 125, 50, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  }
+
+  .plant-btn:hover {
+    transform: translateY(-1px) scale(1.03);
+    box-shadow: 0 10px 20px rgba(46, 125, 50, 0.45);
+    filter: brightness(1.06);
+  }
+
+  .plant-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 5px 12px rgba(46, 125, 50, 0.35);
   }
   
   @keyframes float {
@@ -206,8 +242,10 @@
             <div class="land-plot">
               {% if land.plant_status == 'idle' %}
                 <img src="{{ url_for('static', filename='orchard/soild/soil_empty.png') }}" class="land-image" alt="Empty Land">
-                <div class="land-actions">
-                  <button class="btn btn-sm btn-success" onclick="openPlantModal({{ land.id }})">Plant</button>
+                <div class="land-actions land-action-center">
+                  <button class="btn btn-sm plant-btn" onclick="openPlantModal({{ land.id }})">
+                    <i class="bi bi-flower1 me-1"></i>Plant
+                  </button>
                 </div>
               {% elif land.plant_status == 'growing' %}
                 <img src="{{ url_for('static', filename='orchard/soild/soil_planted.png') }}" class="land-image" alt="Planted Land">
@@ -223,7 +261,7 @@
                 </div>
               {% elif land.plant_status == 'mature' %}
                 <img src="{{ land.current_seed.plant_image_url | default(url_for('static', filename='orchard/soild/soild_ripened_1.png')) }}" class="land-image" alt="Mature Plant">
-                <div class="land-actions">
+                <div class="land-actions land-action-center">
                   <button class="btn btn-sm btn-primary" onclick="harvest({{ land.id }})">Harvest</button>
                 </div>
               {% endif %}
