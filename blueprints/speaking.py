@@ -4,6 +4,7 @@ from models import db, UserActivityLog, SpeakingExercise, UserSpeakingSubmission
 from werkzeug.utils import secure_filename 
 from flask import send_from_directory
 from datetime import datetime, timezone, timedelta
+from time_utils import to_beijing
 import os
 import uuid
 # === AI 语音识别与点评依赖 ===
@@ -391,7 +392,7 @@ def upload_audio():
             submission_committed = True
 
             utc_time = submission.submitted_at
-            local_time = utc_time.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+            local_time = to_beijing(utc_time)
 
             return jsonify({
                 'status': 'success',
@@ -468,7 +469,7 @@ def analysis_detail(sub_id):
     
     # 格式化时间
     utc_time = submission.submitted_at       
-    local_time = utc_time.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+    local_time = to_beijing(utc_time)
     formatted_time = local_time.strftime('%Y-%m-%d %H:%M')
     
     return render_template('speaking/analysis_detail.html', 
@@ -512,7 +513,7 @@ def exercise_detail(exercise_id):
         if not os.path.exists(audio_path):
             continue
         utc_time = sub.submitted_at       
-        local_time = utc_time.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+        local_time = to_beijing(utc_time)
         
         submission_list.append({
             'id': sub.id,
@@ -584,7 +585,7 @@ def academic_detail(scenario_id):
     submission_list = []
     for sub in submissions:
         utc_time = sub.submitted_at       
-        local_time = utc_time.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+        local_time = to_beijing(utc_time)
         submission_list.append({
             'id': sub.id,
             'audio_filename': sub.audio_filename,
@@ -642,7 +643,7 @@ def upload_scenario_audio():
             submission_committed = True
 
             utc_time = new_sub.submitted_at
-            local_time = utc_time.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+            local_time = to_beijing(utc_time)
 
             return jsonify({
                 'status': 'success',
@@ -723,7 +724,7 @@ def scenario_analysis_detail(sub_id):
     scenario = AcademicScenario.query.get_or_404(submission.scenario_id)
 
     utc_time = submission.submitted_at
-    local_time = utc_time.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+    local_time = to_beijing(utc_time)
     formatted_time = local_time.strftime('%Y-%m-%d %H:%M')
 
     return render_template(
@@ -782,7 +783,7 @@ def practice_detail(practice_id):
     # 格式化给前端渲染
     history_list = []
     for r in records:
-        local_time = r.created_at.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+        local_time = to_beijing(r.created_at)
         history_list.append({
             'id': r.id,
             'attempt': r.attempt_number,
@@ -834,7 +835,7 @@ def upload_shadowing_record(practice_id):
             db.session.commit()
             
             # 5. 返回给前端渲染
-            local_time = new_record.created_at.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+            local_time = to_beijing(new_record.created_at)
             
             return jsonify({
                 'success': True,
