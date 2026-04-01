@@ -1,0 +1,778 @@
+{% extends 'base.html' %}
+{% block title %}{{ exercise.title }} - Listening Practice{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <div class="row g-4">
+        <!-- 左侧区域 -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-3">
+                <div class="card-body p-0 position-relative">
+                    <div id="videoContainer" class="video-wrapper" style="position: relative; width: 100%;">
+                        <video id="mainVideo" controls class="w-100" crossorigin="anonymous"
+                            data-exercise-id="{{ exercise.id }}"
+                            data-questions='{{ exercise.questions | tojson | safe }}'>
+                            <source src="{{ exercise.audio_url }}" type="video/mp4">
+                            {% if exercise.subtitle_url %}
+                            <track src="{{ exercise.subtitle_url }}" kind="subtitles" srclang="en" label="English"
+                                default>
+                            {% endif %}
+                            Your browser does not support the video tag.
+                        </video>
+                        <button id="customFullscreenBtn" class="btn btn-sm btn-soft position-absolute"
+                            style="bottom: 10px; right: 10px; z-index: 10;">
+                            <i class="bi bi-arrows-fullscreen"></i> Fullscreen
+                        </button>
+                        <div id="fullscreenPopup" class="video-popup" style="display: none;">
+                            <div class="popup-content"></div>
+                            <div class="popup-timer text-end mt-2" style="display: none;">
+                                <span class="timer-seconds"></span>s
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card shadow-sm" id="questionCard">
+                <div class="card-header card-header-soft">
+                    <i class="bi bi-question-circle me-2"></i>Interactive Questions
+                </div>
+                <div class="card-body" id="questionArea">
+                    <div class="text-muted text-center py-3">
+                        <i class="bi bi-info-circle"></i> Questions will appear here as you watch the video.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧区域：词汇 + 笔记 -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header card-header-soft">
+                    <i class="bi bi-book me-2"></i>Key Vocabulary
+                </div>
+                <div class="card-body" id="vocabArea" style="overflow-y: auto;">
+                    {% if exercise.key_vocab %}
+                    <ul class="list-group list-group-flush vocab-list">
+                        {% for item in exercise.key_vocab %}
+                        <li class="list-group-item vocab-item">
+                            <strong>{{ item.word }}</strong><br>
+                            <small class="text-muted">{{ item.definition }}</small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted mb-0">No vocabulary prepared for this exercise.</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card shadow-sm">
+                <div class="card-header card-header-soft d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-pencil-square me-2"></i>My Notes</span>
+                    <button type="button" class="btn btn-sm btn-outline-light" data-bs-toggle="modal"
+                        data-bs-target="#historyModal">
+                        <i class="bi bi-clock-history"></i> History
+                    </button>
+                </div>
+                <div class="card-body">
+                    <textarea id="notesTextarea" class="form-control" rows="8"
+                        placeholder="Take notes while listening..."></textarea>
+                    <div class="mt-2 d-flex justify-content-between align-items-center">
+                        <small class="text-muted" id="notesStatus"></small>
+                        <button id="saveNotesBtn" class="btn btn-sm btn-soft"><i class="bi bi-save"></i> Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mt-4">
+        <a href="{{ url_for('listening.index') }}" class="btn btn-soft">
+            <i class="bi bi-arrow-left"></i> Back to Exercises
+        </a>
+    </div>
+</div>
+
+<div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">📝 Note History</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="historyList">
+                <div class="text-center text-muted">Loading...</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    const exerciseId = {{ exercise.id }};
+    let questions = [];
+    let userAnswers = new Map();
+    let permanentAnswered = new Set();
+    let permanentCorrect = new Set();
+    let lastPosition = 0;
+    let notesContent = '';
+    let video = null;
+    let lastSaveTime = 0;
+    let playStartTime = null;
+    let currentQuestion = null;
+    let questionTimeout = null;
+    let isFullscreen = false;
+    let remainingSeconds = 30;
+    let ignorePermanent = false;
+
+    const videoElem = document.getElementById('mainVideo');
+    const videoContainer = document.getElementById('videoContainer');
+    const questionArea = document.getElementById('questionArea');
+    const questionCard = document.getElementById('questionCard');
+    const notesTextarea = document.getElementById('notesTextarea');
+    const notesStatus = document.getElementById('notesStatus');
+    const saveNotesBtn = document.getElementById('saveNotesBtn');
+    const fullscreenPopup = document.getElementById('fullscreenPopup');
+    const customFullscreenBtn = document.getElementById('customFullscreenBtn');
+
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function getUrlParam(name) {
+        return new URLSearchParams(window.location.search).get(name);
+    }
+
+    async function resetExercise() {
+        try {
+            const res = await fetch('/listening/progress', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    exercise_id: exerciseId, 
+                    reset: true,
+                    reset_mode: true
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                sessionStorage.setItem(`reset_mode_${exerciseId}`, 'true');
+                window.location.href = `/listening/practice/${exerciseId}`;
+            }
+        } catch (err) {
+            console.error('Reset error:', err);
+        }
+        return false;
+    }
+
+    function clearQuestionDisplay() {
+        if (questionTimeout) clearInterval(questionTimeout);
+        if (isFullscreen) {
+            fullscreenPopup.style.display = 'none';
+        } else {
+            questionArea.innerHTML = '<div class="text-muted text-center py-3">Questions will appear here as you watch the video.</div>';
+        }
+        currentQuestion = null;
+    }
+
+    async function saveProgress(lastPos, answersMap, completed = false) {
+        const answersObj = Object.fromEntries(answersMap);
+        const hasData = lastPos !== null || Object.keys(answersObj).length > 0 || completed;
+        if (!hasData) return;
+        const body = {
+            exercise_id: exerciseId,
+            last_position: lastPos,
+            answers: answersObj,
+            completed: completed,
+            duration_spent: 0
+        };
+        if (ignorePermanent) {
+            body.reset_mode = true;
+        }
+        try {
+            await fetch('/listening/progress', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+        } catch (err) {
+            console.error('Save progress error:', err);
+        }
+    }
+
+    async function saveNotesToServer() {
+        const notes = notesTextarea.value;
+        if (notes === notesContent) return;
+        notesStatus.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
+        try {
+            const res = await fetch('/listening/api/notes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ exercise_id: exerciseId, notes: notes })
+            });
+            const data = await res.json();
+            if (data.success) {
+                notesContent = notes;
+                notesStatus.innerHTML = '<i class="bi bi-check-circle"></i> Saved';
+                setTimeout(() => { notesStatus.innerHTML = ''; }, 2000);
+            } else {
+                notesStatus.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Save failed';
+            }
+        } catch (err) {
+            notesStatus.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Network error';
+        }
+    }
+
+    function showQuestion(question, idx, resumeSeconds = null) {
+        const hasAnswered = userAnswers.has(String(idx));
+        let isCorrectAlready = false;
+        let selectedAnswer = null;
+        
+        if (hasAnswered) {
+            selectedAnswer = userAnswers.get(String(idx));
+            isCorrectAlready = (selectedAnswer === question.answer);
+        } else if (!ignorePermanent) {
+            isCorrectAlready = permanentCorrect.has(idx);
+        }
+        
+        const shouldDisable = hasAnswered || (isCorrectAlready && !ignorePermanent);
+        
+        if (currentQuestion) hideQuestion();
+
+        currentQuestion = { idx, question };
+        if (resumeSeconds !== null && !shouldDisable) {
+            remainingSeconds = resumeSeconds;
+        } else if (!shouldDisable) {
+            remainingSeconds = 30;
+        }
+
+        let optionsHtml = '';
+        if (question.options && Array.isArray(question.options)) {
+            optionsHtml = question.options.map((opt, i) => {
+                let extraClass = '';
+                if (shouldDisable && i === question.answer) extraClass = 'correct-selected';
+                if (hasAnswered && !isCorrectAlready && i === selectedAnswer) extraClass = 'wrong-selected';
+                const disabled = shouldDisable;
+                return `<div class="option-item ${extraClass}" data-opt-index="${i}" ${disabled ? 'data-disabled="true"' : ''}>${opt}</div>`;
+            }).join('');
+        }
+
+        let feedbackHtml = '';
+        if (shouldDisable) {
+            if (isCorrectAlready) {
+                feedbackHtml = '<div class="feedback mt-2" style="color: #28a745;">✅ Correct! (Previous answer)</div>';
+            } else {
+                feedbackHtml = '<div class="feedback mt-2" style="color: #dc3545;">❌ Incorrect</div>';
+            }
+        } else {
+            feedbackHtml = '<div class="feedback mt-2" style="font-size: 0.85rem;"></div>';
+        }
+        
+        const timerHtml = !shouldDisable
+            ? '<div class="timer text-end mt-2"><span class="timer-seconds"></span>s</div>'
+            : '';
+
+        const questionHtml = `
+      <div class="fw-bold mb-2">${question.question}</div>
+      <div class="options-container">${optionsHtml}</div>
+      ${feedbackHtml}
+      ${timerHtml}
+    `;
+
+        if (isFullscreen) {
+            const contentDiv = fullscreenPopup.querySelector('.popup-content');
+            contentDiv.innerHTML = questionHtml;
+            fullscreenPopup.style.display = 'block';
+
+            if (!shouldDisable) {
+                const optionsDivs = fullscreenPopup.querySelectorAll('.option-item');
+                optionsDivs.forEach(optDiv => {
+                    optDiv.addEventListener('click', (e) => {
+                        const selectedIdx = parseInt(optDiv.dataset.optIndex);
+                        handleAnswer(selectedIdx, idx, question.answer);
+                    });
+                });
+                startTimer(true);
+            } else {
+                fullscreenPopup.querySelectorAll('.option-item').forEach(optDiv => {
+                    optDiv.style.pointerEvents = 'none';
+                });
+                if (questionTimeout) clearTimeout(questionTimeout);
+                questionTimeout = setTimeout(() => hideQuestion(), 3000);
+            }
+        } else {
+            questionArea.innerHTML = questionHtml;
+            if (!shouldDisable) {
+                const optionsDivs = questionArea.querySelectorAll('.option-item');
+                optionsDivs.forEach(optDiv => {
+                    optDiv.addEventListener('click', (e) => {
+                        const selectedIdx = parseInt(optDiv.dataset.optIndex);
+                        handleAnswer(selectedIdx, idx, question.answer);
+                    });
+                });
+                startTimer(false);
+            } else {
+                questionArea.querySelectorAll('.option-item').forEach(optDiv => {
+                    optDiv.style.pointerEvents = 'none';
+                });
+                if (questionTimeout) clearTimeout(questionTimeout);
+                questionTimeout = setTimeout(() => hideQuestion(), 3000);
+            }
+        }
+    }
+
+    function startTimer(usePopup) {
+        if (questionTimeout) clearInterval(questionTimeout);
+        const timerSpan = usePopup
+            ? fullscreenPopup.querySelector('.timer-seconds')
+            : questionArea.querySelector('.timer-seconds');
+        if (!timerSpan) return;
+
+        timerSpan.textContent = remainingSeconds;
+        questionTimeout = setInterval(() => {
+            remainingSeconds -= 1;
+            timerSpan.textContent = remainingSeconds;
+            if (remainingSeconds <= 0) {
+                clearInterval(questionTimeout);
+                questionTimeout = null;
+                hideQuestion();
+            }
+        }, 1000);
+    }
+
+    function handleAnswer(selectedIdx, qIdx, correctAnswer) {
+        const isCorrect = (selectedIdx === correctAnswer);
+        const feedbackDiv = isFullscreen
+            ? fullscreenPopup.querySelector('.feedback')
+            : questionArea.querySelector('.feedback');
+
+        userAnswers.set(String(qIdx), selectedIdx);
+        saveProgress(video.currentTime, userAnswers, false);
+
+        if (isCorrect) {
+            feedbackDiv.innerHTML = '✅ Correct!';
+            feedbackDiv.style.color = '#28a745';
+            const optionsDivs = isFullscreen
+                ? fullscreenPopup.querySelectorAll('.option-item')
+                : questionArea.querySelectorAll('.option-item');
+            optionsDivs.forEach(div => { div.style.pointerEvents = 'none'; });
+            setTimeout(() => {
+                if (currentQuestion && currentQuestion.idx === qIdx) hideQuestion();
+            }, 2000);
+            if (questionTimeout) clearInterval(questionTimeout);
+            questionTimeout = null;
+        } else {
+            feedbackDiv.innerHTML = '❌ Try again.';
+            feedbackDiv.style.color = '#dc3545';
+        }
+    }
+
+    function hideQuestion() {
+        if (questionTimeout) {
+            clearInterval(questionTimeout);
+            questionTimeout = null;
+        }
+        currentQuestion = null;
+        if (isFullscreen) {
+            fullscreenPopup.style.display = 'none';
+        } else {
+            questionArea.innerHTML = '<div class="text-muted text-center py-3">Questions will appear here as you watch the video.</div>';
+        }
+    }
+
+    function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            videoContainer.requestFullscreen().catch(err => console.error(`全屏请求失败: ${err.message}`));
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    function handleFullscreenChange() {
+        const nowFull = !!document.fullscreenElement;
+        if (nowFull === isFullscreen) return;
+        const savedRemaining = remainingSeconds;
+        isFullscreen = nowFull;
+
+        if (isFullscreen) {
+            questionCard.style.display = 'none';
+            fullscreenPopup.style.display = 'none';
+            if (currentQuestion) {
+                const cur = currentQuestion;
+                hideQuestion();
+                showQuestion(cur.question, cur.idx, savedRemaining);
+            }
+        } else {
+            questionCard.style.display = 'block';
+            fullscreenPopup.style.display = 'none';
+            if (currentQuestion) {
+                const cur = currentQuestion;
+                hideQuestion();
+                showQuestion(cur.question, cur.idx, savedRemaining);
+            } else {
+                questionArea.innerHTML = '<div class="text-muted text-center py-3">Questions will appear here as you watch the video.</div>';
+            }
+        }
+    }
+
+    async function loadHistory() {
+        const historyList = document.getElementById('historyList');
+        historyList.innerHTML = '<div class="text-center text-muted">Loading...</div>';
+        try {
+            const res = await fetch(`/listening/api/notes/history/${exerciseId}`);
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            if (data.history && data.history.length) {
+                historyList.innerHTML = data.history.map(item => `
+          <div class="card mb-2">
+            <div class="card-body py-2">
+              <div class="text-muted small mb-1">${new Date(item.created_at).toLocaleString()}</div>
+              <div class="text-pre-wrap">${escapeHtml(item.content)}</div>
+            </div>
+          </div>
+        `).join('');
+            } else {
+                historyList.innerHTML = '<div class="text-center text-muted">No historical notes yet.</div>';
+            }
+        } catch (err) {
+            historyList.innerHTML = '<div class="text-center text-danger">Failed to load history.</div>';
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function (m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    async function loadData() {
+        try {
+            const response = await fetch(`/listening/api/practice/${exerciseId}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            const ex = data.exercise;
+            const prog = data.progress;
+
+            questions = ex.questions || [];
+
+            const mode = getUrlParam('mode');
+            if (mode === 'reset') {
+                await resetExercise();
+                return;
+            }
+
+            const resetModeFlag = sessionStorage.getItem(`reset_mode_${exerciseId}`);
+            if (resetModeFlag === 'true') {
+                ignorePermanent = true;
+            } else {
+                ignorePermanent = false;
+            }
+
+            permanentAnswered = new Set(prog.permanent_answered || []);
+            permanentCorrect = new Set(prog.permanent_correct || []);
+            notesContent = prog.notes || '';
+            notesTextarea.value = notesContent;
+
+            lastPosition = prog.last_position || 0;
+            userAnswers = new Map(Object.entries(prog.answers || {}).map(([k, v]) => [k, Number(v)]));
+
+            if (mode === 'resume') {
+                if (video) video.currentTime = lastPosition;
+            } else {
+                if (video) video.currentTime = 0;
+            }
+
+            if (video && video.currentTime !== lastPosition && mode !== 'resume') {
+                saveProgress(video.currentTime, userAnswers, false);
+            }
+        } catch (err) {
+            console.error('Load data error:', err);
+            questionArea.innerHTML = '<div class="alert alert-danger">Failed to load exercise data. Please refresh.</div>';
+        }
+    }
+
+    function initVideo() {
+        video = videoElem;
+        video.addEventListener('timeupdate', () => {
+            const ct = video.currentTime;
+            for (let i = 0; i < questions.length; i++) {
+                const q = questions[i];
+                if (Math.abs(ct - q.time) < 0.5) {
+                    if (currentQuestion && currentQuestion.idx === i) continue;
+                    showQuestion(q, i);
+                    break;
+                }
+            }
+            if (ct - lastSaveTime > 10) {
+                lastSaveTime = ct;
+                saveProgress(ct, userAnswers, false);
+            }
+        });
+
+        video.addEventListener('play', () => {
+            if (playStartTime === null) playStartTime = Date.now();
+        });
+        video.addEventListener('pause', () => {
+            if (playStartTime) {
+                const delta = (Date.now() - playStartTime) / 1000;
+                if (delta > 0) {
+                    fetch('/listening/progress', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ exercise_id: exerciseId, duration_spent: delta })
+                    });
+                }
+                playStartTime = null;
+            }
+        });
+        video.addEventListener('ended', () => {
+            if (playStartTime) {
+                const delta = (Date.now() - playStartTime) / 1000;
+                if (delta > 0) {
+                    fetch('/listening/progress', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ exercise_id: exerciseId, duration_spent: delta, completed: true })
+                    });
+                }
+                playStartTime = null;
+            }
+            saveProgress(video.currentTime, userAnswers, true);
+        });
+        video.addEventListener('seeked', () => {
+            saveProgress(video.currentTime, userAnswers, false);
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (video && !video.paused && playStartTime) {
+                const delta = (Date.now() - playStartTime) / 1000;
+                if (delta > 0) {
+                    navigator.sendBeacon('/listening/progress', JSON.stringify({ exercise_id: exerciseId, duration_spent: delta }));
+                }
+            }
+            saveNotesToServer();
+        });
+    }
+
+    const style = document.createElement('style');
+    style.textContent = `
+    video::-webkit-media-controls-fullscreen-button { display: none !important; }
+    video::-moz-media-controls-fullscreen-button { display: none !important; }
+    video::-ms-media-controls-fullscreen-button { display: none !important; }
+  `;
+    document.head.appendChild(style);
+
+    customFullscreenBtn.addEventListener('click', toggleFullscreen);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    saveNotesBtn.addEventListener('click', saveNotesToServer);
+
+    const historyModal = document.getElementById('historyModal');
+    historyModal.addEventListener('show.bs.modal', loadHistory);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initVideo();
+        loadData();
+    });
+    
+    // ========== 新增：词汇卡片高度与视频区域对齐 ==========
+    function syncVocabHeight() {
+        const isLg = window.innerWidth >= 992; // Bootstrap lg 断点
+        if (!isLg) {
+            document.getElementById('vocabArea').style.maxHeight = '';
+            return;
+        }
+        const videoContainer = document.getElementById('videoContainer');
+        const vocabArea = document.getElementById('vocabArea');
+        if (!videoContainer || !vocabArea) return;
+        
+        // 获取视频容器的实际高度（包括视频和可能的边距）
+        const videoHeight = videoContainer.clientHeight;
+        // 获取卡片头的高度（固定类 .card-header-soft）
+        const cardHeader = document.querySelector('#vocabArea').parentElement.querySelector('.card-header-soft');
+        const headerHeight = cardHeader ? cardHeader.clientHeight : 52;
+        // 卡片 body 已有的上下内边距
+        const bodyPadding = 16; // Bootstrap card-body 默认 padding 1rem = 16px
+        // 计算可用高度：视频容器高度 - 卡片头高度 - 卡片body的上下内边距
+        const targetHeight = videoHeight - headerHeight - bodyPadding * 2;
+        if (targetHeight > 0) {
+            vocabArea.style.maxHeight = targetHeight + 'px';
+        } else {
+            vocabArea.style.maxHeight = '';
+        }
+    }
+    
+    // 页面加载完成后执行，并监听窗口变化
+    document.addEventListener('DOMContentLoaded', function() {
+        syncVocabHeight();
+        // 监听窗口大小变化
+        window.addEventListener('resize', syncVocabHeight);
+        // 视频加载完成可能改变高度（如海报加载）
+        const video = document.getElementById('mainVideo');
+        if (video) {
+            video.addEventListener('loadedmetadata', syncVocabHeight);
+            video.addEventListener('loadeddata', syncVocabHeight);
+        }
+        // 确保全屏切换后重新计算
+        document.addEventListener('fullscreenchange', syncVocabHeight);
+        document.addEventListener('webkitfullscreenchange', syncVocabHeight);
+        document.addEventListener('mozfullscreenchange', syncVocabHeight);
+        document.addEventListener('MSFullscreenChange', syncVocabHeight);
+    });
+</script>
+
+<style>
+    /* 清新标题栏：淡蓝灰渐变 */
+    .card-header-soft {
+        background: linear-gradient(135deg, #7C9EB2 0%, #A8C1D6 100%);
+        color: white;
+        border-bottom: none;
+        padding: 0.75rem 1rem;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+        border-radius: 0.375rem 0.375rem 0 0;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    /* 软按钮：清新蓝绿色 */
+    .btn-soft {
+        background: transparent;
+        border: 1px solid rgba(91, 140, 158, 0.4);
+        color: #5B8C9E;
+        transition: all 0.2s ease;
+    }
+    .btn-soft:hover,
+    .btn-soft:focus {
+        background-color: #5B8C9E;
+        border-color: #5B8C9E;
+        color: #fff;
+    }
+
+    /* 选项卡片清新风格 */
+    .option-item {
+        padding: 6px 12px;
+        background: #FCFDFF;
+        border: 1px solid #E2EDF2;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .option-item:hover {
+        background: #F0F7FA;
+        border-color: #B8D0DE;
+    }
+
+    .option-item.correct-selected {
+        background: rgba(91, 140, 158, 0.12);
+        border-left: 3px solid #5B8C9E;
+    }
+    
+    .option-item.wrong-selected {
+        background: rgba(220, 53, 69, 0.08);
+        border-left: 3px solid #dc3545;
+    }
+
+    /* Key Vocabulary 半透明背景（保留） */
+    #vocabArea {
+        background-color: rgba(91, 140, 158, 0.06);
+        border-radius: 8px;
+        border: 1px solid rgba(91, 140, 158, 0.12);
+        padding: 0.5rem 0;
+        transition: max-height 0.2s ease;
+    }
+    .vocab-list {
+        background: transparent;
+    }
+    .vocab-item {
+        background: transparent !important;
+        border-color: rgba(91, 140, 158, 0.2);
+        color: #2c3e50;
+    }
+    .vocab-item strong {
+        color: #2c3e50;
+    }
+    .vocab-item small {
+        color: #6B7688 !important;
+    }
+    #vocabArea .text-muted {
+        padding: 0.5rem 1rem;
+        margin-bottom: 0;
+    }
+
+    .video-wrapper {
+        position: relative;
+    }
+
+    .video-popup {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.85);
+        color: white;
+        border-radius: 12px;
+        padding: 16px;
+        width: 400px;
+        z-index: 10000;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(4px);
+        border-left: 4px solid #7C9EB2;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        left: 20px;
+        top: 20px;
+    }
+
+    .video-popup .option-item {
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+    }
+
+    .video-popup .option-item:hover {
+        background: rgba(124, 158, 178, 0.4) !important;
+    }
+
+    #customFullscreenBtn {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        border: none;
+        transition: opacity 0.2s;
+    }
+
+    #customFullscreenBtn:hover {
+        background: rgba(0, 0, 0, 0.8);
+    }
+
+    .video-wrapper:fullscreen {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: black;
+    }
+
+    .video-wrapper:fullscreen video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .text-pre-wrap {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+</style>
+{% endblock %}

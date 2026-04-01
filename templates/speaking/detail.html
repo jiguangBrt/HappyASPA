@@ -321,6 +321,11 @@
                             'afterbegin',
                             buildEnglishCornerCard(result.submission_id, result.filename, result.submitted_at)
                         );
+                        if (result.coin_reward === 1) {
+                            alert('🎉 Coin +1! Audio submitted successfully.');
+                        } else {
+                            alert(result.coin_message || "You have reached today's coin reward limit and cannot earn more.");
+                        }
                     } else {
                         alert("Upload failed: " + result.message);
                     }
