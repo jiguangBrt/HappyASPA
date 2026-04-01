@@ -12,11 +12,47 @@ import base64
 from volcenginesdkarkruntime import Ark
 
 speaking_bp = Blueprint('speaking', __name__, url_prefix='/speaking')
+DAILY_AUDIO_COIN_LIMIT = 10
 
 # 工具函数：验证文件扩展名
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in current_app.config['ALLOWED_EXTENSIONS']
+
+
+def can_reward_audio_coin_today(user_id):
+    """检查用户今日是否还能通过提交音频获得金币（按发放日志计数，删除录音不影响）。"""
+    now = datetime.utcnow()
+    today_start = datetime(now.year, now.month, now.day)
+    rewarded_count_today = UserActivityLog.query.filter(
+        UserActivityLog.user_id == user_id,
+        UserActivityLog.module == 'speaking',
+        UserActivityLog.action == 'audio_coin_reward',
+        UserActivityLog.timestamp >= today_start
+    ).count()
+    return rewarded_count_today < DAILY_AUDIO_COIN_LIMIT
+
+
+def reward_audio_coin_if_eligible(user):
+    """尝试发放 1 枚音频奖励金币，并记录日志用于每日上限控制。"""
+    coin_reward = 0
+    coin_message = "You have reached today's coin reward limit and cannot earn more."
+
+    if can_reward_audio_coin_today(user.id):
+        if user.coins is None:
+            user.coins = 0
+        user.coins += 1
+        db.session.add(
+            UserActivityLog(
+                user_id=user.id,
+                module='speaking',
+                action='audio_coin_reward'
+            )
+        )
+        coin_reward = 1
+        coin_message = 'Coin +1'
+
+    return coin_reward, coin_message
 
 # 工具函数：上传文件到TOS并返回URL（独立纯函数）
 def upload_audio_to_tos(file_storage, filename,file_path):
@@ -380,6 +416,8 @@ def upload_audio():
             file.save(filepath)
             
             duration = request.form.get('duration', 0)
+            can_reward_coin = can_reward_audio_coin_today(current_user.id)
+
             submission = UserSpeakingSubmission(
                 user_id=current_user.id,
                 exercise_id=exercise_id,
@@ -387,6 +425,11 @@ def upload_audio():
                 duration_seconds=float(duration) if duration else 0.0
             )
             db.session.add(submission)
+
+            coin_reward = 0
+            coin_message = "You have reached today's coin reward limit and cannot earn more."
+            if can_reward_coin:
+                coin_reward, coin_message = reward_audio_coin_if_eligible(current_user)
             db.session.commit()
             submission_committed = True
 
@@ -399,7 +442,10 @@ def upload_audio():
                 'submission_id': submission.id,
                 'filename': filename,
                 'submitted_at': local_time.strftime('%Y-%m-%d %H:%M'),
-                'duration': round(submission.duration_seconds or 0, 1)
+                'duration': round(submission.duration_seconds or 0, 1),
+                'coin_reward': coin_reward,
+                'coins': current_user.coins or 0,
+                'coin_message': coin_message
             }), 200
         else:
             return jsonify({'status': 'error', 'message': 'File type not allowed'}), 400
@@ -631,6 +677,8 @@ def upload_scenario_audio():
             
             file.save(filepath)
             
+            can_reward_coin = can_reward_audio_coin_today(current_user.id)
+
             new_sub = UserScenarioSubmission(
                 user_id=current_user.id,
                 scenario_id=scenario_id,
@@ -638,6 +686,11 @@ def upload_scenario_audio():
                 duration_seconds=float(duration) if duration else 0.0
             )
             db.session.add(new_sub)
+
+            coin_reward = 0
+            coin_message = "You have reached today's coin reward limit and cannot earn more."
+            if can_reward_coin:
+                coin_reward, coin_message = reward_audio_coin_if_eligible(current_user)
             db.session.commit()
             submission_committed = True
 
@@ -650,7 +703,10 @@ def upload_scenario_audio():
                 'submission_id': new_sub.id,
                 'filename': filename,
                 'submitted_at': local_time.strftime('%Y-%m-%d %H:%M'),
-                'duration': round(new_sub.duration_seconds or 0, 1)
+                'duration': round(new_sub.duration_seconds or 0, 1),
+                'coin_reward': coin_reward,
+                'coins': current_user.coins or 0,
+                'coin_message': coin_message
             }), 200
         else:
             return jsonify({'status': 'error', 'message': 'File type not allowed'}), 400
@@ -824,6 +880,8 @@ def upload_shadowing_record(practice_id):
             next_attempt = (last_record.attempt_number + 1) if last_record else 1
             
             # 4. 写入数据库
+            can_reward_coin = can_reward_audio_coin_today(current_user.id)
+
             new_record = UserShadowingRecord(
                 user_id=current_user.id,
                 exercise_id=practice_id,
@@ -831,6 +889,11 @@ def upload_shadowing_record(practice_id):
                 attempt_number=next_attempt
             )
             db.session.add(new_record)
+
+            coin_reward = 0
+            coin_message = "You have reached today's coin reward limit and cannot earn more."
+            if can_reward_coin:
+                coin_reward, coin_message = reward_audio_coin_if_eligible(current_user)
             db.session.commit()
             
             # 5. 返回给前端渲染
@@ -842,7 +905,10 @@ def upload_shadowing_record(practice_id):
                 'audio_url': url_for('speaking.get_audio', filename=filename),
                 'attempt': next_attempt,
                 'created_at': local_time.strftime("%H:%M:%S"),
-                'record_id': new_record.id
+                'record_id': new_record.id,
+                'coin_reward': coin_reward,
+                'coins': current_user.coins or 0,
+                'coin_message': coin_message
             })
         else:
             return jsonify({'success': False, 'message': '文件类型不被允许'}), 400

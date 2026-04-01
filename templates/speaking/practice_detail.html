@@ -189,6 +189,11 @@
                         historySection.classList.remove('d-none');
                         const newCount = historyList.querySelectorAll('.card').length + 1;
                         attemptCounter.textContent = newCount;
+                        if (result.coin_reward === 1) {
+                            alert("🎉 Coin +1! Recording saved successfully.");
+                        } else {
+                            alert(result.coin_message || "You have reached today's coin reward limit and cannot earn more.");
+                        }
 
                         // 构造新卡片 HTML (带淡入动画)
                         const listItemHtml = `

@@ -469,6 +469,11 @@
                 buildScenarioCard(data.submission_id, data.filename, data.submitted_at, data.duration, false)
             );
             attemptCounter.textContent = String(parseInt(attemptCounter.textContent, 10) + 1);
+            if (data.coin_reward === 1) {
+                alert('🎉 Coin +1! Audio submitted successfully.');
+            } else {
+                alert(data.coin_message || "You have reached today's coin reward limit and cannot earn more.");
+            }
 
             restoreUI(
                 '<i class="bi bi-cloud-check-fill text-success me-1"></i>Upload complete. You can request AI feedback from the card below.',
