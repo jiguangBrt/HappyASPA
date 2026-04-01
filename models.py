@@ -260,7 +260,7 @@ class ListeningExercise(db.Model):
     description      = db.Column(db.Text,        nullable=True)
     audio_url        = db.Column(db.String(256),  nullable=True)
     transcript       = db.Column(db.Text,         nullable=True)
-    difficulty       = db.Column(db.Integer,      default=1)   # 1鈥?
+    difficulty       = db.Column(db.Integer,      default=1)   # 1-5
     category         = db.Column(db.String(50),   nullable=True)
     duration_seconds = db.Column(db.Integer,      nullable=True)
     created_at       = db.Column(db.DateTime,     default=utcnow_naive)
@@ -302,7 +302,7 @@ class WritingExercise(db.Model):
     title        = db.Column(db.String(200), nullable=False)
     prompt       = db.Column(db.Text,        nullable=False)
     type         = db.Column(db.String(50),  default='essay')  # essay/paragraph/email/report
-    difficulty   = db.Column(db.Integer,     default=1)        # 1鈥?
+    difficulty   = db.Column(db.Integer,     default=1)        # 1-5
     word_limit   = db.Column(db.Integer,     nullable=True)
     model_answer = db.Column(db.Text,        nullable=True)
     created_at   = db.Column(db.DateTime,    default=utcnow_naive)
