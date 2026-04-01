@@ -76,7 +76,9 @@
           <video controls class="w-100 mb-2 video-player" crossorigin="anonymous" data-exercise-id="{{ ex.id }}"
             data-questions='{{ ex.questions | tojson | safe }}'>
             <source src="{{ ex.audio_url }}" type="video/mp4">
+            {% if ex.subtitle_url %}
             <track src="{{ ex.subtitle_url }}" kind="subtitles" srclang="en" label="English" default>
+            {% endif %}
             Your browser does not support the video tag.
           </video>
           <div class="video-popup" style="display: none; left: 20px; top: 20px;">
@@ -91,8 +93,9 @@
         {% endif %}
 
         <div class="card-footer bg-transparent border-top-0 pt-0 pb-3 px-3 mt-2">
-          <button class="btn btn-outline-info btn-sm w-100" data-bs-toggle="collapse"
-            data-bs-target="#transcript-{{ ex.id }}">
+          <!-- Overview 按钮：灰色边框 + 悬浮填充 -->
+          <button class="btn btn-sm w-100 btn-overview"
+            data-bs-toggle="collapse" data-bs-target="#transcript-{{ ex.id }}">
             <i class="bi bi-file-text me-1"></i>Overview
           </button>
           <div class="collapse mt-2" id="transcript-{{ ex.id }}">
@@ -126,11 +129,8 @@
   }
 
   function cleanOldStorage() {
-    // 清理旧格式
     const oldPattern = /^listening_progress_\d+$/;
-    // 清理其他用户的存储数据
     const otherUserPattern = new RegExp(`^listening_progress_(?!${CURRENT_USER_ID}_)\\d+_\\d+$`);
-    
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (oldPattern.test(key) || otherUserPattern.test(key)) {
@@ -138,14 +138,12 @@
       }
     }
   }
-  
+
   cleanOldStorage();
 
   document.addEventListener('DOMContentLoaded', function () {
     const videoWrappers = document.querySelectorAll('.video-wrapper');
     const progressMap = new Map();
-    let currentFullscreenWrapper = null;
-    let currentFullscreenExerciseId = null;
 
     function formatTime(seconds) {
       const mins = Math.floor(seconds / 60);
@@ -156,59 +154,7 @@
     videoWrappers.forEach(wrapper => {
       const video = wrapper.querySelector('video');
       const exerciseId = video.dataset.exerciseId;
-      let prog = { triggered: new Set(), answers: new Map(), lastTime: 0 };
-      const saved = localStorage.getItem(getStorageKey(exerciseId));
-      if (saved) {
-        try {
-          const data = JSON.parse(saved);
-          prog.triggered = new Set(data.triggered || []);
-          prog.answers = new Map(Object.entries(data.answers || {}));
-          prog.lastTime = data.lastTime || 0;
-        } catch (e) {
-          console.warn(`Failed to parse localStorage for exercise ${exerciseId}, removing corrupted entry.`, e);
-          localStorage.removeItem(getStorageKey(exerciseId));
-        }
-      }
-      progressMap.set(exerciseId, prog);
-    });
-
-    // 修改前端从服务器获取进度的逻辑
-    videoWrappers.forEach(wrapper => {
-      const video = wrapper.querySelector('video');
-      const exerciseId = video.dataset.exerciseId;
-      fetch(`/listening/progress/${exerciseId}`)
-        .then(res => res.json())
-        .then(data => {
-          const prog = progressMap.get(exerciseId);
-          if (!prog) return;
-
-          if (data.exists) {
-            // 优先使用服务器数据
-            prog.lastTime = data.last_position || 0;
-            // 同步答案数据
-            const serverAnswers = new Map(Object.entries(data.answers || {}).map(([k, v]) => [k, Number(v)]));
-            serverAnswers.forEach((value, key) => {
-              if (!prog.answers.has(key)) {
-                prog.answers.set(key, value);
-                prog.triggered.add(Number(key));
-              }
-            });
-            // 清空本地存储，强制使用服务器数据
-            localStorage.removeItem(getStorageKey(exerciseId));
-          } else {
-            // 服务器没有数据，清空本地存储
-            prog.lastTime = 0;
-            prog.triggered.clear();
-            prog.answers.clear();
-            localStorage.removeItem(getStorageKey(exerciseId));
-          }
-          
-          // 保存到本地存储
-          saveProgress(exerciseId);
-          // 更新按钮显示
-          renderButtons();
-        })
-        .catch(error => console.error('Error fetching progress:', error));
+      progressMap.set(exerciseId, { triggered: new Set(), answers: new Map(), lastTime: 0 });
     });
 
     function saveProgress(exerciseId) {
@@ -222,52 +168,11 @@
       localStorage.setItem(getStorageKey(exerciseId), JSON.stringify(data));
     }
 
-    function sendProgressToServer(exerciseId, data) {
-      // 检查是否有实际数据
-      const hasData = data.lastPosition !== null || 
-                     (data.answers && Object.keys(data.answers).length > 0) || 
-                     data.durationSpent > 0;
-      
-      if (!hasData) {
-        return; // 没有实际数据，不发送请求
-      }
-
-      fetch('/listening/progress', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          exercise_id: exerciseId,
-          last_position: data.lastPosition,
-          answers: data.answers,
-          completed: data.completed || false,
-          reset: data.reset || false,
-          duration_spent: data.durationSpent || 0
-        })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (!data.success) {
-          console.warn('Failed to save progress to server:', data);
-        }
-      })
-      .catch(error => console.error('Error saving progress:', error));
-    }
-
     function renderButtons() {
-      progressMap.forEach((prog, exerciseId) => {
-        if (prog.lastTime === 0 && prog.triggered.size === 0) {
-          localStorage.removeItem(getStorageKey(exerciseId));
-          progressMap.delete(exerciseId);
-        }
-      });
-
       document.querySelectorAll('.progress-buttons').forEach(btnContainer => {
         const exerciseId = btnContainer.dataset.exerciseId;
-        let prog = progressMap.get(exerciseId);
-        if (!prog) {
-          prog = { triggered: new Set(), answers: new Map(), lastTime: 0 };
-          progressMap.set(exerciseId, prog);
-        }
+        const prog = progressMap.get(exerciseId);
+        if (!prog) return;
 
         const hasProgress = prog.triggered.size > 0 || prog.lastTime > 0;
         btnContainer.innerHTML = '';
@@ -276,27 +181,30 @@
           const displaySeconds = prog.lastTime > 0 ? prog.lastTime : 1;
           const resumeText = `⏵ Continue from last progress ${formatTime(displaySeconds)}`;
 
+          // Continue 按钮：保留雾霾蓝背景，悬浮加深
           const resumeBtn = document.createElement('button');
-          resumeBtn.className = 'btn btn-sm btn-info flex-grow-1';
+          resumeBtn.className = 'btn btn-sm flex-grow-1 btn-continue';
           resumeBtn.textContent = resumeText;
           resumeBtn.addEventListener('click', function (e) {
             e.stopPropagation();
             startExercise(exerciseId, 'resume');
           });
 
+          // Reset 按钮：灰色边框 + 悬浮填充
           const restartBtn = document.createElement('button');
-          restartBtn.className = 'btn btn-sm btn-outline-secondary';
-          restartBtn.textContent = '↺ Reset Exercise';
+          restartBtn.className = 'btn btn-sm btn-reset';
+          restartBtn.textContent = '↺ Reset';
           restartBtn.addEventListener('click', function (e) {
             e.stopPropagation();
-            startExercise(exerciseId, 'restart');
+            startExercise(exerciseId, 'reset');
           });
 
           btnContainer.appendChild(resumeBtn);
           btnContainer.appendChild(restartBtn);
         } else {
+          // Start Practise 按钮：保留豆沙紫背景，悬浮加深
           const startBtn = document.createElement('button');
-          startBtn.className = 'btn btn-sm btn-success w-100';
+          startBtn.className = 'btn btn-sm w-100 btn-start';
           startBtn.textContent = 'Start Practise';
           startBtn.addEventListener('click', function (e) {
             e.stopPropagation();
@@ -308,383 +216,44 @@
     }
 
     function startExercise(exerciseId, mode) {
-      const wrapper = document.querySelector(`.video-wrapper[data-wrapper-id="${exerciseId}"]`);
-      if (!wrapper) return;
-      const video = wrapper.querySelector('video');
-      const prog = progressMap.get(exerciseId);
-      if (!prog) return;
-
-      if (mode === 'restart') {
-        prog.triggered.clear();
-        prog.answers.clear();
-        prog.lastTime = 0;
-        saveProgress(exerciseId);
-        video.currentTime = 0;
-      } else if (mode === 'resume' || mode === 'start') {
-        // 恢复到上次的实时进度
-        video.currentTime = prog.lastTime;
-      }
-
-      currentFullscreenWrapper = wrapper;
-      currentFullscreenExerciseId = exerciseId;
-
-      if (wrapper.requestFullscreen) {
-        wrapper.requestFullscreen();
-      } else if (wrapper.webkitRequestFullscreen) {
-        wrapper.webkitRequestFullscreen();
-      } else if (wrapper.msRequestFullscreen) {
-        wrapper.msRequestFullscreen();
-      } else {
-        alert('您的浏览器不支持全屏 API');
-      }
-
-      video.play().catch(e => {
-        console.log('自动播放被阻止', e);
-        currentFullscreenWrapper = null;
-        currentFullscreenExerciseId = null;
-      });
+      window.location.href = `/listening/practice/${exerciseId}?mode=${mode}`;
     }
 
-    renderButtons();
+    const exerciseIds = Array.from(videoWrappers).map(wrapper => wrapper.querySelector('video').dataset.exerciseId);
+    let pendingRequests = exerciseIds.length;
 
-    videoWrappers.forEach(wrapper => {
-      const video = wrapper.querySelector('video');
-      const popup = wrapper.querySelector('.video-popup');
-      const exerciseId = video.dataset.exerciseId;
-      let questions = [];
-      try {
-        questions = JSON.parse(video.dataset.questions || '[]');
-      } catch (e) {
-        console.warn('Invalid questions JSON', e);
-      }
-      wrapper.questions = questions;
+    if (pendingRequests === 0) return;
 
-      let progress = progressMap.get(exerciseId);
-      if (!progress) {
-        progress = { triggered: new Set(), answers: new Map(), lastTime: 0 };
-        progressMap.set(exerciseId, progress);
-      }
-
-      wrapper._popupTimer = null;
-      let lastSaveTime = 0;
-
-      video._playStartTime = null;
-      video._totalPlayedTime = 0;
-
-      function sendDurationIncrement() {
-        if (video._playStartTime !== null) {
-          const now = Date.now();
-          const delta = (now - video._playStartTime) / 1000;
-          if (delta > 0) {
-            video._totalPlayedTime += delta;
-            const answersObj = Object.fromEntries(progress.answers);
-            sendProgressToServer(exerciseId, {
-              lastPosition: video.currentTime,
-              answers: answersObj,
-              completed: false,
-              reset: false,
-              durationSpent: delta
-            });
-          }
-          video._playStartTime = null;
-        }
-      }
-
-      video.addEventListener('play', function () {
-        if (video._playStartTime === null) {
-          video._playStartTime = Date.now();
-        }
-      });
-
-      video.addEventListener('pause', sendDurationIncrement);
-      video.addEventListener('ended', sendDurationIncrement);
-      video.addEventListener('seeked', sendDurationIncrement);
-
-      video.addEventListener('timeupdate', function () {
-        if (!document.fullscreenElement || !wrapper.contains(document.fullscreenElement)) return;
-        if (video.paused || video.ended) return;
-        const currentTime = video.currentTime;
-
-        if (currentTime - lastSaveTime > 10) {
-          // 总是更新为最新位置
-          progress.lastTime = currentTime;
-          saveProgress(exerciseId);
-          lastSaveTime = currentTime;
-          updateResumeButtonTime(exerciseId, currentTime);
-
-          const answersObj = Object.fromEntries(progress.answers);
-          sendProgressToServer(exerciseId, {
-            lastPosition: currentTime,
-            answers: answersObj,
-            completed: false,
-            durationSpent: 0
-          });
-        }
-
-        questions.forEach((q, idx) => {
-          if (Math.abs(currentTime - q.time) < 0.5) {
-            showQuestionPopup(q, idx, wrapper, popup, video, exerciseId);
-          }
-        });
-      });
-
-      video.addEventListener('seeked', function () {
-        if (!document.fullscreenElement || !wrapper.contains(document.fullscreenElement)) return;
-        const currentTime = video.currentTime;
-        const prog = progressMap.get(exerciseId);
-        if (prog) {
-          // 总是更新为最新位置
-          prog.lastTime = currentTime;
-          saveProgress(exerciseId);
-          const answersObj = Object.fromEntries(prog.answers);
-          sendProgressToServer(exerciseId, {
-            lastPosition: currentTime,
-            answers: answersObj,
-            completed: false,
-            durationSpent: 0
-          });
-          updateResumeButtonTime(exerciseId, currentTime);
-        }
-      });
-
-      function updateResumeButtonTime(exerciseId, time) {
-        const btnContainer = document.querySelector(`.progress-buttons[data-exercise-id="${exerciseId}"]`);
-        if (btnContainer) {
-          const resumeBtn = btnContainer.querySelector('.btn-info');
-          if (resumeBtn) {
-            resumeBtn.textContent = `⏵ Continue from last progress ${formatTime(time)}`;
-          }
-        }
-      }
-
-      function showQuestionPopup(question, idx, wrapper, popup, video, exerciseId) {
-        // 安全检查
-        if (!question || !question.options) {
-          console.warn('Invalid question data', question);
-          return;
-        }
-
-        if (wrapper._popupTimer) {
-          clearInterval(wrapper._popupTimer);
-          wrapper._popupTimer = null;
-        }
-
-        document.querySelectorAll('.video-popup').forEach(p => p.style.display = 'none');
-
-        const currentProg = progressMap.get(exerciseId);
-        if (!currentProg) return;
-        const { triggered, answers } = currentProg;
-
-        const hasAnswered = answers.has(String(idx));
-        const selectedIdx = hasAnswered ? answers.get(String(idx)) : null;
-        const isAlreadyCorrect = hasAnswered ? (Number(selectedIdx) === Number(question.answer)) : false;
-
-        popup.style.display = 'block';
-        const contentDiv = popup.querySelector('.popup-content');
-
-        // 生成选项HTML：如果已经正确，禁用选项并高亮正确选项；否则所有选项可点击，不附加任何样式
-        let optionsHtml = '';
-        if (question.options && Array.isArray(question.options)) {
-          optionsHtml = question.options.map((opt, i) => {
-            let extraClass = '';
-            if (isAlreadyCorrect && i === selectedIdx) {
-              extraClass = 'correct-selected';
-            }
-            const disabled = isAlreadyCorrect;
-            return `<div class="option-item ${extraClass}" data-opt-index="${i}" ${disabled ? 'data-disabled="true"' : ''}>${opt}</div>`;
-          }).join('');
-        }
-
-        const questionHtml = `
-          <div style="font-weight: bold; margin-bottom: 8px;">${question.question}</div>
-          <div class="options-container">${optionsHtml}</div>
-          <div class="feedback mt-2" style="font-size: 0.85rem; min-height: 20px;"></div>
-        `;
-        contentDiv.innerHTML = questionHtml;
-
-        if (isAlreadyCorrect) {
-          // 已经正确：禁用选项，显示已正确信息，3秒后自动关闭
-          const feedbackDiv = contentDiv.querySelector('.feedback');
-          feedbackDiv.innerHTML = '✅ Correct! (Last Answer)';
-          feedbackDiv.style.color = '#28a745';
-          wrapper._popupTimer = setInterval(() => {
-            clearInterval(wrapper._popupTimer);
-            wrapper._popupTimer = null;
-            popup.style.display = 'none';
-          }, 3000);
-          contentDiv.querySelectorAll('.option-item').forEach(optDiv => {
-            optDiv.style.pointerEvents = 'none';
-          });
-        } else {
-          // 未正确（包括未答过或之前答错）：所有选项可点击，不显示之前错误标记
-          contentDiv.querySelectorAll('.option-item').forEach(optDiv => {
-            optDiv.addEventListener('click', function (e) {
-              const selectedNewIdx = parseInt(this.dataset.optIndex);
-              const isCorrectNow = (selectedNewIdx === question.answer);
-              const feedbackDiv = contentDiv.querySelector('.feedback');
-
-              // 更新本地状态（覆盖之前的答案）
-              currentProg.answers.set(String(idx), Number(selectedNewIdx));
-              currentProg.triggered.add(idx);
-              saveProgress(exerciseId);
-
-              const currentTime = video.currentTime;
-              const answersObj = Object.fromEntries(currentProg.answers);
-
-              // 发送到后端（后端会根据永久记录判断是否首次正确）
-              sendProgressToServer(exerciseId, {
-                lastPosition: currentTime,
-                answers: answersObj,
-                completed: false,
-                durationSpent: 0
-              });
-
-              if (isCorrectNow) {
-                // 正确：显示成功，2秒后关闭弹窗
-                if (currentProg.triggered.size === wrapper.questions.length) {
-                  sendProgressToServer(exerciseId, {
-                    lastPosition: currentTime,
-                    answers: answersObj,
-                    completed: true,
-                    durationSpent: 0
-                  });
-                }
-                feedbackDiv.innerHTML = '✅ Correct!';
-                feedbackDiv.style.color = '#28a745';
-                setTimeout(() => {
-                  popup.style.display = 'none';
-                }, 2000);
-                // 清除计时器
-                if (wrapper._popupTimer) {
-                  clearInterval(wrapper._popupTimer);
-                  wrapper._popupTimer = null;
-                }
-              } else {
-                // 错误：显示提示，不清除弹窗，允许继续选择
-                feedbackDiv.innerHTML = '❌ Try again.';
-                feedbackDiv.style.color = '#dc3545';
-                // 计时器继续
+    exerciseIds.forEach(exerciseId => {
+      fetch(`/listening/progress/${exerciseId}`)
+        .then(res => res.json())
+        .then(data => {
+          const prog = progressMap.get(exerciseId);
+          if (data.exists) {
+            prog.lastTime = data.last_position || 0;
+            const serverAnswers = new Map(Object.entries(data.answers || {}).map(([k, v]) => [k, Number(v)]));
+            serverAnswers.forEach((value, key) => {
+              if (!prog.answers.has(key)) {
+                prog.answers.set(key, value);
+                prog.triggered.add(Number(key));
               }
             });
-          });
-
-          // 计时器（30秒），仅当未正确时启动
-          let secondsLeft = 30;
-          const timerSpan = popup.querySelector('.timer-seconds');
-          timerSpan.textContent = secondsLeft;
-          wrapper._popupTimer = setInterval(() => {
-            secondsLeft -= 1;
-            timerSpan.textContent = secondsLeft;
-            if (secondsLeft <= 0) {
-              clearInterval(wrapper._popupTimer);
-              wrapper._popupTimer = null;
-              popup.style.display = 'none';
-            }
-          }, 1000);
-        }
-      }
-    });
-
-    function handleFullscreenChange() {
-      if (!document.fullscreenElement) {
-        if (currentFullscreenWrapper) {
-          const video = currentFullscreenWrapper.querySelector('video');
-          if (video) {
-            if (!video.paused) {
-              const event = new Event('pause');
-              video.dispatchEvent(event);
-            }
-            const exerciseId = currentFullscreenExerciseId;
-            const prog = progressMap.get(exerciseId);
-            if (prog) {
-              prog.lastTime = video.currentTime;
-              saveProgress(exerciseId);
-              const answersObj = Object.fromEntries(prog.answers);
-              sendProgressToServer(exerciseId, {
-                lastPosition: prog.lastTime,
-                answers: answersObj,
-                completed: false,
-                durationSpent: 0
-              });
-            }
+          } else {
+            prog.lastTime = 0;
+            prog.triggered.clear();
+            prog.answers.clear();
           }
-          currentFullscreenWrapper = null;
-          currentFullscreenExerciseId = null;
-        }
-
-        videoWrappers.forEach(wrapper => {
-          const popup = wrapper.querySelector('.video-popup');
-          if (popup.style.display === 'block') {
-            popup.style.display = 'none';
-            if (wrapper._popupTimer) {
-              clearInterval(wrapper._popupTimer);
-              wrapper._popupTimer = null;
-            }
+          saveProgress(exerciseId);
+          pendingRequests--;
+          if (pendingRequests === 0) {
+            renderButtons();
           }
+        })
+        .catch(error => {
+          console.error('Error fetching progress:', error);
+          pendingRequests--;
+          if (pendingRequests === 0) renderButtons();
         });
-        setTimeout(() => {
-          renderButtons();
-        }, 0);
-      }
-    }
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
-
-    window.addEventListener('beforeunload', function () {
-      videoWrappers.forEach(wrapper => {
-        const video = wrapper.querySelector('video');
-        if (!video) return;
-        const exerciseId = video.dataset.exerciseId;
-        const prog = progressMap.get(exerciseId);
-        if (!prog) return;
-
-        // 检查是否有实际数据
-        const hasData = video._playStartTime !== null || 
-                       prog.lastTime > 0 || 
-                       prog.answers.size > 0;
-
-        if (hasData) {
-          // 发送播放时长数据
-          if (video._playStartTime !== null) {
-            const now = Date.now();
-            const delta = (now - video._playStartTime) / 1000;
-            if (delta > 0) {
-              const blob = new Blob([JSON.stringify({
-                exercise_id: exerciseId,
-                duration_spent: delta,
-                last_position: video.currentTime,
-                answers: Object.fromEntries(prog.answers || {}),
-                completed: false
-              })], { type: 'application/json' });
-              navigator.sendBeacon('/listening/progress', blob);
-            }
-          }
-
-          // 发送进度数据
-          const data = {
-            exercise_id: exerciseId,
-            last_position: prog.lastTime,
-            answers: Object.fromEntries(prog.answers),
-            completed: (prog.triggered.size === wrapper.questions?.length) || false
-          };
-          const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-          navigator.sendBeacon('/listening/progress', blob);
-        }
-      });
-    });
-
-    document.addEventListener('click', function (e) {
-      if (e.target.closest('.video-wrapper')) return;
-      if (!e.target.closest('.video-popup')) {
-        document.querySelectorAll('.video-popup').forEach(popup => {
-          if (popup.style.display === 'block') {
-            popup.style.display = 'none';
-          }
-        });
-      }
     });
   });
 </script>
@@ -696,65 +265,8 @@
     object-fit: contain;
   }
 
-  .video-wrapper:fullscreen {
-    width: 100vw !important;
-    height: 100vh !important;
-    background: black;
-  }
-
-  .video-wrapper:fullscreen .video-player {
-    max-height: none;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-
-  .video-wrapper:-webkit-full-screen {
-    width: 100vw !important;
-    height: 100vh !important;
-  }
-
-  .video-wrapper:-webkit-full-screen .video-player {
-    max-height: none;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-
-  .video-wrapper:-moz-full-screen {
-    width: 100vw !important;
-    height: 100vh !important;
-  }
-
-  .video-wrapper:-moz-full-screen .video-player {
-    max-height: none;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-
-  .video-wrapper:-ms-fullscreen {
-    width: 100vw !important;
-    height: 100vh !important;
-  }
-
-  .video-wrapper:-ms-fullscreen .video-player {
-    max-height: none;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-
   video::-webkit-media-controls-fullscreen-button {
-    display: none !important;
-  }
-
-  video::-moz-media-controls-fullscreen-button {
-    display: none !important;
-  }
-
-  video::-ms-media-controls-fullscreen-button {
-    display: none !important;
+    display: inline-block !important;
   }
 
   .video-popup {
@@ -832,8 +344,57 @@
     gap: 8px;
   }
 
-  .progress-buttons .btn {
-    font-size: 0.9rem;
+  /* ---------- 按钮样式：保留原色，悬浮填充 ---------- */
+  /* Overview 按钮：灰色边框+灰色文字，悬浮填充灰色+白字 */
+  .btn-overview {
+    border: 1px solid #8A92A6;
+    color: #6B7280;
+    background: transparent;
+    transition: all 0.2s ease;
+  }
+  .btn-overview:hover,
+  .btn-overview:focus {
+    background-color: #8A92A6;
+    color: #fff;
+  }
+
+  /* Start 按钮：豆沙紫背景+白字，悬浮加深 */
+  .btn-start {
+    background-color: #6b5f78;
+    color: #fff;
+    border: none;
+    transition: all 0.2s ease;
+  }
+  .btn-start:hover,
+  .btn-start:focus {
+    background-color: #5a4e68;
+    color: #fff;
+  }
+
+  /* Continue 按钮：雾霾蓝背景+白字，悬浮加深 */
+  .btn-continue {
+    background-color: #3a5a78;
+    color: #fff;
+    border: none;
+    transition: all 0.2s ease;
+  }
+  .btn-continue:hover,
+  .btn-continue:focus {
+    background-color: #2a4a68;
+    color: #fff;
+  }
+
+  /* Reset 按钮：灰色边框+灰色文字，悬浮填充灰色+白字 */
+  .btn-reset {
+    border: 1px solid #8A92A6;
+    color: #6B7280;
+    background: transparent;
+    transition: all 0.2s ease;
+  }
+  .btn-reset:hover,
+  .btn-reset:focus {
+    background-color: #8A92A6;
+    color: #fff;
   }
 </style>
 {% endblock %}
