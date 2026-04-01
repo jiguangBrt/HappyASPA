@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
 from models import db, ListeningExercise, UserListeningProgress
 from datetime import datetime, timezone
+from time_utils import utcnow_naive
 from sqlalchemy.orm.attributes import flag_modified  # 新增导入
 
 listening_bp = Blueprint("listening", __name__, url_prefix="/listening")
@@ -184,7 +185,7 @@ def save_progress():
         current_user.total_listening_duration += duration_spent
         db.session.add(current_user)
 
-    progress.last_attempt_at = datetime.now(timezone.utc)
+    progress.last_attempt_at = utcnow_naive()
     db.session.add(progress)
 
     # 标记 JSON 字段

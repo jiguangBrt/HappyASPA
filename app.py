@@ -4,6 +4,7 @@ from flask_login import LoginManager
 from flask_migrate import Migrate
 from models import db, User
 from dotenv import load_dotenv
+from time_utils import is_system_tz_beijing
 
 load_dotenv()
 
@@ -29,6 +30,9 @@ def create_app():
     # ── Extensions ───────────────────────────────────────────────────────────
     db.init_app(app)
     migrate = Migrate(app, db)
+
+    if not is_system_tz_beijing():
+        app.logger.warning("System timezone is not UTC+8 (Asia/Shanghai). Datetimes are stored as naive UTC; display should be converted explicitly.")
 
     login_manager = LoginManager()
     login_manager.init_app(app)
