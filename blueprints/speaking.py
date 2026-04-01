@@ -8,7 +8,6 @@ import os
 import uuid
 # === AI 语音识别与点评依赖 ===
 import requests
-import base64
 from volcenginesdkarkruntime import Ark
 
 speaking_bp = Blueprint('speaking', __name__, url_prefix='/speaking')
@@ -40,15 +39,6 @@ def upload_audio_to_tos(file_storage, filename,file_path):
         return None
 
 # ====================== AI 工具函数 ======================
-def file_to_base64(file_path):
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"❌ 文件不存在：{file_path}")
-    with open(file_path, 'rb') as file:
-        file_data = file.read()
-        base64_data = base64.b64encode(file_data).decode('utf-8')
-    return base64_data
-
-
 def build_topic_context_text(topic_context):
     """将题目上下文规范化为可读文本，供 LLM 结合录音进行点评。"""
     if not topic_context:
