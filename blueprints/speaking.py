@@ -359,7 +359,7 @@ def upload_audio():
         except (TypeError, ValueError):
             return jsonify({'status': 'error', 'message': 'Invalid exercise'}), 400
         
-        exercise = SpeakingExercise.query.get(exercise_id)
+        exercise = db.session.get(SpeakingExercise, exercise_id)
         
         if not exercise:
             return jsonify({'status': 'error', 'message': 'Invalid exercise'}), 400
@@ -427,7 +427,7 @@ def analyze_audio(sub_id):
     if submission.feedback:
         return jsonify({'status': 'success', 'message': 'Already analyzed'})
 
-    exercise = SpeakingExercise.query.get(submission.exercise_id)
+    exercise = db.session.get(SpeakingExercise, submission.exercise_id)
     if not exercise:
         return jsonify({'status': 'error', 'message': 'Exercise not found'}), 404
 
@@ -464,7 +464,7 @@ def analyze_audio(sub_id):
 @login_required
 def analysis_detail(sub_id):
     submission = UserSpeakingSubmission.query.get_or_404(sub_id)
-    exercise = SpeakingExercise.query.get(submission.exercise_id)
+    exercise = db.session.get(SpeakingExercise, submission.exercise_id)
     
     # 格式化时间
     utc_time = submission.submitted_at       
@@ -617,7 +617,7 @@ def upload_scenario_audio():
         except (TypeError, ValueError):
             return jsonify({'status': 'error', 'message': 'Invalid scenario ID'}), 400
         
-        scenario = AcademicScenario.query.get(scenario_id)
+        scenario = db.session.get(AcademicScenario, scenario_id)
         if not scenario:
             return jsonify({'status': 'error', 'message': 'Scenario not found'}), 404
         
@@ -677,7 +677,7 @@ def analyze_scenario_audio(sub_id):
     if submission.overall_feedback:
         return jsonify({'status': 'success', 'message': 'Already analyzed'})
 
-    scenario = AcademicScenario.query.get(submission.scenario_id)
+    scenario = db.session.get(AcademicScenario, submission.scenario_id)
     if not scenario:
         return jsonify({'status': 'error', 'message': 'Scenario not found'}), 404
 
