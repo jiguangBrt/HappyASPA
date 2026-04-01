@@ -150,7 +150,7 @@
                                     </div>
                                 </div>
                                 {% if current_user.is_authenticated and current_user.username == sub.username %}
-                                <button onclick="deleteSubmission({{ sub.id }})" class="btn btn-light btn-sm rounded-circle text-danger shadow-sm border" title="Delete my recording" style="width: 32px; height: 32px;">
+                                <button onclick="deleteSubmission('{{ sub.id }}')" class="btn btn-light btn-sm rounded-circle text-danger shadow-sm border" title="Delete my recording" style="width: 32px; height: 32px;">
                                     <i class="bi bi-trash3"></i>
                                 </button>
                                 {% endif %}
@@ -165,16 +165,16 @@
                             <div class="d-flex justify-content-end align-items-center" id="action-area-{{ sub.id }}">
                                 {% if sub.feedback and sub.feedback != 'No feedback yet' %}
                                     <a href="{{ url_for('speaking.analysis_detail', sub_id=sub.id) }}" class="btn btn-outline-primary btn-sm rounded-pill px-4 fw-medium border-2">
-                                        <i class="bi bi-file-earmark-text-fill me-1"></i> View AI Analysis
+                                        <i class="bi bi-file-earmark-text-fill me-1"></i> View AI Feedback
                                     </a>
                                 {% else %}
                                     {% if current_user.is_authenticated and current_user.username == sub.username %}
-                                    <button class="btn btn-primary btn-sm rounded-pill px-4 fw-medium ai-btn-glow" onclick="requestAIAnalysis({{ sub.id }}, this)">
+                                    <button class="btn btn-primary btn-sm rounded-pill px-4 fw-medium ai-btn-glow" onclick="requestAIAnalysis('{{ sub.id }}', this)">
                                         <i class="bi bi-stars me-1"></i> Get AI Feedback
                                     </button>
                                     {% else %}
                                     <span class="badge bg-light text-muted border px-3 py-2 rounded-pill fw-normal">
-                                        <i class="bi bi-dash-circle me-1"></i>No AI Analysis yet
+                                        <i class="bi bi-dash-circle me-1"></i>No AI Feedback yet
                                     </span>
                                     {% endif %}
                                 {% endif %}
@@ -204,6 +204,7 @@
     let mediaRecorder;       
     let audioChunks = [];    
     let isRecording = false; 
+    let isUploading = false;
     let audioStream;         
 
     const recordBtn = document.getElementById('record-btn');
@@ -212,8 +213,59 @@
     const historyList = document.getElementById('history-list');
     const attemptCounter = document.getElementById('attempt-counter');
     const noRecordingsMsg = document.getElementById('no-recordings-msg');
+
+    window.addEventListener('beforeunload', function (event) {
+        if (isUploading) {
+            event.preventDefault();
+            event.returnValue = '';
+        }
+    });
+
+    window.addEventListener('pageshow', function (event) {
+        const navigationEntries = performance.getEntriesByType('navigation');
+        const isBackForwardNavigation = event.persisted || (
+            navigationEntries.length > 0 && navigationEntries[0].type === 'back_forward'
+        );
+
+        if (isBackForwardNavigation) {
+            window.location.reload();
+        }
+    });
     
     const currentUsername = "{{ current_user.username if current_user.is_authenticated else 'Guest' }}";
+
+    function buildEnglishCornerCard(submissionId, audioFilename, submittedAt) {
+        const userInitial = currentUsername.charAt(0).toUpperCase();
+
+        return `
+            <div class="card shadow-sm rounded-4 bg-white p-4 feed-card animate__animated animate__fadeInDown" id="record-card-${submissionId}">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary bg-gradient text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-3 shadow-sm" style="width: 45px; height: 45px; font-size: 1.3rem;">
+                            ${userInitial}
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark fs-6">${currentUsername}</div>
+                            <div class="text-muted" style="font-size: 0.8rem;"><i class="bi bi-clock me-1"></i>${submittedAt}</div>
+                        </div>
+                    </div>
+                    <button onclick="deleteSubmission(${submissionId})" class="btn btn-light btn-sm rounded-circle text-danger shadow-sm border" title="Delete my recording" style="width: 32px; height: 32px;">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                </div>
+                <div class="bg-light p-3 rounded-4 mb-3">
+                    <audio controls class="w-100 shadow-sm" style="height: 40px;">
+                        <source src="/speaking/audio/${audioFilename}" type="audio/webm">
+                    </audio>
+                </div>
+                <div class="d-flex justify-content-end align-items-center" id="action-area-${submissionId}">
+                    <button class="btn btn-primary btn-sm rounded-pill px-4 fw-medium ai-btn-glow" onclick="requestAIAnalysis(${submissionId}, this)">
+                        <i class="bi bi-stars me-1"></i> Get AI Feedback
+                    </button>
+                </div>
+            </div>
+        `;
+    }
 
     async function toggleRecording() {
         if (!isRecording) {
@@ -249,7 +301,8 @@
                 formData.append('exercise_id', '{{ exercise.id }}');
 
                 // 改变按钮为上传状态
-                recordText.textContent = "Saving...";
+                isUploading = true;
+                recordText.textContent = "Uploading...";
                 recordBtn.classList.replace('btn-dark', 'btn-secondary');
                 recordBtn.classList.remove('animate__pulse', 'animate__infinite');
                 recordBtn.disabled = true;
@@ -264,42 +317,10 @@
                     if (result.status === 'success') {
                         if (noRecordingsMsg) noRecordingsMsg.classList.add('d-none');
                         attemptCounter.textContent = parseInt(attemptCounter.textContent) + 1;
-
-                        const now = new Date();
-                        const timeString = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0') + " " + String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
-                        const audioUrl = `/speaking/audio/${result.filename}`;
-                        const userInitial = currentUsername.charAt(0).toUpperCase();
-
-                        // 生成精美的新卡片 HTML
-                        const listItemHtml = `
-                            <div class="card shadow-sm rounded-4 bg-white p-4 feed-card animate__animated animate__fadeInDown" id="record-card-${result.submission_id}">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-primary bg-gradient text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-3 shadow-sm" style="width: 45px; height: 45px; font-size: 1.3rem;">
-                                            ${userInitial}
-                                        </div>
-                                        <div>
-                                            <div class="fw-bold text-dark fs-6">${currentUsername}</div>
-                                            <div class="text-muted" style="font-size: 0.8rem;"><i class="bi bi-clock me-1"></i>${timeString}</div>
-                                        </div>
-                                    </div>
-                                    <button onclick="deleteSubmission(${result.submission_id})" class="btn btn-light btn-sm rounded-circle text-danger shadow-sm border" title="Delete my recording" style="width: 32px; height: 32px;">
-                                        <i class="bi bi-trash3"></i>
-                                    </button>
-                                </div>
-                                <div class="bg-light p-3 rounded-4 mb-3">
-                                    <audio controls class="w-100 shadow-sm" style="height: 40px;">
-                                        <source src="${audioUrl}" type="audio/webm">
-                                    </audio>
-                                </div>
-                                <div class="d-flex justify-content-end align-items-center" id="action-area-${result.submission_id}">
-                                    <button class="btn btn-primary btn-sm rounded-pill px-4 fw-medium ai-btn-glow" onclick="requestAIAnalysis(${result.submission_id}, this)">
-                                        <i class="bi bi-stars me-1"></i> Get AI Feedback
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                        historyList.insertAdjacentHTML('afterbegin', listItemHtml);
+                        historyList.insertAdjacentHTML(
+                            'afterbegin',
+                            buildEnglishCornerCard(result.submission_id, result.filename, result.submitted_at)
+                        );
                     } else {
                         alert("Upload failed: " + result.message);
                     }
@@ -307,6 +328,7 @@
                     console.error("Error:", error);
                     alert("Network error.");
                 } finally {
+                    isUploading = false;
                     recordBtn.disabled = false;
                     recordBtn.classList.remove('btn-secondary');
                     recordBtn.classList.add('btn-danger');
@@ -349,14 +371,14 @@
             if (data.status === 'success') {
                 window.location.href = `/speaking/analysis-detail/${subId}`;
             } else {
-                alert("AI Analysis failed: " + data.message);
+                alert("AI feedback failed: " + data.message);
                 btnElement.disabled = false;
                 btnElement.classList.add('ai-btn-glow');
                 btnElement.innerHTML = originalHtml;
             }
         } catch (error) {
             console.error("Analysis Error:", error);
-            alert("Network error during AI analysis.");
+            alert("Network error during AI feedback generation.");
             btnElement.disabled = false;
             btnElement.classList.add('ai-btn-glow');
             btnElement.innerHTML = originalHtml;
