@@ -211,4 +211,19 @@ def update_english_proficiency():
 @auth_bp.route('/profile')
 @login_required
 def profile():
-    return render_template('auth/profile.html')
+    # 1. 极速统计当前用户的总获赞数
+    total_likes = db.session.query(func.count(ForumLike.id))\
+                            .join(ForumPost, ForumLike.post_id == ForumPost.id)\
+                            .filter(ForumPost.user_id == current_user.id).scalar() or 0
+                            
+    # 2. 查询当前用户最近发的 3 个帖子 (因为空间有限，放 3 个刚好)
+    recent_posts = ForumPost.query.filter_by(user_id=current_user.id)\
+                                  .order_by(ForumPost.created_at.desc())\
+                                  .limit(3).all()
+
+    # 3. 把这两个变量传给前端
+    return render_template('auth/profile.html', 
+                           total_likes=total_likes,
+                           recent_posts=recent_posts)
+
+

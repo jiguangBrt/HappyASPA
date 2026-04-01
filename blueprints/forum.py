@@ -1,13 +1,8 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import func  # <--- 新增：用于统计点赞数
-<<<<<<< Updated upstream
 from datetime import datetime, timezone
-from models import db, ForumPost, ForumComment, ForumLike, ForumFavorite, CommentLike, CommentFavorite
-=======
-from datetime import datetime
 from models import db, ForumPost, ForumComment, ForumLike, ForumFavorite, CommentLike, CommentFavorite, User
->>>>>>> Stashed changes
 
 import os
 import uuid
@@ -404,8 +399,6 @@ def delete_post(post_id):
     
     flash('Post deleted successfully.', 'success')
     return redirect(url_for('forum.index'))
-<<<<<<< Updated upstream
-=======
 
 
 
@@ -434,4 +427,3 @@ def public_profile(user_id):
                            target_user=target_user, 
                            recent_posts=recent_posts,
                            total_likes=total_likes)
->>>>>>> Stashed changes
