@@ -266,6 +266,7 @@ class ListeningExercise(db.Model):
     subtitle_url     = db.Column(db.String(256),  nullable=True)
     accent = db.Column(db.String(50), nullable=True)
     questions = db.Column(db.JSON, nullable=True)  
+    key_vocab = db.Column(db.JSON, nullable=True)
 
     progress = db.relationship('UserListeningProgress', backref='exercise', lazy=True)
 
@@ -284,6 +285,8 @@ class UserListeningProgress(db.Model):
     last_position   = db.Column(db.Float, nullable=True)           # current play position
     # two_thirds_count = db.Column(db.Integer, default=0)           # count of finishing exercises
     answers         = db.Column(db.JSON, nullable=True)           # record of answer result
+    notes = db.Column(db.Text, nullable=True)  # 用户笔记区域
+    notes_history = db.Column(db.JSON, default=list)   # 历史笔记列表
 
     # 永久记录：已做过的题目索引列表（无论对错，永不重置）
     permanent_answered = db.Column(db.JSON, default=lambda: list())
