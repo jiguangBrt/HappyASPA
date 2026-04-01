@@ -8,15 +8,50 @@ import os
 import uuid
 # === AI 语音识别与点评依赖 ===
 import requests
-import base64
 from volcenginesdkarkruntime import Ark
 
 speaking_bp = Blueprint('speaking', __name__, url_prefix='/speaking')
+DAILY_AUDIO_COIN_LIMIT = 10
 
 # 工具函数：验证文件扩展名
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in current_app.config['ALLOWED_EXTENSIONS']
+
+
+def can_reward_audio_coin_today(user_id):
+    """检查用户今日是否还能通过提交音频获得金币（按发放日志计数，删除录音不影响）。"""
+    now = datetime.utcnow()
+    today_start = datetime(now.year, now.month, now.day)
+    rewarded_count_today = UserActivityLog.query.filter(
+        UserActivityLog.user_id == user_id,
+        UserActivityLog.module == 'speaking',
+        UserActivityLog.action == 'audio_coin_reward',
+        UserActivityLog.timestamp >= today_start
+    ).count()
+    return rewarded_count_today < DAILY_AUDIO_COIN_LIMIT
+
+
+def reward_audio_coin_if_eligible(user):
+    """尝试发放 1 枚音频奖励金币，并记录日志用于每日上限控制。"""
+    coin_reward = 0
+    coin_message = "You have reached today's coin reward limit and cannot earn more."
+
+    if can_reward_audio_coin_today(user.id):
+        if user.coins is None:
+            user.coins = 0
+        user.coins += 1
+        db.session.add(
+            UserActivityLog(
+                user_id=user.id,
+                module='speaking',
+                action='audio_coin_reward'
+            )
+        )
+        coin_reward = 1
+        coin_message = 'Coin +1'
+
+    return coin_reward, coin_message
 
 # 工具函数：上传文件到TOS并返回URL（独立纯函数）
 def upload_audio_to_tos(file_storage, filename,file_path):
@@ -40,15 +75,6 @@ def upload_audio_to_tos(file_storage, filename,file_path):
         return None
 
 # ====================== AI 工具函数 ======================
-def file_to_base64(file_path):
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"❌ 文件不存在：{file_path}")
-    with open(file_path, 'rb') as file:
-        file_data = file.read()
-        base64_data = base64.b64encode(file_data).decode('utf-8')
-    return base64_data
-
-
 def build_topic_context_text(topic_context):
     """将题目上下文规范化为可读文本，供 LLM 结合录音进行点评。"""
     if not topic_context:
@@ -59,6 +85,8 @@ def build_topic_context_text(topic_context):
         lines.append(f"Practice type: {topic_context.get('type')}")
     if topic_context.get("title"):
         lines.append(f"Title: {topic_context.get('title')}")
+    if topic_context.get("focus"):
+        lines.append(f"Focus: {topic_context.get('focus')}")
     if topic_context.get("category"):
         lines.append(f"Category: {topic_context.get('category')}")
     if topic_context.get("difficulty") is not None:
@@ -359,7 +387,7 @@ def upload_audio():
         except (TypeError, ValueError):
             return jsonify({'status': 'error', 'message': 'Invalid exercise'}), 400
         
-        exercise = SpeakingExercise.query.get(exercise_id)
+        exercise = db.session.get(SpeakingExercise, exercise_id)
         
         if not exercise:
             return jsonify({'status': 'error', 'message': 'Invalid exercise'}), 400
@@ -380,6 +408,8 @@ def upload_audio():
             file.save(filepath)
             
             duration = request.form.get('duration', 0)
+            can_reward_coin = can_reward_audio_coin_today(current_user.id)
+
             submission = UserSpeakingSubmission(
                 user_id=current_user.id,
                 exercise_id=exercise_id,
@@ -387,6 +417,11 @@ def upload_audio():
                 duration_seconds=float(duration) if duration else 0.0
             )
             db.session.add(submission)
+
+            coin_reward = 0
+            coin_message = "You have reached today's coin reward limit and cannot earn more."
+            if can_reward_coin:
+                coin_reward, coin_message = reward_audio_coin_if_eligible(current_user)
             db.session.commit()
             submission_committed = True
 
@@ -399,7 +434,10 @@ def upload_audio():
                 'submission_id': submission.id,
                 'filename': filename,
                 'submitted_at': local_time.strftime('%Y-%m-%d %H:%M'),
-                'duration': round(submission.duration_seconds or 0, 1)
+                'duration': round(submission.duration_seconds or 0, 1),
+                'coin_reward': coin_reward,
+                'coins': current_user.coins or 0,
+                'coin_message': coin_message
             }), 200
         else:
             return jsonify({'status': 'error', 'message': 'File type not allowed'}), 400
@@ -427,7 +465,7 @@ def analyze_audio(sub_id):
     if submission.feedback:
         return jsonify({'status': 'success', 'message': 'Already analyzed'})
 
-    exercise = SpeakingExercise.query.get(submission.exercise_id)
+    exercise = db.session.get(SpeakingExercise, submission.exercise_id)
     if not exercise:
         return jsonify({'status': 'error', 'message': 'Exercise not found'}), 404
 
@@ -464,7 +502,7 @@ def analyze_audio(sub_id):
 @login_required
 def analysis_detail(sub_id):
     submission = UserSpeakingSubmission.query.get_or_404(sub_id)
-    exercise = SpeakingExercise.query.get(submission.exercise_id)
+    exercise = db.session.get(SpeakingExercise, submission.exercise_id)
     
     # 格式化时间
     utc_time = submission.submitted_at       
@@ -617,7 +655,7 @@ def upload_scenario_audio():
         except (TypeError, ValueError):
             return jsonify({'status': 'error', 'message': 'Invalid scenario ID'}), 400
         
-        scenario = AcademicScenario.query.get(scenario_id)
+        scenario = db.session.get(AcademicScenario, scenario_id)
         if not scenario:
             return jsonify({'status': 'error', 'message': 'Scenario not found'}), 404
         
@@ -631,6 +669,8 @@ def upload_scenario_audio():
             
             file.save(filepath)
             
+            can_reward_coin = can_reward_audio_coin_today(current_user.id)
+
             new_sub = UserScenarioSubmission(
                 user_id=current_user.id,
                 scenario_id=scenario_id,
@@ -638,6 +678,11 @@ def upload_scenario_audio():
                 duration_seconds=float(duration) if duration else 0.0
             )
             db.session.add(new_sub)
+
+            coin_reward = 0
+            coin_message = "You have reached today's coin reward limit and cannot earn more."
+            if can_reward_coin:
+                coin_reward, coin_message = reward_audio_coin_if_eligible(current_user)
             db.session.commit()
             submission_committed = True
 
@@ -650,7 +695,10 @@ def upload_scenario_audio():
                 'submission_id': new_sub.id,
                 'filename': filename,
                 'submitted_at': local_time.strftime('%Y-%m-%d %H:%M'),
-                'duration': round(new_sub.duration_seconds or 0, 1)
+                'duration': round(new_sub.duration_seconds or 0, 1),
+                'coin_reward': coin_reward,
+                'coins': current_user.coins or 0,
+                'coin_message': coin_message
             }), 200
         else:
             return jsonify({'status': 'error', 'message': 'File type not allowed'}), 400
@@ -677,7 +725,7 @@ def analyze_scenario_audio(sub_id):
     if submission.overall_feedback:
         return jsonify({'status': 'success', 'message': 'Already analyzed'})
 
-    scenario = AcademicScenario.query.get(submission.scenario_id)
+    scenario = db.session.get(AcademicScenario, submission.scenario_id)
     if not scenario:
         return jsonify({'status': 'error', 'message': 'Scenario not found'}), 404
 
@@ -787,7 +835,8 @@ def practice_detail(practice_id):
             'id': r.id,
             'attempt': r.attempt_number,
             'audio_url': url_for('speaking.get_audio', filename=r.audio_path),
-            'created_at': local_time.strftime("%H:%M:%S")
+            'created_at': local_time.strftime("%H:%M:%S"),
+            'has_ai_feedback': bool(r.ai_feedback and r.ai_feedback.strip())
         })
     
     return render_template('speaking/practice_detail.html', practice=practice_data, history=history_list)
@@ -824,6 +873,8 @@ def upload_shadowing_record(practice_id):
             next_attempt = (last_record.attempt_number + 1) if last_record else 1
             
             # 4. 写入数据库
+            can_reward_coin = can_reward_audio_coin_today(current_user.id)
+
             new_record = UserShadowingRecord(
                 user_id=current_user.id,
                 exercise_id=practice_id,
@@ -831,6 +882,11 @@ def upload_shadowing_record(practice_id):
                 attempt_number=next_attempt
             )
             db.session.add(new_record)
+
+            coin_reward = 0
+            coin_message = "You have reached today's coin reward limit and cannot earn more."
+            if can_reward_coin:
+                coin_reward, coin_message = reward_audio_coin_if_eligible(current_user)
             db.session.commit()
             
             # 5. 返回给前端渲染
@@ -842,7 +898,11 @@ def upload_shadowing_record(practice_id):
                 'audio_url': url_for('speaking.get_audio', filename=filename),
                 'attempt': next_attempt,
                 'created_at': local_time.strftime("%H:%M:%S"),
-                'record_id': new_record.id
+                'record_id': new_record.id,
+                'feedback_ready': False,
+                'coin_reward': coin_reward,
+                'coins': current_user.coins or 0,
+                'coin_message': coin_message
             })
         else:
             return jsonify({'success': False, 'message': '文件类型不被允许'}), 400
@@ -852,7 +912,78 @@ def upload_shadowing_record(practice_id):
         current_app.logger.error(f"Upload shadowing record error: {str(e)}")
         return jsonify({'success': False, 'message': '服务器处理失败'}), 500
 
-# 14. 删除某条跟读录音记录接口
+# 14. 跟读录音 AI 分析接口
+@speaking_bp.route('/analyze-shadowing-audio/<int:record_id>', methods=['POST'])
+@login_required
+def analyze_shadowing_audio(record_id):
+    record = UserShadowingRecord.query.get_or_404(record_id)
+
+    if record.user_id != current_user.id:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+
+    if record.ai_feedback:
+        return jsonify({
+            'status': 'success',
+            'message': 'Already analyzed',
+            'redirect_url': url_for('speaking.practice_analysis_detail', record_id=record.id)
+        })
+
+    practice = ShadowingExercise.query.get_or_404(record.exercise_id)
+    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], record.audio_path)
+
+    if not os.path.exists(filepath):
+        return jsonify({'status': 'error', 'message': 'Audio file not found'}), 404
+
+    try:
+        tos_url = upload_audio_to_tos(None, record.audio_path, filepath)
+        if not tos_url:
+            return jsonify({'status': 'error', 'message': 'Audio upload failed'}), 500
+
+        topic_context = {
+            'type': 'Shadowing Practice',
+            'title': practice.title,
+            'focus': practice.focus,
+            'prompt': practice.text
+        }
+
+        ai_result = ai_evaluate_audio(tos_url, topic_context=topic_context)
+        record.ai_feedback = ai_result.get('feedback', 'No feedback generated.')
+
+        db.session.commit()
+        return jsonify({
+            'status': 'success',
+            'message': 'AI analysis complete!',
+            'redirect_url': url_for('speaking.practice_analysis_detail', record_id=record.id)
+        })
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Shadowing AI analysis error: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'AI analysis failed. Please try again.'}), 500
+
+# 15. 跟读 AI 反馈详情页
+@speaking_bp.route('/practice-analysis-detail/<int:record_id>')
+@login_required
+def practice_analysis_detail(record_id):
+    record = UserShadowingRecord.query.filter_by(id=record_id, user_id=current_user.id).first_or_404()
+    practice = ShadowingExercise.query.get_or_404(record.exercise_id)
+
+    audio_dict = {audio.accent_code: audio.audio_url for audio in practice.audios}
+    default_accent = 'us' if 'us' in audio_dict else next(iter(audio_dict), None)
+
+    utc_time = record.created_at
+    local_time = utc_time.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+    formatted_time = local_time.strftime('%Y-%m-%d %H:%M')
+
+    return render_template(
+        'speaking/practice_analysis_detail.html',
+        practice=practice,
+        practice_audio=audio_dict,
+        default_accent=default_accent,
+        record=record,
+        formatted_time=formatted_time
+    )
+
+# 16. 删除某条跟读录音记录接口
 @speaking_bp.route('/delete-shadowing-record/<int:record_id>', methods=['POST'])
 @login_required
 def delete_shadowing_record(record_id):

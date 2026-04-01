@@ -1,5 +1,5 @@
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import Blueprint, render_template, jsonify, request
 from flask_login import login_required, current_user
 from sqlalchemy import func
@@ -78,7 +78,7 @@ def record_choice():
         return jsonify({'error': 'Missing word_id or known'}), 400
 
     # 验证单词是否存在
-    word = VocabularyWord.query.get(word_id)
+    word = db.session.get(VocabularyWord, word_id)
     if not word:
         return jsonify({'error': 'Invalid word_id'}), 400
 
@@ -108,7 +108,7 @@ def record_choice():
     else:
         progress.status = 'new'
 
-    progress.last_reviewed_at = datetime.utcnow()
+    progress.last_reviewed_at = datetime.now(timezone.utc)
 
 # ⭐ 每5个词奖励1 coin
     if completed_set:

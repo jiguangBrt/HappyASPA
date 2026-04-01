@@ -20,7 +20,7 @@
 **Scene 3: Guidance card click → dedicated subpage (navigation test)**
 * **Test content:** Click each mini-card (Teams/DIICSU/Misconduct/Focus).
 * **Execution result:** Each click navigates to its dedicated URL `/guidance/<card_key>` and loads a **content page**.
-* **Status:** [Pending]
+* **Status:** [Passed]
 
 **Scene 4: Background image placeholder hook (configuration test)**
 * **Test content:** Locate the background image placeholder in the dashboard CSS; optionally add a test URL and refresh.

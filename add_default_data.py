@@ -65,7 +65,7 @@ def add_default_data():
         added = 0
         updated = 0
         for item in words_data:
-            word = VocabularyWord.query.get(item['id'])
+            word = db.session.get(VocabularyWord, item['id'])
             if word:
                 if (word.word != item['word'] or
                         word.definition != item['meaning'] or  
@@ -161,6 +161,12 @@ def add_default_data():
                     ],
                     "answer": 2
                 }
+            ],
+            'key_vocab': [
+                {"word": "memorable", "definition": "worth remembering or easily remembered"},
+                {"word": "habit", "definition": "a settled or regular tendency or practice"},
+                {"word": "challenge", "definition": "a task or situation that tests someone's abilities"},
+                {"word": "approach", "definition": "a way of dealing with a situation or problem"}
             ]
         },
         {
@@ -223,6 +229,13 @@ def add_default_data():
                     "answer": 1,
                 },
             ],
+            'key_vocab': [
+                {"word": "curator", "definition": "a keeper or custodian of a museum or collection"},
+                {"word": "collide", "definition": "hit with force when moving"},
+                {"word": "necrophilia", "definition": "sexual attraction to corpses"},
+                {"word": "specimen", "definition": "an individual animal, plant, or object used as an example"},
+                {"word": "documented", "definition": "recorded in detail"}
+            ]
         },
         {
             "title": "The key to effective educational science videos",
@@ -284,6 +297,12 @@ def add_default_data():
                     "answer": 2,
                 },
             ],
+            'key_vocab': [
+                {"word": "misconception", "definition": "a view or opinion that is incorrect based on faulty thinking"},
+                {"word": "conflicting", "definition": "being in opposition or disagreement"},
+                {"word": "insight", "definition": "the capacity to gain an accurate and deep understanding"},
+                {"word": "emphasizing", "definition": "giving special importance or prominence to something"}
+            ]
         },
         {
             "title": "Creativity, Humor, and WTF!",
@@ -344,253 +363,269 @@ def add_default_data():
                     "answer": 2,
                 },
             ],
+            'key_vocab': [
+                {"word": "overwhelmed", "definition": "defeated completely, or having a strong emotional effect"},
+                {"word": "frustration", "definition": "the feeling of being upset or annoyed because of inability to change something"},
+                {"word": "resonate", "definition": "to produce or be filled with a deep, full sound; to evoke a feeling of shared emotion"},
+                {"word": "reconciliation", "definition": "the restoration of friendly relations"},
+                {"word": "lighthearted", "definition": "cheerful and carefree"}
+            ]
         },
         {
-    "title": "20 Things NOT to do in UK",
-    "description": "Locals in the UK share advice on what foreigners and tourists should never do to avoid offending people, getting in trouble, or causing accidents while visiting the country.",
-    "audio_url": "/static/video/20 Things NOT to do in UK.mp4",
-    "subtitle_url": "/static/subtitles/20_Things_NOT_to_do_in_UK_Truth_from_Locals.vtt",
-    "transcript": "This video gathers opinions from British locals about behaviors foreigners should avoid. Key points include: do not walk slowly in crowded areas, do not spit, always have your card ready at tube gates, don't assume weather predictions, avoid littering, do not leave gates open in rural areas, and do not discuss sensitive topics like Brexit casually. Instead, interact politely with locals, respect rules, and be considerate of others.",
-    "difficulty": 3,
-    "category": "Culture",
-    "accent": "British",
-    "duration_seconds": 690,
-    "source_platform": "YouTube",
-    "source_author": "UniverseofKorede",
-    "license_type": "Creative Commons Attribution licence (reuse allowed)",
-    "source_url": "https://www.youtube.com/watch?v=eJU34nRlK5c",
-    "is_modified": True,
-    "questions": [
-        {
-            "time": 35.6,
-            "question": "What should foreigners never do on crowded streets in the UK?",
-            "options": [
-                "Walk slowly in front of others",
-                "Walk in groups",
-                "Take pictures of everything",
-                "Stop to talk to locals"
+            "title": "20 Things NOT to do in UK",
+            "description": "Locals in the UK share advice on what foreigners and tourists should never do to avoid offending people, getting in trouble, or causing accidents while visiting the country.",
+            "audio_url": "/static/video/20 Things NOT to do in UK.mp4",
+            "subtitle_url": "/static/subtitles/20_Things_NOT_to_do_in_UK_Truth_from_Locals.vtt",
+            "transcript": "This video gathers opinions from British locals about behaviors foreigners should avoid. Key points include: do not walk slowly in crowded areas, do not spit, always have your card ready at tube gates, don't assume weather predictions, avoid littering, do not leave gates open in rural areas, and do not discuss sensitive topics like Brexit casually. Instead, interact politely with locals, respect rules, and be considerate of others.",
+            "difficulty": 3,
+            "category": "Culture",
+            "accent": "British",
+            "duration_seconds": 690,
+            "source_platform": "YouTube",
+            "source_author": "UniverseofKorede",
+            "license_type": "Creative Commons Attribution licence (reuse allowed)",
+            "source_url": "https://www.youtube.com/watch?v=eJU34nRlK5c",
+            "is_modified": True,
+            "questions": [
+                {
+                    "time": 35.6,
+                    "question": "What should foreigners never do on crowded streets in the UK?",
+                    "options": [
+                        "Walk slowly in front of others",
+                        "Walk in groups",
+                        "Take pictures of everything",
+                        "Stop to talk to locals"
+                    ],
+                    "answer": 0
+                },
+                {
+                    "time": 142.0,
+                    "question": "What is a safety concern for tourists in rural UK areas?",
+                    "options": [
+                        "Feeding wildlife",
+                        "Leaving gates open or letting dogs off leads",
+                        "Walking alone at night",
+                        "Taking selfies with animals"
+                    ],
+                    "answer": 1
+                },
+                {
+                    "time": 220.0,
+                    "question": "How should tourists behave on public transport in London?",
+                    "options": [
+                        "Walk slowly and block others",
+                        "Use apps and walk faster",
+                        "Take photos of transport stops",
+                        "Chat loudly with friends"
+                    ],
+                    "answer": 1
+                },
+                {
+                    "time": 358.0,
+                    "question": "Which topics are suggested to avoid discussing as a foreigner in the UK?",
+                    "options": [
+                        "Local cuisine",
+                        "Weather",
+                        "Brexit",
+                        "Public transport"
+                    ],
+                    "answer": 2
+                },
+                {
+                    "time": 410.0,
+                    "question": "Overall, what is the main advice for foreigners visiting the UK?",
+                    "options": [
+                        "Behave politely, respect rules, and be considerate",
+                        "Avoid visiting big cities",
+                        "Do not interact with locals",
+                        "Always take guided tours"
+                    ],
+                    "answer": 0
+                }
+
             ],
-            "answer": 0
+            'key_vocab': [
+                {"word": "offend", "definition": "cause to feel upset, annoyed, or resentful"},
+                {"word": "littering", "definition": "the act of dropping trash in public places"},
+                {"word": "considerate", "definition": "careful not to inconvenience or harm others"},
+                {"word": "sensitive topics", "definition": "subjects that can easily cause strong emotions or controversy"},
+                {"word": "casually", "definition": "in a relaxed and informal way"}
+            ]
         },
         {
-            "time": 142.0,
-            "question": "What is a safety concern for tourists in rural UK areas?",
-            "options": [
-                "Feeding wildlife",
-                "Leaving gates open or letting dogs off leads",
-                "Walking alone at night",
-                "Taking selfies with animals"
+            "title": "Music Dreams Empower Young Chinese Artists",
+            "description": (
+                "A TED-style talk by Harry Hui about empowering young Chinese artists, "
+                "sharing stories of perseverance, passion, and creativity in the music industry."
+            ),
+            "audio_url": "/static/video/Harry Hui_ Music dreams empower young Chinese artists.mp4",
+            "subtitle_url": "/static/subtitles/Harry_Hui_Music_dreams_empower_young_Chinese_artists.vtt",
+            "transcript": (
+                "Harry Hui has been in television production and creation in Asia for 15 years, "
+                "mostly around music, celebrating and promoting Chinese artists. "
+                "He shares stories of young artists overcoming challenges, following their dreams, "
+                "and balancing tradition with modernity in their creative pursuits."
+            ),
+            "difficulty": 3,
+            "category": "Motivation",
+            "accent": "Chinese",
+            "duration_seconds": 410,
+            "questions": [
+                {
+                    "time": 103.0,
+                    "question": "How long has Harry Hui been working in television production and creation?",
+                    "options": [
+                        "5 years",
+                        "10 years",
+                        "15 years",
+                        "20 years"
+                    ],
+                    "answer": 2
+                },
+                {
+                    "time": 206.0,
+                    "question": "How did the first boy practice singing a Backstreet Boys song perfectly?",
+                    "options": [
+                        "He took English lessons",
+                        "He repeatedly played and sang the song",
+                        "He went abroad to learn",
+                        "He joined a band tour"
+                    ],
+                    "answer": 1
+                },
+                {
+                    "time": 309.0,
+                    "question": "Why did Waying, the girl from Shenyang, leave the competition?",
+                    "options": [
+                        "Family opposed her",
+                        "Her boyfriend asked her to quit",
+                        "She was injured",
+                        "She was busy with studies"
+                    ],
+                    "answer": 1
+                },
             ],
-            "answer": 1
+            'key_vocab': [
+                {"word": "empower", "definition": "give someone the authority or power to do something"},
+                {"word": "perseverance", "definition": "persistence in doing something despite difficulty"},
+                {"word": "creativity", "definition": "the use of imagination to produce original ideas"},
+                {"word": "tradition", "definition": "the transmission of customs or beliefs from generation to generation"},
+                {"word": "modernity", "definition": "the quality of being modern or contemporary"}
+            ]
         },
         {
-            "time": 220.0,
-            "question": "How should tourists behave on public transport in London?",
-            "options": [
-                "Walk slowly and block others",
-                "Use apps and walk faster",
-                "Take photos of transport stops",
-                "Chat loudly with friends"
+            "title": "Iran-Saudi Relations and Regional Politics",
+            "description": (
+                "An interview with Hossein Amirabdollahian, Iran’s Deputy Foreign Minister in charge of "
+                "Arab and African Affairs, discussing Iran-Saudi relations and regional political issues."
+            ),
+            "audio_url": "/static/video/Hossein AMIRABDOLLAHIAN.mp4",
+            "subtitle_url": "/static/subtitles/Hossein_AMIRABDOLLAHIAN.vtt",
+            "transcript": (
+                "Hossein Amirabdollahian discusses Iran’s view on Saudi Arabia, emphasizing willingness "
+                "to cooperate on regional political solutions in places like Yemen, Lebanon, Iraq, and Syria. "
+                "He comments on changes in Saudi leadership, the impact of military interventions, "
+                "and expresses cautious optimism for future negotiations."
+            ),
+            "difficulty": 5,
+            "category": "Politics",
+            "accent": "Iranian",
+            "duration_seconds": 207,
+            "questions": [
+                {
+                    "time": 52.0,
+                    "question": "According to Amirabdollahian, what is the main issue between Iran and Saudi Arabia?",
+                    "options": [
+                        "Bilateral trade disputes",
+                        "Different ideas about regional situations",
+                        "Religious conflicts",
+                        "Border disputes"
+                    ],
+                    "answer": 1
+                },
+                {
+                    "time": 104.0,
+                    "question": "What event complicated Iran-Saudi relations according to the speaker?",
+                    "options": [
+                        "Death of King Abdullah",
+                        "Signing a trade agreement",
+                        "A sports event",
+                        "Opening of new embassies"
+                    ],
+                    "answer": 0
+                },
+                {
+                    "time": 156.0,
+                    "question": "How does Amirabdollahian describe the future prospects of negotiations?",
+                    "options": [
+                        "Pessimistic due to ongoing conflicts",
+                        "Neutral and indifferent",
+                        "Optimistic and ready for cooperation",
+                        "Uncertain and refusing talks"
+                    ],
+                    "answer": 2
+                }
             ],
-            "answer": 1
+            'key_vocab': [
+                {"word": "regional", "definition": "relating to or characteristic of a region"},
+                {"word": "intervention", "definition": "the action or process of intervening"},
+                {"word": "cautious optimism", "definition": "hopeful but careful about potential risks"},
+                {"word": "negotiation", "definition": "discussion aimed at reaching an agreement"}
+            ]
         },
         {
-            "time": 358.0,
-            "question": "Which topics are suggested to avoid discussing as a foreigner in the UK?",
-            "options": [
-                "Local cuisine",
-                "Weather",
-                "Brexit",
-                "Public transport"
+            "title": "YS Jagan on Congress and Political Alliances",
+            "description": "YS Jagan discusses his independent political stance in Andhra Pradesh, critiques the Congress-TDP alliance, and explains why he keeps all political options open.",
+            "audio_url": "/static/video/YS Jagan Exclusive Interview in INDIA TODAY.mp4",
+            "subtitle_url": "/static/subtitles/YS_Jagan_Exclusive_Interview_in_INDIA_TODAY.vtt",
+            "transcript": "YS Jagan explains that he does not rely on Rahul Gandhi or any external support. He criticizes the Congress-TDP alliance in Telangana, saying such politics are unethical and misleading. He emphasizes maintaining independence and credibility in politics.",
+            "difficulty": 4,
+            "category": "Politics",
+            "accent": "Indian",
+            "duration_seconds": 282,
+            "questions": [
+                {
+                    "time": 120.0,
+                    "question": "What is YS Jagan's main stance regarding external political support?",
+                    "options": [
+                        "He relies fully on Congress support.",
+                        "He is open to support but remains independent.",
+                        "He opposes all other parties completely.",
+                        "He plans to join the Congress in the future."
+                    ],
+                    "answer": 1
+                },
+                {
+                    "time": 150.0,
+                    "question": "How does YS Jagan view the Congress-TDP alliance in Telangana?",
+                    "options": [
+                        "As a strong and credible partnership.",
+                        "As an unethical and opportunistic political move.",
+                        "As irrelevant to Andhra Pradesh politics.",
+                        "As a model for future alliances."
+                    ],
+                    "answer": 1
+                },
+                {
+                    "time": 180.0,
+                    "question": "What is the main idea of this segment?",
+                    "options": [
+                        "YS Jagan supports Congress-TDP collaboration.",
+                        "YS Jagan maintains political independence and criticizes opportunism.",
+                        "YS Jagan plans to leave politics.",
+                        "YS Jagan focuses on personal political gain only."
+                    ],
+                    "answer": 1
+                }
             ],
-            "answer": 2
-        },
-        {
-            "time": 410.0,
-            "question": "Overall, what is the main advice for foreigners visiting the UK?",
-            "options": [
-                "Behave politely, respect rules, and be considerate",
-                "Avoid visiting big cities",
-                "Do not interact with locals",
-                "Always take guided tours"
-            ],
-            "answer": 0
+            'key_vocab': [
+                {"word": "alliance", "definition": "a union or association formed for mutual benefit"},
+                {"word": "unethical", "definition": "not morally correct"},
+                {"word": "misleading", "definition": "giving the wrong idea or impression"},
+                {"word": "credibility", "definition": "the quality of being trusted and believed in"},
+                {"word": "opportunistic", "definition": "taking immediate advantage of circumstances with little regard for principles"}
+            ]
         }
-    ]
-        },
-        {
-    'title': 'Music Dreams Empower Young Chinese Artists',
-    'description': (
-        'A TED-style talk by Harry Hui about empowering young Chinese artists, '
-        'sharing stories of perseverance, passion, and creativity in the music industry.'
-    ),
-    'audio_url': '/static/video/Harry Hui_ Music dreams empower young Chinese artists.mp4',
-    'subtitle_url': '/static/subtitles/Harry_Hui_Music_dreams_empower_young_Chinese_artists.vtt',
-    'transcript': (
-        'Harry Hui has been in television production and creation in Asia for 15 years, '
-        'mostly around music, celebrating and promoting Chinese artists. '
-        'He shares stories of young artists overcoming challenges, following their dreams, '
-        'and balancing tradition with modernity in their creative pursuits.'
-    ),
-    'difficulty': 3,
-    'category': 'Motivation',
-    'accent': 'Chinese',
-    'duration_seconds': 410,
-    "source_platform": "YouTube",
-    "source_author": "TEDTalentSearch",
-    "license_type": "Creative Commons Attribution licence (reuse allowed)",
-    "source_url": "https://www.youtube.com/watch?v=7sy1gVJcHlk",
-    "is_modified": True,
-            
-    'questions': [
-        {
-            "time": 103.0,
-            "question": "How long has Harry Hui been working in television production and creation?",
-            "options": [
-                "5 years",
-                "10 years",
-                "15 years",
-                "20 years"
-            ],
-            "answer": 2
-        },
-        {
-            "time": 206.0,
-            "question": "How did the first boy practice singing a Backstreet Boys song perfectly?",
-            "options": [
-                "He took English lessons",
-                "He repeatedly played and sang the song",
-                "He went abroad to learn",
-                "He joined a band tour"
-            ],
-            "answer": 1
-        },
-        {
-            "time": 309.0,
-            "question": "Why did Waying, the girl from Shenyang, leave the competition?",
-            "options": [
-                "Family opposed her",
-                "Her boyfriend asked her to quit",
-                "She was injured",
-                "She was busy with studies"
-            ],
-            "answer": 1
-        },
-    ]
-},
-        {
-    'title': 'Iran-Saudi Relations and Regional Politics',
-    'description': (
-        'An interview with Hossein Amirabdollahian, Iran’s Deputy Foreign Minister in charge of '
-        'Arab and African Affairs, discussing Iran-Saudi relations and regional political issues.'
-    ),
-    'audio_url': '/static/video/Hossein AMIRABDOLLAHIAN.mp4',
-    'subtitle_url': '/static/subtitles/Hossein_AMIRABDOLLAHIAN.vtt',
-    'transcript': (
-        'Hossein Amirabdollahian discusses Iran’s view on Saudi Arabia, emphasizing willingness '
-        'to cooperate on regional political solutions in places like Yemen, Lebanon, Iraq, and Syria. '
-        'He comments on changes in Saudi leadership, the impact of military interventions, '
-        'and expresses cautious optimism for future negotiations.'
-    ),
-    'difficulty': 5,
-    'category': 'Politics',
-    'accent': 'Iranian',
-    'duration_seconds': 207,
-    "source_platform": "YouTube",
-    "source_author": "World Policy “WPC TV” Conference TV",
-    "license_type": "Creative Commons Attribution licence (reuse allowed)",
-    "source_url": "https://www.youtube.com/watch?v=gTVKntka2Cg",
-    "is_modified": True,
-    
-    'questions': [
-        {
-            "time": 52.0,
-            "question": "According to Amirabdollahian, what is the main issue between Iran and Saudi Arabia?",
-            "options": [
-                "Bilateral trade disputes",
-                "Different ideas about regional situations",
-                "Religious conflicts",
-                "Border disputes"
-            ],
-            "answer": 1
-        },
-        {
-            "time": 104.0,
-            "question": "What event complicated Iran-Saudi relations according to the speaker?",
-            "options": [
-                "Death of King Abdullah",
-                "Signing a trade agreement",
-                "A sports event",
-                "Opening of new embassies"
-            ],
-            "answer": 0
-        },
-        {
-            "time": 156.0,
-            "question": "How does Amirabdollahian describe the future prospects of negotiations?",
-            "options": [
-                "Pessimistic due to ongoing conflicts",
-                "Neutral and indifferent",
-                "Optimistic and ready for cooperation",
-                "Uncertain and refusing talks"
-            ],
-            "answer": 2
-        }
-    ]
-},
-        {
-    "title": "YS Jagan on Congress and Political Alliances",
-    "description": "YS Jagan discusses his independent political stance in Andhra Pradesh, critiques the Congress-TDP alliance, and explains why he keeps all political options open.",
-    "audio_url": "/static/video/YS Jagan Exclusive Interview in INDIA TODAY.mp4",
-    "subtitle_url": "/static/subtitles/YS_Jagan_Exclusive_Interview_in_INDIA_TODAY.vtt",
-    "transcript": "YS Jagan explains that he does not rely on Rahul Gandhi or any external support. He criticizes the Congress-TDP alliance in Telangana, saying such politics are unethical and misleading. He emphasizes maintaining independence and credibility in politics.",
-    "difficulty": 4,
-    "category": "Politics",
-    "accent": "Indian",
-    "duration_seconds": 282,
-    "source_platform": "YouTube",
-    "source_author": "V Sri",
-    "license_type": "Creative Commons Attribution licence (reuse allowed)",
-    "source_url": "https://www.youtube.com/watch?v=gJ22jqWbxwg",
-    "is_modified": True,
-    "questions": [
-        {
-            "time": 120.0,
-            "question": "What is YS Jagan's main stance regarding external political support?",
-            "options": [
-                "He relies fully on Congress support.",
-                "He is open to support but remains independent.",
-                "He opposes all other parties completely.",
-                "He plans to join the Congress in the future."
-            ],
-            "answer": 1
-        },
-        {
-            "time": 150.0,
-            "question": "How does YS Jagan view the Congress-TDP alliance in Telangana?",
-            "options": [
-                "As a strong and credible partnership.",
-                "As an unethical and opportunistic political move.",
-                "As irrelevant to Andhra Pradesh politics.",
-                "As a model for future alliances."
-            ],
-            "answer": 1
-        },
-        {
-            "time": 180.0,
-            "question": "What is the main idea of this segment?",
-            "options": [
-                "YS Jagan supports Congress-TDP collaboration.",
-                "YS Jagan maintains political independence and criticizes opportunism.",
-                "YS Jagan plans to leave politics.",
-                "YS Jagan focuses on personal political gain only."
-            ],
-            "answer": 1
-        }
-    ]
-}
-        
-        
     ]
 
     for data in listening_defaults:

@@ -16,7 +16,7 @@ class User(UserMixin, db.Model):
     email          = db.Column(db.String(120), unique=True, nullable=False)
     password_hash  = db.Column(db.String(256), nullable=False)
     avatar_url     = db.Column(db.String(256), nullable=True)
-    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at     = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     last_login_at  = db.Column(db.DateTime, nullable=True)
 
     # ==========================================
@@ -83,7 +83,7 @@ class VocabularyWord(db.Model):
     example_sentence = db.Column(db.Text,        nullable=True)
     difficulty       = db.Column(db.Integer,     default=1)   # 1–5
     category         = db.Column(db.String(50),  nullable=True)
-    created_at       = db.Column(db.DateTime,    default=datetime.utcnow)
+    created_at       = db.Column(db.DateTime,    default=lambda: datetime.now(timezone.utc))
 
     progress = db.relationship('UserVocabularyProgress', backref='word', lazy=True)
 
@@ -111,7 +111,7 @@ class Flashcard(db.Model):
     category      = db.Column(db.String(50),  nullable=True)
     created_by    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     is_public     = db.Column(db.Boolean, default=True)
-    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at    = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     progress = db.relationship('UserFlashcardProgress', backref='flashcard', lazy=True)
 
@@ -139,8 +139,8 @@ class ForumPost(db.Model):
     # 👇 NEW: 新增一个字段专门管大分区（默认发到交流区 discussion）
     board      = db.Column(db.String(50),  default='discussion')
     views      = db.Column(db.Integer,     default=0)
-    created_at = db.Column(db.DateTime,    default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime,    default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime,    default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime,    default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     image_url = db.Column(db.String(256), nullable=True) # 👈 存图片路径
     audio_url = db.Column(db.String(256), nullable=True) # 👈 存语音路径
@@ -179,7 +179,7 @@ class ForumComment(db.Model):
     post_id    = db.Column(db.Integer, db.ForeignKey('forum_posts.id'), nullable=False)
     user_id    = db.Column(db.Integer, db.ForeignKey('users.id'),       nullable=False)
     content    = db.Column(db.Text,     nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     parent_id  = db.Column(db.Integer, db.ForeignKey('forum_comments.id'), nullable=True)
 
@@ -221,7 +221,7 @@ class CommentLike(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     comment_id = db.Column(db.Integer, db.ForeignKey('forum_comments.id'), nullable=False)
     user_id    = db.Column(db.Integer, db.ForeignKey('users.id'),       nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 class CommentFavorite(db.Model):
     __tablename__ = 'comment_favorites'
@@ -229,7 +229,7 @@ class CommentFavorite(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     comment_id = db.Column(db.Integer, db.ForeignKey('forum_comments.id'), nullable=False)
     user_id    = db.Column(db.Integer, db.ForeignKey('users.id'),       nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class ForumLike(db.Model):
@@ -238,7 +238,7 @@ class ForumLike(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     post_id    = db.Column(db.Integer, db.ForeignKey('forum_posts.id'), nullable=False)
     user_id    = db.Column(db.Integer, db.ForeignKey('users.id'),       nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 class ForumFavorite(db.Model):
     __tablename__ = 'forum_favorites'
@@ -246,7 +246,7 @@ class ForumFavorite(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     post_id    = db.Column(db.Integer, db.ForeignKey('forum_posts.id'), nullable=False)
     user_id    = db.Column(db.Integer, db.ForeignKey('users.id'),       nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 # ─────────────────────────────────────────────
 # Listening
@@ -262,10 +262,11 @@ class ListeningExercise(db.Model):
     difficulty       = db.Column(db.Integer,      default=1)   # 1–5
     category         = db.Column(db.String(50),   nullable=True)
     duration_seconds = db.Column(db.Integer,      nullable=True)
-    created_at       = db.Column(db.DateTime,     default=datetime.utcnow)
+    created_at       = db.Column(db.DateTime,     default=lambda: datetime.now(timezone.utc))
     subtitle_url     = db.Column(db.String(256),  nullable=True)
     accent = db.Column(db.String(50), nullable=True)
     questions = db.Column(db.JSON, nullable=True)  
+    key_vocab = db.Column(db.JSON, nullable=True)
 
     progress = db.relationship('UserListeningProgress', backref='exercise', lazy=True)
     
@@ -290,6 +291,8 @@ class UserListeningProgress(db.Model):
     last_position   = db.Column(db.Float, nullable=True)           # current play position
     # two_thirds_count = db.Column(db.Integer, default=0)           # count of finishing exercises
     answers         = db.Column(db.JSON, nullable=True)           # record of answer result
+    notes = db.Column(db.Text, nullable=True)  # 用户笔记区域
+    notes_history = db.Column(db.JSON, default=list)   # 历史笔记列表
 
     # 永久记录：已做过的题目索引列表（无论对错，永不重置）
     permanent_answered = db.Column(db.JSON, default=lambda: list())
@@ -310,7 +313,7 @@ class WritingExercise(db.Model):
     difficulty   = db.Column(db.Integer,     default=1)        # 1–5
     word_limit   = db.Column(db.Integer,     nullable=True)
     model_answer = db.Column(db.Text,        nullable=True)
-    created_at   = db.Column(db.DateTime,    default=datetime.utcnow)
+    created_at   = db.Column(db.DateTime,    default=lambda: datetime.now(timezone.utc))
 
     submissions = db.relationship('UserWritingSubmission', backref='exercise', lazy=True)
 
@@ -338,7 +341,7 @@ class SpeakingExercise(db.Model):
     prompt = db.Column(db.Text, nullable=False)  
     difficulty = db.Column(db.Integer, default=1)  
     category = db.Column(db.String(50), nullable=True)  
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True) 
     creator = db.relationship('User', backref='created_exercises')
@@ -353,7 +356,7 @@ class UserSpeakingSubmission(db.Model):
     exercise_id = db.Column(db.Integer, db.ForeignKey('speaking_exercises.id'), nullable=False)
     audio_filename = db.Column(db.String(256), nullable=False)  
     duration_seconds = db.Column(db.Float, nullable=True)  
-    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    submitted_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     feedback = db.Column(db.Text, nullable=True)  
     score = db.Column(db.Float, nullable=True)  
 
@@ -375,7 +378,7 @@ class AcademicScenario(db.Model):
     reference_material = db.Column(db.Text, nullable=True)  # 参考资料/线索
     prep_time_seconds = db.Column(db.Integer, default=120)  # 建议准备时间
     
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     # 建立和提交记录的关系
     submissions = db.relationship('UserScenarioSubmission', backref='scenario', lazy=True)
@@ -389,7 +392,7 @@ class UserScenarioSubmission(db.Model):
     
     audio_filename = db.Column(db.String(256), nullable=False)  
     duration_seconds = db.Column(db.Float, nullable=True)  
-    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    submitted_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     # AI 评估专属字段
     score_vocabulary = db.Column(db.Float, nullable=True)
@@ -409,7 +412,7 @@ class ShadowingExercise(db.Model):
     text = db.Column(db.Text, nullable=False)
     duration_str = db.Column(db.String(20)) # e.g., "~0:30"
     word_count = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     audios = db.relationship('ShadowingAudio', backref='exercise', lazy=True, cascade='all, delete-orphan')
     
@@ -436,9 +439,12 @@ class UserShadowingRecord(db.Model):
     
     # 记录这是用户的第几次尝试，方便前端排序展示
     attempt_number = db.Column(db.Integer, default=1)
+
+    # AI 跟读反馈
+    ai_feedback = db.Column(db.Text, nullable=True)
     
     # 录音时间
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 # ─────────────────────────────────────────────
 # Activity Log（学习轨迹核心）
@@ -451,7 +457,7 @@ class UserActivityLog(db.Model):
     module    = db.Column(db.String(50), nullable=False)
     action    = db.Column(db.String(50), nullable=False)
     ref_id    = db.Column(db.Integer,    nullable=True)   
-    timestamp = db.Column(db.DateTime,   default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime,   default=lambda: datetime.now(timezone.utc))
 
 # Dashboard schedule items
 class UserScheduleItem(db.Model):
@@ -463,7 +469,7 @@ class UserScheduleItem(db.Model):
     kind           = db.Column(db.String(30), nullable=False)  
     title          = db.Column(db.String(200), nullable=False)
     notes          = db.Column(db.Text, nullable=True)
-    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at     = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 # Dashboard journal markers (custom log)
 class UserJournalMarker(db.Model):
@@ -478,7 +484,7 @@ class UserJournalMarker(db.Model):
     notes      = db.Column(db.Text, nullable=True)
     color      = db.Column(db.String(20), nullable=True)
     event_date = db.Column(db.Date, nullable=False, index=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 # ─────────────────────────────────────────────
@@ -499,7 +505,7 @@ class SeedType(db.Model):
     is_mystery = db.Column(db.Boolean, default=False)             # 是否为盲盒种子
     available = db.Column(db.Boolean, default=True)               # 是否可购买
     plant_image_url = db.Column(db.String(256), nullable=True)    # 成熟时的植物图片
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     # 关联可能产出的果实
     possible_fruits = db.relationship('FruitType', backref='seed_type', lazy=True)
@@ -521,7 +527,7 @@ class FruitType(db.Model):
     is_showcase_worthy = db.Column(db.Boolean, default=False)     # 是否值得展示（SR/SSR自动true）
     academic_element = db.Column(db.String(100), nullable=True)   # 学术元素（如"戴学士帽的苹果"）
     image_url = db.Column(db.String(256), nullable=True)          # 果实图片路径
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 # 土地等级定义表
@@ -564,7 +570,7 @@ class UserOrchard(db.Model):
     total_points = db.Column(db.Integer, default=0)               # 总积分
     weekly_points = db.Column(db.Integer, default=0)              # 本周积分
     last_weekly_reset = db.Column(db.Date, nullable=True)         # 上次周榜重置日期
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     # 关系
     user = db.relationship('User', backref=db.backref('orchard', uselist=False, lazy=True))
@@ -587,7 +593,7 @@ class UserLand(db.Model):
     planted_at = db.Column(db.DateTime, nullable=True)            # 播种时间
     matures_at = db.Column(db.DateTime, nullable=True)            # 成熟时间
     
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     # 关系
     land_type = db.relationship('LandType')
@@ -617,7 +623,7 @@ class UserHarvestedFruit(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     fruit_type_id = db.Column(db.Integer, db.ForeignKey('orchard_fruit_types.id'), nullable=False)
     land_id = db.Column(db.Integer, db.ForeignKey('user_lands.id'), nullable=True)
-    harvested_at = db.Column(db.DateTime, default=datetime.utcnow)
+    harvested_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     points_earned = db.Column(db.Integer, default=0)              # 获得的积分
     
     # 关系
@@ -634,7 +640,7 @@ class UserShowcaseFruit(db.Model):
     harvested_fruit_id = db.Column(db.Integer, db.ForeignKey('user_harvested_fruits.id'), nullable=False)
     position = db.Column(db.Integer, default=0)                   # 展示位置
     display_message = db.Column(db.Text, nullable=True)           # 自定义展示文案
-    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    added_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     # 关系
     harvested_fruit = db.relationship('UserHarvestedFruit')
