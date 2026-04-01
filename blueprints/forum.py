@@ -105,11 +105,18 @@ def index():
     category_filter = request.args.get('category')
     sort_by = request.args.get('sort_by', 'hot') 
     board = request.args.get('board', 'discussion') 
-    
+    # --- 👇 新增：获取用户 ID 参数 ---
+    user_id_filter = request.args.get('user_id', type=int)
+
     saved_comments = []
 
     # 初始化基础查询
     post_query = db.session.query(ForumPost)
+
+# --- 👇 新增：如果传了 user_id，就只看该用户的帖子 ---
+    if user_id_filter:
+        post_query = post_query.filter(ForumPost.user_id == user_id_filter)
+    # -----------------------------------------------
 
     if tab == 'saved':
         # 👇 NEW: 在查询收藏帖子时，加上 .filter(ForumPost.board == board) 强隔离！
@@ -154,6 +161,7 @@ def index():
                            tab=tab, 
                            saved_comments=saved_comments,
                            current_category=category_filter,
+                           user_id_filter=user_id_filter,
                            sort_by=sort_by,
                            daily_done=daily_done,
                            board=board)

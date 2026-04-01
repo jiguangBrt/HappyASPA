@@ -2,7 +2,8 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime, date, timezone
 from time_utils import utcnow_naive
-from models import db, User
+from models import db, User,ForumPost, ForumLike
+from sqlalchemy import func
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
