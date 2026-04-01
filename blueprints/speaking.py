@@ -59,6 +59,8 @@ def build_topic_context_text(topic_context):
         lines.append(f"Practice type: {topic_context.get('type')}")
     if topic_context.get("title"):
         lines.append(f"Title: {topic_context.get('title')}")
+    if topic_context.get("focus"):
+        lines.append(f"Focus: {topic_context.get('focus')}")
     if topic_context.get("category"):
         lines.append(f"Category: {topic_context.get('category')}")
     if topic_context.get("difficulty") is not None:
@@ -787,7 +789,8 @@ def practice_detail(practice_id):
             'id': r.id,
             'attempt': r.attempt_number,
             'audio_url': url_for('speaking.get_audio', filename=r.audio_path),
-            'created_at': local_time.strftime("%H:%M:%S")
+            'created_at': local_time.strftime("%H:%M:%S"),
+            'has_ai_feedback': bool(r.ai_feedback and r.ai_feedback.strip())
         })
     
     return render_template('speaking/practice_detail.html', practice=practice_data, history=history_list)
@@ -842,7 +845,8 @@ def upload_shadowing_record(practice_id):
                 'audio_url': url_for('speaking.get_audio', filename=filename),
                 'attempt': next_attempt,
                 'created_at': local_time.strftime("%H:%M:%S"),
-                'record_id': new_record.id
+                'record_id': new_record.id,
+                'feedback_ready': False
             })
         else:
             return jsonify({'success': False, 'message': '文件类型不被允许'}), 400
@@ -852,7 +856,78 @@ def upload_shadowing_record(practice_id):
         current_app.logger.error(f"Upload shadowing record error: {str(e)}")
         return jsonify({'success': False, 'message': '服务器处理失败'}), 500
 
-# 14. 删除某条跟读录音记录接口
+# 14. 跟读录音 AI 分析接口
+@speaking_bp.route('/analyze-shadowing-audio/<int:record_id>', methods=['POST'])
+@login_required
+def analyze_shadowing_audio(record_id):
+    record = UserShadowingRecord.query.get_or_404(record_id)
+
+    if record.user_id != current_user.id:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+
+    if record.ai_feedback:
+        return jsonify({
+            'status': 'success',
+            'message': 'Already analyzed',
+            'redirect_url': url_for('speaking.practice_analysis_detail', record_id=record.id)
+        })
+
+    practice = ShadowingExercise.query.get_or_404(record.exercise_id)
+    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], record.audio_path)
+
+    if not os.path.exists(filepath):
+        return jsonify({'status': 'error', 'message': 'Audio file not found'}), 404
+
+    try:
+        tos_url = upload_audio_to_tos(None, record.audio_path, filepath)
+        if not tos_url:
+            return jsonify({'status': 'error', 'message': 'Audio upload failed'}), 500
+
+        topic_context = {
+            'type': 'Shadowing Practice',
+            'title': practice.title,
+            'focus': practice.focus,
+            'prompt': practice.text
+        }
+
+        ai_result = ai_evaluate_audio(tos_url, topic_context=topic_context)
+        record.ai_feedback = ai_result.get('feedback', 'No feedback generated.')
+
+        db.session.commit()
+        return jsonify({
+            'status': 'success',
+            'message': 'AI analysis complete!',
+            'redirect_url': url_for('speaking.practice_analysis_detail', record_id=record.id)
+        })
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Shadowing AI analysis error: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'AI analysis failed. Please try again.'}), 500
+
+# 15. 跟读 AI 反馈详情页
+@speaking_bp.route('/practice-analysis-detail/<int:record_id>')
+@login_required
+def practice_analysis_detail(record_id):
+    record = UserShadowingRecord.query.filter_by(id=record_id, user_id=current_user.id).first_or_404()
+    practice = ShadowingExercise.query.get_or_404(record.exercise_id)
+
+    audio_dict = {audio.accent_code: audio.audio_url for audio in practice.audios}
+    default_accent = 'us' if 'us' in audio_dict else next(iter(audio_dict), None)
+
+    utc_time = record.created_at
+    local_time = utc_time.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+    formatted_time = local_time.strftime('%Y-%m-%d %H:%M')
+
+    return render_template(
+        'speaking/practice_analysis_detail.html',
+        practice=practice,
+        practice_audio=audio_dict,
+        default_accent=default_accent,
+        record=record,
+        formatted_time=formatted_time
+    )
+
+# 16. 删除某条跟读录音记录接口
 @speaking_bp.route('/delete-shadowing-record/<int:record_id>', methods=['POST'])
 @login_required
 def delete_shadowing_record(record_id):
