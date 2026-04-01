@@ -433,6 +433,9 @@ class UserShadowingRecord(db.Model):
     
     # 记录这是用户的第几次尝试，方便前端排序展示
     attempt_number = db.Column(db.Integer, default=1)
+
+    # AI 跟读反馈
+    ai_feedback = db.Column(db.Text, nullable=True)
     
     # 录音时间
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
