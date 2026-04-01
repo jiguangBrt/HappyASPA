@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
 from models import db, ListeningExercise, UserListeningProgress
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm.attributes import flag_modified  # 新增导入
 
 listening_bp = Blueprint("listening", __name__, url_prefix="/listening")
@@ -52,7 +52,7 @@ def save_progress():
     if not exercise_id:
         return jsonify({"error": "exercise_id required"}), 400
 
-    exercise = ListeningExercise.query.get(exercise_id)
+    exercise = db.session.get(ListeningExercise, exercise_id)
     if not exercise:
         return jsonify({"error": "Exercise not found"}), 404
 
@@ -159,7 +159,7 @@ def save_progress():
         current_user.total_listening_duration += duration_spent
         db.session.add(current_user)
 
-    progress.last_attempt_at = datetime.utcnow()
+    progress.last_attempt_at = datetime.now(timezone.utc)
     db.session.add(progress)
 
     # 提交前再次确保字段被标记

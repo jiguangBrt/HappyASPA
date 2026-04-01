@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from models import db, User
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -18,7 +18,7 @@ def login():
 
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
-            user.last_login_at = datetime.utcnow()
+            user.last_login_at = datetime.now(timezone.utc)
             db.session.commit()
             login_user(user, remember=remember)
             next_page = request.args.get('next')
