@@ -1,8 +1,13 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import func  # <--- 新增：用于统计点赞数
+<<<<<<< Updated upstream
 from datetime import datetime, timezone
 from models import db, ForumPost, ForumComment, ForumLike, ForumFavorite, CommentLike, CommentFavorite
+=======
+from datetime import datetime
+from models import db, ForumPost, ForumComment, ForumLike, ForumFavorite, CommentLike, CommentFavorite, User
+>>>>>>> Stashed changes
 
 import os
 import uuid
@@ -399,3 +404,34 @@ def delete_post(post_id):
     
     flash('Post deleted successfully.', 'success')
     return redirect(url_for('forum.index'))
+<<<<<<< Updated upstream
+=======
+
+
+
+
+@forum_bp.route('/user/<int:user_id>')
+@login_required
+def public_profile(user_id):
+    # 如果点的是自己，直接去私密主页
+    if user_id == current_user.id:
+        return redirect(url_for('auth.profile'))
+        
+    # 查询你要看的那个目标用户
+    target_user = User.query.get_or_404(user_id)
+    
+    # 顺便查一下这个人最近发的 5 个帖子
+    recent_posts = ForumPost.query.filter_by(user_id=target_user.id)\
+                                  .order_by(ForumPost.created_at.desc())\
+                                  .limit(5).all()
+                                  
+   # 👇 NEW: 修复 property 报错，通过关联 ForumLike 表来精确统计该用户获得的总赞数
+    total_likes = db.session.query(func.count(ForumLike.id))\
+                            .join(ForumPost, ForumLike.post_id == ForumPost.id)\
+                            .filter(ForumPost.user_id == target_user.id).scalar() or 0
+                                  
+    return render_template('forum/public_profile.html', 
+                           target_user=target_user, 
+                           recent_posts=recent_posts,
+                           total_likes=total_likes)
+>>>>>>> Stashed changes
