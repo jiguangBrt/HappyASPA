@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block title %}AI Feedback - {{ practice.title }}{% endblock %}
+
+{% block head %}
+<style>
+    .shadowing-report-hero {
+        background: linear-gradient(135deg, rgba(18, 53, 107, 0.08) 0%, rgba(255, 255, 255, 0.96) 100%);
+        border: 1px solid #d5e0ef;
+        border-radius: 1.5rem;
+    }
+    .shadowing-report-panel {
+        border-top: 4px solid var(--app-primary);
+    }
+    .shadowing-report-text {
+        line-height: 1.9;
+        white-space: pre-wrap;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="mb-4">
+        <a href="{{ url_for('speaking.practice_detail', practice_id=practice.id) }}" class="text-decoration-none text-muted fw-medium hover-primary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Practice
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="shadowing-report-hero p-4 p-md-5 shadow-sm mb-4">
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <div class="bg-primary bg-gradient text-white rounded-4 p-3 shadow-sm">
+                        <i class="bi bi-stars fs-2"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-1">Shadowing Feedback Report</h3>
+                        <p class="text-muted mb-0">Practice: {{ practice.title }} | Date: {{ formatted_time }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4 bg-light rounded-4">
+                    <h6 class="text-muted fw-bold mb-2"><i class="bi bi-bullseye me-2"></i>Practice Focus</h6>
+                    <p class="mb-0 text-dark">{{ practice.focus }}</p>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4 bg-light rounded-4">
+                    <h6 class="text-muted fw-bold mb-3"><i class="bi bi-file-earmark-text me-2"></i>Reference Script</h6>
+                    <p class="mb-0 text-dark" style="line-height: 1.8;">{{ practice.text }}</p>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4 text-center">
+                    <h6 class="text-muted fw-bold mb-3">Reference Audio</h6>
+                    <div class="d-flex justify-content-center mb-3 flex-wrap gap-2">
+                        {% if practice_audio.get('us') %}
+                        <button class="btn btn-outline-primary rounded-pill px-4" type="button" onclick="changeAccent('us')">American</button>
+                        {% endif %}
+                        {% if practice_audio.get('gb') %}
+                        <button class="btn btn-outline-primary rounded-pill px-4" type="button" onclick="changeAccent('gb')">British</button>
+                        {% endif %}
+                        {% if practice_audio.get('au') %}
+                        <button class="btn btn-outline-primary rounded-pill px-4" type="button" onclick="changeAccent('au')">Australian</button>
+                        {% endif %}
+                    </div>
+                    <audio id="reference-audio" controls class="w-100 shadow-sm rounded-pill" style="height: 40px; max-width: 500px;">
+                        <source src="{{ practice_audio.get(default_accent) if default_accent else '' }}" type="audio/mpeg">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4 text-center">
+                    <h6 class="text-muted fw-bold mb-3">Your Recording</h6>
+                    <audio controls class="w-100 shadow-sm rounded-pill" style="height: 40px; max-width: 500px;">
+                        <source src="{{ url_for('speaking.get_audio', filename=record.audio_path) }}" type="audio/webm">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm shadowing-report-panel mb-5">
+                <div class="card-body p-4 p-md-5">
+                    <h5 class="fw-bold mb-4 text-primary"><i class="bi bi-robot me-2"></i>Detailed Feedback</h5>
+                    <div class="shadowing-report-text text-dark fs-6">{{ record.ai_feedback or 'No AI feedback generated yet.' }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script id="shadowing-audio-data" type="application/json">
+    {{ practice_audio | tojson | safe }}
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const referenceAudio = document.getElementById('reference-audio');
+    const shadowingAudioData = JSON.parse(document.getElementById('shadowing-audio-data').textContent);
+
+    function changeAccent(accentCode) {
+        if (!shadowingAudioData[accentCode]) {
+            return;
+        }
+
+        const wasPlaying = !referenceAudio.paused;
+        referenceAudio.src = shadowingAudioData[accentCode];
+        referenceAudio.load();
+
+        if (wasPlaying) {
+            referenceAudio.play();
+        }
+    }
+</script>
+{% endblock %}
