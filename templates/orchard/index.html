@@ -241,28 +241,54 @@
         <h5 class="mb-0"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Harvest Leaderboard</h5>
       </div>
       <div class="card-body p-0">
+        <div class="px-3 pt-3">
+          <h6 class="mb-2 text-muted">This Week</h6>
+        </div>
         <ul class="list-group list-group-flush">
-          {% for entry in leaderboard %}
-            <li class="list-group-item d-flex justify-content-between align-items-center {% if entry.user_id == current_user.id %}bg-light{% endif %}">
+          {% for entry in weekly_leaderboard %}
+            <li class="list-group-item d-flex justify-content-between align-items-center {% if entry.id == current_user.id %}bg-light{% endif %}">
               <div class="d-flex align-items-center">
                 <span class="me-3 fw-bold rank-{{ loop.index }}">
                   {% if loop.index == 1 %}👑{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
                 </span>
                 <span>{{ entry.username }}</span>
               </div>
-              <span class="badge bg-primary rounded-pill">{{ entry.total_points }} pts</span>
+              <span class="badge bg-primary rounded-pill">{{ entry.weekly_points }} pts</span>
             </li>
           {% else %}
-            <li class="list-group-item text-center text-muted">No data available yet.</li>
+            <li class="list-group-item text-center text-muted">No weekly data yet.</li>
+          {% endfor %}
+        </ul>
+
+        <div class="px-3 pt-3">
+          <h6 class="mb-2 text-muted">All Time</h6>
+        </div>
+        <ul class="list-group list-group-flush">
+          {% for entry in total_leaderboard %}
+            <li class="list-group-item d-flex justify-content-between align-items-center {% if entry.id == current_user.id %}bg-light{% endif %}">
+              <div class="d-flex align-items-center">
+                <span class="me-3 fw-bold rank-{{ loop.index }}">
+                  {% if loop.index == 1 %}👑{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+                </span>
+                <span>{{ entry.username }}</span>
+              </div>
+              <span class="badge bg-secondary rounded-pill">{{ entry.total_points }} pts</span>
+            </li>
+          {% else %}
+            <li class="list-group-item text-center text-muted">No all-time data yet.</li>
           {% endfor %}
         </ul>
       </div>
-      {% if current_user_rank %}
-      <div class="card-footer bg-light d-flex justify-content-between align-items-center">
-        <span class="fw-bold text-primary">Your Rank: #{{ current_user_rank.rank }}</span>
-        <span class="badge bg-secondary">{{ current_user_rank.total_points }} pts</span>
+      <div class="card-footer bg-light">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="fw-bold text-primary">Your Weekly Rank: #{{ user_weekly_rank }}</span>
+          <span class="badge bg-primary">{{ orchard.weekly_points }} pts</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="fw-bold text-secondary">Your Total Rank: #{{ user_total_rank }}</span>
+          <span class="badge bg-secondary">{{ orchard.total_points }} pts</span>
+        </div>
       </div>
-      {% endif %}
     </div>
   </div>
 </div>
@@ -461,17 +487,24 @@
     if (!confirm(`Buy this ${type} for ${price} coins?`)) return;
     
     try {
-      const res = await fetch('{{ url_for("orchard.buy_item") }}', {
+      const endpoint = type === 'seed'
+        ? '{{ url_for("orchard.buy_seed") }}'
+        : '{{ url_for("orchard.buy_item") }}';
+      const payload = type === 'seed'
+        ? { seed_id: itemId, quantity: 1 }
+        : { item_id: itemId, quantity: 1 };
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ item_type: type, item_id: itemId })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (data.success) {
         alert('Purchase successful!');
         location.reload();
       } else {
-        alert(data.error || 'Purchase failed');
+        alert(data.message || 'Purchase failed');
       }
     } catch (e) {
       alert('An error occurred');
@@ -495,7 +528,7 @@
       if (data.success) {
         location.reload();
       } else {
-        alert(data.error || 'Failed to plant seed');
+        alert(data.message || 'Failed to plant seed');
       }
     } catch (e) {
       alert('An error occurred');
@@ -532,7 +565,7 @@
       if (data.success) {
         location.reload();
       } else {
-        alert(data.error || 'Failed to use item');
+        alert(data.message || 'Failed to use item');
       }
     } catch (e) {
       alert('An error occurred');
@@ -555,7 +588,7 @@
         alert(msg);
         location.reload();
       } else {
-        alert(data.error || 'Failed to harvest');
+        alert(data.message || 'Failed to harvest');
       }
     } catch (e) {
       alert('An error occurred');
