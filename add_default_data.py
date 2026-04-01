@@ -163,11 +163,17 @@ def add_default_data():
                 }
             ],
             'key_vocab': [
-                {"word": "memorable", "definition": "worth remembering or easily remembered"},
-                {"word": "habit", "definition": "a settled or regular tendency or practice"},
-                {"word": "challenge", "definition": "a task or situation that tests someone's abilities"},
-                {"word": "approach", "definition": "a way of dealing with a situation or problem"}
-            ]
+                    {"word": "rut", "definition": "a boring fixed routine that is hard to change"},
+                    {"word": "memorable", "definition": "worth remembering or easily remembered"},
+                    {"word": "habit", "definition": "a settled or regular tendency or practice"},
+                    {"word": "challenge", "definition": "a task or situation that tests someone's abilities"},
+                    {"word": "confidence", "definition": "belief in one's own abilities or judgment"},
+                    {"word": "adventurous", "definition": "willing to take risks or try new experiences"},
+                    {"word": "scratch", "definition": "from nothing; with no previous preparation"},
+                    {"word": "novel", "definition": "a long written story"},
+                    {"word": "sustainable", "definition": "able to be maintained over a long period of time"},
+                    {"word": "guarantee", "definition": "a promise that something will be done"}
+                ]
         },
         {
             "title": "How a dead duck changed my life",
@@ -230,12 +236,17 @@ def add_default_data():
                 },
             ],
             'key_vocab': [
-                {"word": "curator", "definition": "a keeper or custodian of a museum or collection"},
-                {"word": "collide", "definition": "hit with force when moving"},
-                {"word": "necrophilia", "definition": "sexual attraction to corpses"},
-                {"word": "specimen", "definition": "an individual animal, plant, or object used as an example"},
-                {"word": "documented", "definition": "recorded in detail"}
-            ]
+                    {"word": "curator", "definition": "a keeper or custodian of a museum or other collection"},
+                    {"word": "collision", "definition": "an instance of one moving object striking violently against another"},
+                    {"word": "copulate", "definition": "to engage in sexual intercourse"},
+                    {"word": "necrophilia", "definition": "sexual interest in or attraction to dead bodies"},
+                    {"word": "homosexual", "definition": "sexually attracted to people of the same sex"},
+                    {"word": "biologist", "definition": "an expert in or student of natural history and the study of living organisms"},
+                    {"word": "specimen", "definition": "an individual animal, plant, or piece of tissue used for scientific study"},
+                    {"word": "ceremony", "definition": "a formal religious or public occasion, typically celebrating a particular event"},
+                    {"word": "achievement", "definition": "a thing done successfully with effort, skill, or courage"},
+                    {"word": "congregate", "definition": "to gather or assemble in a crowd or mass"}
+                ]
         },
         {
             "title": "The key to effective educational science videos",
@@ -297,12 +308,18 @@ def add_default_data():
                     "answer": 2,
                 },
             ],
-            'key_vocab': [
-                {"word": "misconception", "definition": "a view or opinion that is incorrect based on faulty thinking"},
-                {"word": "conflicting", "definition": "being in opposition or disagreement"},
-                {"word": "insight", "definition": "the capacity to gain an accurate and deep understanding"},
-                {"word": "emphasizing", "definition": "giving special importance or prominence to something"}
-            ]
+           'key_vocab': [
+                    {"word": "initiatives", "definition": "new plans or actions intended to solve a problem"},
+                    {"word": "effectively", "definition": "in a way that successfully produces the desired result"},
+                    {"word": "multiple choice", "definition": "a question with several possible answers to choose from"},
+                    {"word": "confidence", "definition": "a feeling of trust in one's abilities or judgments"},
+                    {"word": "randomly", "definition": "without a plan or pattern; by chance"},
+                    {"word": "exposition", "definition": "a clear explanation of a theory or idea"},
+                    {"word": "concise", "definition": "giving a lot of information clearly in few words"},
+                    {"word": "misconceptions", "definition": "views or opinions that are wrong based on incorrect understanding"},
+                    {"word": "dialogue", "definition": "a conversation between two or more people"},
+                    {"word": "mental effort", "definition": "the mental work used to think and understand"}
+                ]
         },
         {
             "title": "Creativity, Humor, and WTF!",
@@ -364,12 +381,17 @@ def add_default_data():
                 },
             ],
             'key_vocab': [
-                {"word": "overwhelmed", "definition": "defeated completely, or having a strong emotional effect"},
-                {"word": "frustration", "definition": "the feeling of being upset or annoyed because of inability to change something"},
-                {"word": "resonate", "definition": "to produce or be filled with a deep, full sound; to evoke a feeling of shared emotion"},
-                {"word": "reconciliation", "definition": "the restoration of friendly relations"},
-                {"word": "lighthearted", "definition": "cheerful and carefree"}
-            ]
+                    {"word": "inability", "definition": "the state of not being able to do something"},
+                    {"word": "election", "definition": "a formal process of choosing someone for a position by voting"},
+                    {"word": "lawmaker", "definition": "a person who makes and enacts laws"},
+                    {"word": "racial profiling", "definition": "the act of suspecting someone based on race or ethnicity"},
+                    {"word": "frustrated", "definition": "feeling upset or annoyed because of unmet expectations"},
+                    {"word": "exhibit", "definition": "a public display of art or objects"},
+                    {"word": "catharsis", "definition": "the process of releasing strong emotions"},
+                    {"word": "resonate", "definition": "to evoke a feeling of shared emotion or belief"},
+                    {"word": "outlandish", "definition": "strange or unusual in a noticeable way"},
+                    {"word": "perspective", "definition": "a particular attitude toward or way of regarding something"}
+                ]
         },
         {
             "title": "20 Things NOT to do in UK",
@@ -445,12 +467,17 @@ def add_default_data():
 
             ],
             'key_vocab': [
-                {"word": "offend", "definition": "cause to feel upset, annoyed, or resentful"},
-                {"word": "littering", "definition": "the act of dropping trash in public places"},
-                {"word": "considerate", "definition": "careful not to inconvenience or harm others"},
-                {"word": "sensitive topics", "definition": "subjects that can easily cause strong emotions or controversy"},
-                {"word": "casually", "definition": "in a relaxed and informal way"}
-            ]
+                    {"word": "foreigner", "definition": "a person born in or coming from another country"},
+                    {"word": "tourist", "definition": "a person who is traveling or visiting a place for pleasure"},
+                    {"word": "pavement", "definition": "a paved surface for people to walk on beside a road"},
+                    {"word": "escalator", "definition": "a moving staircase that carries people between floors"},
+                    {"word": "conscientious", "definition": "wishing to do one's work or duty well and thoroughly"},
+                    {"word": "integrity", "definition": "the quality of being honest and having strong moral principles"},
+                    {"word": "embrace", "definition": "to accept or support something willingly and enthusiastically"},
+                    {"word": "citizen", "definition": "a legally recognized member of a country"},
+                    {"word": "rural", "definition": "relating to the countryside rather than the town"},
+                    {"word": "stampede", "definition": "a sudden panicked rush of a crowd or group of animals"}
+                ]
         },
         {
             "title": "Music Dreams Empower Young Chinese Artists",
@@ -506,12 +533,17 @@ def add_default_data():
                 },
             ],
             'key_vocab': [
-                {"word": "empower", "definition": "give someone the authority or power to do something"},
-                {"word": "perseverance", "definition": "persistence in doing something despite difficulty"},
-                {"word": "creativity", "definition": "the use of imagination to produce original ideas"},
-                {"word": "tradition", "definition": "the transmission of customs or beliefs from generation to generation"},
-                {"word": "modernity", "definition": "the quality of being modern or contemporary"}
-            ]
+                    {"word": "production", "definition": "the process of making or creating a show, film, or program"},
+                    {"word": "promote", "definition": "to support or encourage the growth or development of someone or something"},
+                    {"word": "audition", "definition": "a short performance to show one's talent for a role or show"},
+                    {"word": "celebrity", "definition": "a famous person, especially in entertainment or sports"},
+                    {"word": "revelation", "definition": "a surprising and previously unknown fact that is made known"},
+                    {"word": "diction", "definition": "the clarity and pronunciation of speech or singing"},
+                    {"word": "conflicted", "definition": "feeling confused or torn between two choices"},
+                    {"word": "legitimate", "definition": "reasonable and valid; able to be defended"},
+                    {"word": "passion", "definition": "a strong feeling of enthusiasm or love for something"},
+                    {"word": "renaissance", "definition": "a period of new growth or activity in art, culture, or ideas"}
+                ]
         },
         {
             "title": "Iran-Saudi Relations and Regional Politics",
@@ -567,11 +599,17 @@ def add_default_data():
                 }
             ],
             'key_vocab': [
-                {"word": "regional", "definition": "relating to or characteristic of a region"},
-                {"word": "intervention", "definition": "the action or process of intervening"},
-                {"word": "cautious optimism", "definition": "hopeful but careful about potential risks"},
-                {"word": "negotiation", "definition": "discussion aimed at reaching an agreement"}
-            ]
+                    {"word": "deputy", "definition": "second in command; a person who is next in rank to a leader"},
+                    {"word": "bilateral", "definition": "relating to two sides or parties, especially countries"},
+                    {"word": "cooperation", "definition": "the process of working together to achieve a common goal"},
+                    {"word": "settlement", "definition": "an official agreement that ends a dispute or conflict"},
+                    {"word": "political", "definition": "relating to government, public policy, or politics"},
+                    {"word": "complicating", "definition": "making a situation more difficult or complex"},
+                    {"word": "attitude", "definition": "a settled way of thinking or feeling about someone or something"},
+                    {"word": "military", "definition": "relating to armed forces or warfare"},
+                    {"word": "optimistic", "definition": "hopeful and confident about the future"},
+                    {"word": "negotiation", "definition": "discussion aimed at reaching an agreement"}
+                ]
         },
         {
             "title": "YS Jagan on Congress and Political Alliances",
@@ -619,15 +657,19 @@ def add_default_data():
                 }
             ],
             'key_vocab': [
-                {"word": "alliance", "definition": "a union or association formed for mutual benefit"},
-                {"word": "unethical", "definition": "not morally correct"},
-                {"word": "misleading", "definition": "giving the wrong idea or impression"},
-                {"word": "credibility", "definition": "the quality of being trusted and believed in"},
-                {"word": "opportunistic", "definition": "taking immediate advantage of circumstances with little regard for principles"}
-            ]
+                    {"word": "appoint", "definition": "to choose someone for a job or position"},
+                    {"word": "chief minister", "definition": "the head of a state government in India"},
+                    {"word": "support", "definition": "approval and help given to a person or group"},
+                    {"word": "option", "definition": "a choice or course of action that can be taken"},
+                    {"word": "evaporate", "definition": "to disappear completely"},
+                    {"word": "vote", "definition": "a formal choice in an election or decision"},
+                    {"word": "confidence", "definition": "trust in oneself or others"},
+                    {"word": "ethics", "definition": "moral rules and principles of behavior"},
+                    {"word": "corruption", "definition": "dishonest or illegal behavior by people in power"},
+                    {"word": "credibility", "definition": "the quality of being trusted and believed"}
+                ]
         }
     ]
-
     for data in listening_defaults:
         exercise = ListeningExercise.query.filter_by(title=data['title']).first()
         if exercise:
