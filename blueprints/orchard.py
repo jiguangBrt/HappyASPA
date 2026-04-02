@@ -10,7 +10,7 @@ from sqlalchemy import func, desc
 import random
 
 from models import (
-    db, User,
+    db, User,Team,
     SeedType, FruitType, LandType, OrchardItem,
     UserOrchard, UserLand, UserOrchardInventory,
     UserHarvestedFruit, UserShowcaseFruit
@@ -157,6 +157,14 @@ def index():
     ).join(UserOrchard, User.id == UserOrchard.user_id)\
      .order_by(desc(UserOrchard.total_points))\
      .limit(10).all()
+
+    # ==========================================
+    # 👇 NEW: 团队总排行榜逻辑 👇
+    # ==========================================
+    from models import Team  # 确保能查到 Team 模型
+    all_teams = Team.query.all()
+    # 使用 models.py 中定义的 total_team_points 属性，从大到小排序，取前 10 名
+    team_leaderboard = sorted(all_teams, key=lambda t: t.total_team_points, reverse=True)[:10]
     
     # 获取当前用户排名
     user_weekly_rank = db.session.query(func.count(UserOrchard.id))\
@@ -194,12 +202,14 @@ def index():
             ~UserHarvestedFruit.id.in_(showcased_ids) if showcased_ids else True
         ).all()
     
+    # 最终渲染页面，把所有数据传给前端
     return render_template('orchard/index.html',
         orchard=orchard,
         lands=lands,
         showcase_fruits=showcase_fruits,
         weekly_leaderboard=weekly_leaderboard,
         total_leaderboard=total_leaderboard,
+        team_leaderboard=team_leaderboard,  # 👈 新增：把刚才算好的团队榜单传进去！
         user_weekly_rank=user_weekly_rank,
         user_total_rank=user_total_rank,
         seeds=seeds,
