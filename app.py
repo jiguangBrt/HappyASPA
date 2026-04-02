@@ -18,6 +18,9 @@ def create_app():
         'DATABASE_URL', 'sqlite:///happyaspa.db'
     )
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['VOLC_TOS_BUCKET'] = os.environ.get('VOLC_TOS_BUCKET', 'english-practice-audio')
+    app.config['VOLC_TOS_ENDPOINT'] = os.environ.get('VOLC_TOS_ENDPOINT', 'tos-cn-beijing.volces.com')
+    app.config['VOLC_TOS_REGION'] = os.environ.get('VOLC_TOS_REGION', 'cn-beijing')
 
     # 新增：文件上传配置
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads/speaking')  # 音频存储路径
