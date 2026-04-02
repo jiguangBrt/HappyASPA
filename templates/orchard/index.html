@@ -156,6 +156,37 @@
     width: 0%;
     transition: width 1s linear;
   }
+
+  .timer-text {
+    color: #1f2937;
+    font-weight: 700;
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.45);
+    letter-spacing: 0.2px;
+  }
+
+  .grow-action-btn {
+    border: none;
+    border-radius: 10px;
+    padding: 0.4rem 0.85rem;
+    font-weight: 700;
+    color: #ffffff;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+    transition: transform 0.15s ease, filter 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .grow-action-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.28);
+  }
+
+  .water-btn {
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  }
+
+  .fertilize-btn {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  }
   
   .leaderboard-card {
     border-radius: 12px;
@@ -249,17 +280,17 @@
                 </div>
               {% elif land.plant_status == 'growing' %}
                 <img src="{{ url_for('static', filename='orchard/soild/soil_planted.png') }}" class="land-image" alt="Planted Land">
-                <div class="land-actions" style="bottom: 10px; flex-direction: column; align-items: center; width: 100%;">
+                <div class="land-actions" style="bottom: -10px; flex-direction: column; align-items: center; width: 100%;">
                   <div class="progress-container" style="width: 90%; margin-bottom: 5px;">
                     <div class="progress-bar-custom"
                          id="progress-{{ land.id }}"
                          data-start="{{ land_timing_map[land.id]['start_ts'] }}"
                          data-end="{{ land_timing_map[land.id]['end_ts'] }}"></div>
                   </div>
-                  <div class="text-white small mb-1" id="timer-{{ land.id }}" style="text-shadow: 1px 1px 2px black;">Calculating...</div>
+                  <div class="small mb-1 timer-text" id="timer-{{ land.id }}">Calculating...</div>
                   <div>
-                    <button class="btn btn-sm btn-info" onclick="openAccelerateModal({{ land.id }}, 'water')">Water</button>
-                    <button class="btn btn-sm btn-warning" onclick="openAccelerateModal({{ land.id }}, 'fertilizer')">Fertilize</button>
+                    <button class="btn btn-sm grow-action-btn water-btn" onclick="openAccelerateModal({{ land.id }}, 'water')">Water</button>
+                    <button class="btn btn-sm grow-action-btn fertilize-btn" onclick="openAccelerateModal({{ land.id }}, 'fertilizer')">Fertilize</button>
                   </div>
                 </div>
               {% elif land.plant_status == 'mature' %}
@@ -508,6 +539,17 @@
     return `${secs}s`;
   }
 
+  // 总时长用紧凑展示，避免换行：小时优先，不显示分秒
+  function formatTotalDurationCompact(totalSeconds) {
+    const seconds = Math.max(0, Math.floor(totalSeconds));
+    const hours = Math.floor(seconds / 3600);
+    if (hours >= 1) {
+      return `${hours}h`;
+    }
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes}m`;
+  }
+
   function updateTimers() {
     const now = Date.now() / 1000;
     document.querySelectorAll('.progress-bar-custom').forEach(bar => {
@@ -525,7 +567,7 @@
         const totalLocked = end - start;
         if (totalLocked > 0) {
           bar.style.width = '100%';
-          timerEl.textContent = `${formatDuration(totalLocked)} / ${formatDuration(totalLocked)} (100%)`;
+          timerEl.textContent = `${formatTotalDurationCompact(totalLocked)} / ${formatTotalDurationCompact(totalLocked)} (100%)`;
         } else {
           timerEl.textContent = 'Ready to harvest!';
         }
@@ -545,7 +587,7 @@
         const percent = Math.min(100, Math.max(0, (elapsed / total) * 100));
         bar.style.width = `${percent}%`;
 
-        timerEl.textContent = `${formatDuration(elapsed)} / ${formatDuration(total)} (${Math.floor(percent)}%)`;
+        timerEl.textContent = `${formatDuration(elapsed)} / ${formatTotalDurationCompact(total)} (${Math.floor(percent)}%)`;
       }
     });
   }
@@ -653,7 +695,7 @@
             const end = parseFloat(bar.dataset.end);
             if (timerEl && !Number.isNaN(start) && !Number.isNaN(end) && end > start) {
               const total = end - start;
-              timerEl.textContent = `${formatDuration(total)} / ${formatDuration(total)} (100%)`;
+              timerEl.textContent = `${formatTotalDurationCompact(total)} / ${formatTotalDurationCompact(total)} (100%)`;
             }
           }
           if (timerEl && !timerEl.textContent) {
