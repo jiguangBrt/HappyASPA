@@ -14,17 +14,66 @@
   }
   
   .showcase-container {
-    background: #f8f9fa;
-    border: 2px solid #e9ecef;
-    border-radius: 12px;
+    position: relative;
+    background:
+      radial-gradient(120% 90% at 50% 0%, rgba(255, 222, 150, 0.22), rgba(0, 0, 0, 0) 60%),
+      linear-gradient(180deg, #5a4124 0%, #3f2d18 55%, #2f2214 100%);
+    border: 1px solid transparent;
+    border-radius: 16px;
     padding: 1.5rem;
     margin-bottom: 2rem;
-    min-height: 150px;
+    height: 260px;
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
-    justify-content: center;
-    align-items: center;
+    justify-content: flex-start;
+    align-content: flex-start;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 230, 170, 0.2),
+      inset 0 16px 34px rgba(255, 215, 120, 0.08),
+      inset 0 -12px 30px rgba(0, 0, 0, 0.35),
+      0 12px 28px rgba(41, 24, 6, 0.45);
+  }
+
+  .showcase-container::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    padding: 2px;
+    background: linear-gradient(135deg, #f2d27a 0%, #b9852b 35%, #f3de9a 60%, #8f6019 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .showcase-container::after {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 12px;
+    right: 12px;
+    height: 22px;
+    border-radius: 999px;
+    background: linear-gradient(to bottom, rgba(255, 242, 201, 0.35), rgba(255, 242, 201, 0));
+    pointer-events: none;
+  }
+
+  .showcase-container::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .showcase-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #d6b66a, #a6772a);
+    border-radius: 999px;
+  }
+
+  .showcase-container::-webkit-scrollbar-track {
+    background: rgba(255, 234, 184, 0.12);
+    border-radius: 999px;
   }
   
   .fruit-item {
