@@ -71,6 +71,51 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         return f'<User {self.username}>'
     
+
+# ==========================================
+# 🤝 NEW: Team (学习小组/团队系统)
+# ==========================================
+# 多对多关联表
+team_members = db.Table('team_members',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('team_id', db.Integer, db.ForeignKey('teams.id'), primary_key=True),
+    db.Column('role', db.String(20), default='member'), # 可以是 'member', 'admin'
+    db.Column('joined_at', db.DateTime, default=utcnow_naive)
+)
+
+class Team(db.Model):
+    __tablename__ = 'teams'
+
+    id          = db.Column(db.Integer, primary_key=True)
+    name        = db.Column(db.String(100), nullable=False, unique=True)
+    description = db.Column(db.Text, nullable=True)
+    leader_id   = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False) 
+    avatar_url  = db.Column(db.String(256), nullable=True)
+    created_at  = db.Column(db.DateTime, default=utcnow_naive)
+
+    members = db.relationship('User', secondary=team_members, lazy='subquery',
+                              backref=db.backref('teams', lazy=True))
+
+    # ==========================================
+    # 👇 把这段加到 Team 类的最下面 👇
+    # ==========================================
+    @property
+    def total_team_points(self):
+        # 引入用户的农场模型
+        from models import UserOrchard
+        
+        # 拿到队伍里所有成员的 ID
+        member_ids = [m.id for m in self.members]
+        if not member_ids:
+            return 0
+            
+        # 把队伍里这几个人的农场总积分加起来！
+        total = db.session.query(db.func.sum(UserOrchard.total_points))\
+                  .filter(UserOrchard.user_id.in_(member_ids))\
+                  .scalar()
+                  
+        return total or 0
+    
 # ─────────────────────────────────────────────
 # Vocabulary
 # ─────────────────────────────────────────────

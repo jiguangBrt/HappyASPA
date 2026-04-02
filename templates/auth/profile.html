@@ -19,12 +19,23 @@
           <h4 class="fw-bold">{{ current_user.username }}</h4>
           <p class="text-muted">{{ current_user.email }}</p>
           
-{# 👇 新增的 Team 标签占位 #}
-<div class="mb-4">
-  <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm" style="font-weight: 500;">
-    <i class="bi bi-people-fill text-primary me-2"></i>Web App Dev Team
-  </span>
-</div>
+{# 👇 动态渲染当前用户的 Team 标签 👇 #}
+          <div class="mb-4 d-flex flex-wrap justify-content-center gap-2">
+            {% if current_user.teams %}
+              {% for team in current_user.teams %}
+                <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm" style="font-weight: 500;" title="{{ team.description }}">
+                  <i class="bi bi-people-fill text-primary me-2"></i>{{ team.name }}
+                  {% if team.leader_id == current_user.id %}
+                    <i class="bi bi-star-fill text-warning ms-1" style="font-size: 0.75rem;" data-bs-toggle="tooltip" title="Team Leader"></i>
+                  {% endif %}
+                </span>
+              {% endfor %}
+            {% else %}
+              <span class="badge bg-light text-muted border px-3 py-2 rounded-pill shadow-sm" style="font-weight: 500;">
+                <i class="bi bi-person me-2"></i>Not in any team yet
+              </span>
+            {% endif %}
+          </div>
 
           <div class="mb-4" id="guideBadgeContainer">
             {% if current_user.is_guide_qualified %}
@@ -53,6 +64,10 @@
             </div>
           </div>
           
+          <button class="btn btn-primary w-100 btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#createTeamModal">
+            <i class="bi bi-plus-circle"></i> Create a Team
+          </button>
+
           <button class="btn btn-outline-primary w-100 btn-sm" disabled>
             <i class="bi bi-camera"></i> Change Avatar (Coming Soon)
           </button>
@@ -204,6 +219,30 @@
     
   </div>
 </div>
+
+<!-- Create Team Modal -->
+<div class="modal fade" id="createTeamModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-people-fill text-primary me-2"></i>Create Your Team</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Team Name</label>
+          <input type="text" class="form-control" id="teamNameInput" placeholder="e.g. TOEFL Study Group">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Description (Optional)</label>
+          <textarea class="form-control" id="teamDescInput" rows="2" placeholder="What is your team about?"></textarea>
+        </div>
+        <button type="button" class="btn btn-primary w-100" onclick="createTeam()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -248,5 +287,31 @@
       btn.innerHTML = originalText;
     }
   });
+
+// 创建团队的 API 请求
+  async function createTeam() {
+    const name = document.getElementById('teamNameInput').value;
+    const desc = document.getElementById('teamDescInput').value;
+    
+    if(!name) return alert('Team name is required!');
+    
+    try {
+      const res = await fetch('/team/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, description: desc })
+      });
+      const data = await res.json();
+      if(data.success) {
+        alert('🎉 ' + data.message);
+        location.reload(); 
+      } else {
+        alert('Error: ' + data.message);
+      }
+    } catch (err) {
+      alert('Network error!');
+    }
+  }
+
 </script>
 {% endblock %}
