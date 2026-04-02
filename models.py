@@ -270,6 +270,12 @@ class ListeningExercise(db.Model):
     key_vocab = db.Column(db.JSON, nullable=True)
 
     progress = db.relationship('UserListeningProgress', backref='exercise', lazy=True)
+    
+    source_url = db.Column(db.String(256), nullable=True)
+    source_author = db.Column(db.String(100), nullable=True)
+    license_type = db.Column(db.String(50), nullable=True)  
+    source_platform = db.Column(db.String(50))   
+    is_modified = db.Column(db.Boolean, default=False)
 
 
 class UserListeningProgress(db.Model):
