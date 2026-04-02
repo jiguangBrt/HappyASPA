@@ -277,14 +277,24 @@
 
   <div class="col-lg-4">
     <!-- Module 3: Harvest Leaderboard -->
-    <div class="card leaderboard-card">
-      <div class="card-header bg-white">
-        <h5 class="mb-0"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Harvest Leaderboard</h5>
-      </div>
-      <div class="card-body p-0">
-        <div class="px-3 pt-3">
-          <h6 class="mb-2 text-muted">This Week</h6>
-        </div>
+  <div class="card leaderboard-card">
+    <div class="card-header bg-white pb-0 border-bottom-0">
+      <h5 class="mb-3"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Harvest Leaderboard</h5>
+      <!-- 👇 新增：切换页签 👇 -->
+      <ul class="nav nav-tabs" id="leaderboardTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#solo-tab" type="button">Solo Rank</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link text-success fw-bold" data-bs-toggle="tab" data-bs-target="#team-tab" type="button">Team Rank</button>
+        </li>
+      </ul>
+    </div>
+    
+    <div class="card-body p-0 tab-content">
+      <!-- 🏆 页签 1：原本的个人榜单 -->
+      <div class="tab-pane fade show active" id="solo-tab">
+        <div class="px-3 pt-3"><h6 class="mb-2 text-muted">This Week</h6></div>
         <ul class="list-group list-group-flush">
           {% for entry in weekly_leaderboard %}
             <li class="list-group-item d-flex justify-content-between align-items-center {% if entry.id == current_user.id %}bg-light{% endif %}">
@@ -300,11 +310,9 @@
             <li class="list-group-item text-center text-muted">No weekly data yet.</li>
           {% endfor %}
         </ul>
-
-        <div class="px-3 pt-3">
-          <h6 class="mb-2 text-muted">All Time</h6>
-        </div>
-        <ul class="list-group list-group-flush">
+        
+        <div class="px-3 pt-3"><h6 class="mb-2 text-muted">All Time</h6></div>
+        <ul class="list-group list-group-flush mb-2">
           {% for entry in total_leaderboard %}
             <li class="list-group-item d-flex justify-content-between align-items-center {% if entry.id == current_user.id %}bg-light{% endif %}">
               <div class="d-flex align-items-center">
@@ -320,17 +328,44 @@
           {% endfor %}
         </ul>
       </div>
-      <div class="card-footer bg-light">
-        <div class="d-flex justify-content-between align-items-center mb-1">
-          <span class="fw-bold text-primary">Your Weekly Rank: #{{ user_weekly_rank }}</span>
-          <span class="badge bg-primary">{{ orchard.weekly_points }} pts</span>
-        </div>
-        <div class="d-flex justify-content-between align-items-center">
-          <span class="fw-bold text-secondary">Your Total Rank: #{{ user_total_rank }}</span>
-          <span class="badge bg-secondary">{{ orchard.total_points }} pts</span>
-        </div>
+
+      <!-- 🤝 页签 2：全新的团队榜单 -->
+      <div class="tab-pane fade" id="team-tab">
+        <div class="px-3 pt-3"><h6 class="mb-2 text-muted">Top Teams (Total Harvest)</h6></div>
+        <ul class="list-group list-group-flush mb-3">
+          {% if team_leaderboard %}
+            {% for team in team_leaderboard %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                  <span class="me-3 fw-bold rank-{{ loop.index }}">
+                    {% if loop.index == 1 %}👑{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+                  </span>
+                  <div>
+                    <span class="d-block fw-bold">{{ team.name }}</span>
+                    <small class="text-muted">{{ team.members|length }}/3 Members</small>
+                  </div>
+                </div>
+                <span class="badge bg-success rounded-pill px-3 py-2"><i class="bi bi-lightning-charge-fill me-1"></i>{{ team.total_team_points }} pts</span>
+              </li>
+            {% endfor %}
+          {% else %}
+            <li class="list-group-item text-center text-muted py-4">No teams formed yet.</li>
+          {% endif %}
+        </ul>
       </div>
     </div>
+    
+    <div class="card-footer bg-light">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="fw-bold text-primary">Your Weekly Rank: #{{ user_weekly_rank }}</span>
+        <span class="badge bg-primary">{{ orchard.weekly_points }} pts</span>
+      </div>
+      <div class="d-flex justify-content-between align-items-center">
+        <span class="fw-bold text-secondary">Your Total Rank: #{{ user_total_rank }}</span>
+        <span class="badge bg-secondary">{{ orchard.total_points }} pts</span>
+      </div>
+    </div>
+  </div>
   </div>
 </div>
 
