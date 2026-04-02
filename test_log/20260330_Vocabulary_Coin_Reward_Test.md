@@ -2,7 +2,7 @@
 
 ## 1. Basic Information
 
-* **Test Subject:** JL
+* **Test Subject:** Jing Lu
 * **Test Date:** 2026-03-30
 * **Test Environment:** Localhost
 

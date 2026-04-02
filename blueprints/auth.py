@@ -1,7 +1,9 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime, date, timezone
-from models import db, User
+from time_utils import utcnow_naive
+from models import db, User,ForumPost, ForumLike
+from sqlalchemy import func
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -18,7 +20,7 @@ def login():
 
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
-            user.last_login_at = datetime.now(timezone.utc)
+            user.last_login_at = utcnow_naive()
             db.session.commit()
             login_user(user, remember=remember)
             next_page = request.args.get('next')
@@ -211,4 +213,19 @@ def update_english_proficiency():
 @auth_bp.route('/profile')
 @login_required
 def profile():
-    return render_template('auth/profile.html')
+    # 1. 极速统计当前用户的总获赞数
+    total_likes = db.session.query(func.count(ForumLike.id))\
+                            .join(ForumPost, ForumLike.post_id == ForumPost.id)\
+                            .filter(ForumPost.user_id == current_user.id).scalar() or 0
+                            
+    # 2. 查询当前用户最近发的 3 个帖子 (因为空间有限，放 3 个刚好)
+    recent_posts = ForumPost.query.filter_by(user_id=current_user.id)\
+                                  .order_by(ForumPost.created_at.desc())\
+                                  .limit(3).all()
+
+    # 3. 把这两个变量传给前端
+    return render_template('auth/profile.html', 
+                           total_likes=total_likes,
+                           recent_posts=recent_posts)
+
+

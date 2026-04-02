@@ -4,7 +4,14 @@
 {% block content %}
 <nav aria-label="breadcrumb" class="mb-3">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{{ url_for('forum.index') }}">Forum</a></li>
+    {# 👇 核心修复：如果有接力棒传过来，就原路返回个人主页筛选模式；否则回全论坛 #}
+    <li class="breadcrumb-item">
+      {% if request.args.get('ref_user') %}
+        <a href="{{ url_for('forum.index', user_id=request.args.get('ref_user')) }}">Profile Forum</a>
+      {% else %}
+        <a href="{{ url_for('forum.index', board=post.board) }}">Forum</a>
+      {% endif %}
+    </li>
     <li class="breadcrumb-item active text-truncate" style="max-width:300px">{{ post.title }}</li>
   </ol>
 </nav>
@@ -12,13 +19,19 @@
 <div class="card border-0 shadow-sm mb-4">
   <div class="card-body p-4">
     <div class="d-flex align-items-center gap-3 mb-3">
-      <div class="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center"
-           style="width:46px;height:46px;">
+      {# 👇 帖主头像加上跳转逻辑 👇 #}
+      <div class="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center transition-hover shadow-sm"
+           style="width:46px;height:46px; cursor: pointer;"
+           onclick="window.location.href='{{ url_for('forum.public_profile', user_id=post.author.id) }}';">
         <span class="fw-bold text-danger fs-5">{{ post.author.username[0]|upper }}</span>
       </div>
       <div>
-      
-        <div class="fw-semibold">{{ post.author.username }}</div>
+        {# 👇 帖主名字加上跳转逻辑 👇 #}
+        <div class="fw-semibold transition-hover" 
+             style="cursor: pointer;"
+             onclick="window.location.href='{{ url_for('forum.public_profile', user_id=post.author.id) }}';">
+          {{ post.author.username }}
+        </div>
         <small class="text-muted">{{ post.created_at.strftime('%B %d, %Y at %H:%M') }}</small>
       </div>
       
@@ -107,8 +120,10 @@
   {% for comment in post.comments %}
 <div class="list-group-item border-0 border-bottom py-3" id="comment-{{ comment.id }}">
     <div class="d-flex gap-3">
-      <div class="rounded-circle bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
-           style="width:36px;height:36px;">
+      {# 👇 评论者头像加上跳转逻辑 👇 #}
+      <div class="rounded-circle bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0 transition-hover"
+           style="width:36px;height:36px; cursor: pointer;"
+           onclick="window.location.href='{{ url_for('forum.public_profile', user_id=comment.author.id) }}';">
         <span class="fw-bold text-secondary small">{{ comment.author.username[0]|upper }}</span>
       </div>
       
@@ -116,7 +131,12 @@
         <div class="d-flex justify-content-between align-items-center mb-2">
           
           <div class="d-flex align-items-center gap-2">
-            <span class="fw-semibold small">{{ comment.author.username }}</span>
+            {# 👇 评论者名字加上跳转逻辑 👇 #}
+            <span class="fw-semibold small transition-hover" 
+                  style="cursor: pointer;"
+                  onclick="window.location.href='{{ url_for('forum.public_profile', user_id=comment.author.id) }}';">
+              {{ comment.author.username }}
+            </span>
             <small class="text-muted">{{ comment.created_at.strftime('%b %d, %H:%M') }}</small>
           </div>
           
@@ -192,12 +212,22 @@ function scrollToComment(commentId) {
     
     if (targetComment) {
         targetComment.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        targetComment.style.transition = "background-color 0.5s ease";
-        targetComment.style.backgroundColor = "#fff3cd"; // 浅黄色高亮
         
+        // 1. 设置动画过渡时间
+        targetComment.style.transition = "background-color 1s ease";
+        
+        // 2. 瞬间变成浅黄色高亮
+        targetComment.style.backgroundColor = "#fff3cd"; 
+        
+        // 3. 延迟后，强制褪色为纯白色 (而不是 transparent)
         setTimeout(() => {
-            targetComment.style.backgroundColor = "transparent";
+            targetComment.style.backgroundColor = "#ffffff"; 
         }, 1500);
+        
+        // 4. 👇 核心修复：清理浏览器地址栏的 hash，彻底干掉原生的灰色 :target 状态！
+        if(window.location.hash) {
+            history.replaceState(null, null, ' ');
+        }
     }
 }
 

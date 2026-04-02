@@ -2,7 +2,26 @@
 {% block title %}Community Forum{% endblock %}
 {% block content %}
 
+{% set cat_styles = {
+    'Vocabulary': {'bg': '#d1e7dd', 'text': '#0f5132', 'border': '#badbcc'},
+    'Grammar':    {'bg': '#e0cffc', 'text': '#512da8', 'border': '#d1bdf9'},
+    'Listening':  {'bg': '#cff4fc', 'text': '#055160', 'border': '#b6effb'},
+    'Speaking':   {'bg': '#fff3cd', 'text': '#664d03', 'border': '#ffecb5'},
+    'Writing':    {'bg': '#f8d7da', 'text': '#842029', 'border': '#f5c2c7'},
+    'Reading':    {'bg': '#cfe2ff', 'text': '#084298', 'border': '#b6d4fe'},
+    'General':    {'bg': '#f8f9fa', 'text': '#6c757d', 'border': '#dee2e6'}
+} %}
 
+{# 👇 新增：如果是按用户筛选模式，显示优雅的返回按钮 #}
+{% if user_id_filter %}
+<div class="mb-3">
+  <a href="{{ url_for('forum.public_profile', user_id=user_id_filter) }}" 
+     class="text-decoration-none text-secondary d-inline-flex align-items-center transition-hover" 
+     style="font-weight: 500;">
+    <i class="bi bi-arrow-left-circle-fill me-2 fs-5"></i> Back to Profile
+  </a>
+</div>
+{% endif %}
 
  <div class="d-flex align-items-center justify-content-between mb-4">
   <div>
@@ -27,12 +46,12 @@
     </a>
   </div>
 </div>
-</div>
+
 
 <div class="mb-4">
   <div class="d-inline-flex bg-light rounded-pill p-1 shadow-sm border border-secondary border-opacity-25">
     
-    <a href="{{ url_for('forum.index', board='discussion', tab=tab, category=current_category, sort_by=sort_by) }}" 
+    <a href="{{ url_for('forum.index', board='discussion', tab=tab, category=current_category, sort_by=sort_by, user_id=user_id_filter) }}" 
        class="btn rounded-pill px-4 py-2 fw-bold d-flex align-items-center gap-2 transition-hover
               {% if board == 'discussion' %}btn-primary shadow{% else %}btn-light text-muted border-0 bg-transparent{% endif %}">
       <i class="bi bi-cup-hot-fill fs-5"></i>
@@ -42,7 +61,7 @@
       </span>
     </a>
 
-    <a href="{{ url_for('forum.index', board='guide', tab=tab, category=current_category, sort_by=sort_by) }}" 
+    <a href="{{ url_for('forum.index', board='guide', tab=tab, category=current_category, sort_by=sort_by, user_id=user_id_filter) }}" 
        class="btn rounded-pill px-4 py-2 fw-bold d-flex align-items-center gap-2 transition-hover
               {% if board == 'guide' %}btn-warning text-dark shadow{% else %}btn-light text-muted border-0 bg-transparent{% endif %}">
       <i class="bi bi-mortarboard-fill fs-5"></i>
@@ -57,42 +76,42 @@
 <ul class="nav nav-tabs mb-4">
   <li class="nav-item">
     <a class="nav-link {% if tab != 'saved' %}active fw-bold{% else %}text-muted{% endif %}" 
-       href="{{ url_for('forum.index', board=board, category=current_category, sort_by=sort_by) }}">
+       href="{{ url_for('forum.index', board=board, category=current_category, sort_by=sort_by,user_id=user_id_filter) }}">
       <i class="bi bi-collection me-1"></i>All Posts
     </a>
   </li>
   <li class="nav-item">
-    <a class="nav-link {% if tab == 'saved' %}active fw-bold text-warning{% else %}text-muted{% endif %}" 
-       href="{{ url_for('forum.index', tab='saved', board=board, category=current_category, sort_by=sort_by) }}">
-      <i class="bi bi-bookmark-star-fill me-1"></i>My Saved
-    </a>
-  </li>
+  <a class="nav-link {% if tab == 'saved' %}active fw-bold text-warning{% else %}text-muted{% endif %}" 
+     href="{{ url_for('forum.index', tab='saved', board=board, category=current_category, sort_by=sort_by, user_id=user_id_filter) }}">
+    <i class="bi bi-bookmark-star-fill me-1"></i>My Saved
+  </a>
+</li>
 </ul>
 
 <div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
   
   <div class="d-flex gap-2 flex-wrap">
-    <a href="{{ url_for('forum.index', tab=tab, sort_by=sort_by, board=board) }}" 
-       class="btn btn-sm {% if not current_category %}btn-dark{% else %}btn-outline-dark{% endif %} rounded-pill">
-      All
-    </a>
-    {% if category_colors %}
-      {% for cat_name, color in category_colors.items() %}
-        <a href="{{ url_for('forum.index', tab=tab, category=cat_name, sort_by=sort_by, board=board) }}" 
-           class="btn btn-sm {% if current_category == cat_name %}btn-{{ color }}{% else %}btn-outline-{{ color }}{% endif %} rounded-pill">
-          {{ cat_name }}
-        </a>
-      {% endfor %}
-    {% endif %}
+    <a href="{{ url_for('forum.index', tab=tab, sort_by=sort_by, board=board, user_id=user_id_filter) }}" 
+   class="btn btn-sm {% if not current_category %}btn-dark{% else %}btn-outline-dark{% endif %} rounded-pill">
+  All
+</a>
+
+{% for cat_name, color in category_colors.items() %}
+  <a href="{{ url_for('forum.index', tab=tab, category=cat_name, sort_by=sort_by, board=board, user_id=user_id_filter) }}" 
+     class="btn btn-sm {% if current_category == cat_name %}btn-{{ color }}{% else %}btn-outline-{{ color }}{% endif %} rounded-pill">
+    {{ cat_name }}
+  </a>
+{% endfor %}
+    
   </div>
 
   {% if tab != 'saved' %}
   <div class="btn-group btn-group-sm flex-shrink-0 shadow-sm" role="group">
-    <a href="{{ url_for('forum.index', tab=tab, category=current_category, sort_by='hot', board=board) }}" 
+    <a href="{{ url_for('forum.index', tab=tab, category=current_category, sort_by='hot', board=board,user_id=user_id_filter) }}" 
        class="btn {% if sort_by == 'hot' or not sort_by %}btn-danger{% else %}btn-outline-danger{% endif %}">
       <i class="bi bi-fire me-1"></i>Hot
     </a>
-    <a href="{{ url_for('forum.index', tab=tab, category=current_category, sort_by='new', board=board) }}" 
+    <a href="{{ url_for('forum.index', tab=tab, category=current_category, sort_by='new', board=board,user_id=user_id_filter) }}" 
        class="btn {% if sort_by == 'new' %}btn-danger{% else %}btn-outline-danger{% endif %}">
       <i class="bi bi-clock me-1"></i>New
     </a>
@@ -104,12 +123,14 @@
   {% if posts %}
   <div class="list-group shadow-sm">
     {% for post in posts %}
-    <a href="{{ url_for('forum.post_detail', post_id=post.id) }}"
+    <a href="{{ url_for('forum.post_detail', post_id=post.id, ref_user=user_id_filter) }}"
        class="list-group-item list-group-item-action border-0 border-bottom py-3">
       <div class="d-flex align-items-start gap-3">
-        <div class="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0" style="width:42px;height:42px;">
-          <span class="fw-bold text-danger">{{ post.author.username[0]|upper }}</span>
-        </div>
+       <div class="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0 transition-hover shadow-sm" 
+     style="width:42px;height:42px; cursor: pointer; position: relative; z-index: 2;" 
+     onclick="event.preventDefault(); window.location.href='{{ url_for('forum.public_profile', user_id=post.author.id) }}';">
+  <span class="fw-bold text-danger">{{ post.author.username[0]|upper }}</span>
+</div>
         <div class="flex-grow-1" style="min-width: 0;">
           <div class="d-flex justify-content-between align-items-center mb-1">
             <h6 class="fw-bold mb-0 text-truncate me-3" title="{{ post.title }}">{{ post.title }}</h6>
@@ -117,8 +138,10 @@
           </div>
           <p class="text-muted small mb-1 text-truncate" title="{{ post.content }}">{{ post.content }}</p>
           <div class="d-flex align-items-center gap-3">
-            <small class="text-muted d-flex align-items-center gap-1">
-  <i class="bi bi-person"></i>{{ post.author.username }}
+          <small class="text-muted d-flex align-items-center gap-1 transition-hover" 
+       style="cursor: pointer; position: relative; z-index: 2;" 
+       onclick="event.preventDefault(); window.location.href='{{ url_for('forum.public_profile', user_id=post.author.id) }}';">
+  <i class="bi bi-person"></i><span class="text-dark fw-semibold">{{ post.author.username }}</span>
   {% if post.author.is_guide_qualified %}
     <span class="badge-guide-expert ms-1" title="Guide Forum Qualified"><i class="bi bi-patch-check-fill"></i></span>
   {% endif %}
@@ -136,9 +159,10 @@
             <small class="text-muted"><i class="bi bi-eye me-1"></i>{{ post.views }} views</small>
             
             {% if post.category %}
-  {% set bg_color = category_colors.get(post.category, 'secondary') if category_colors else 'secondary' %}
-  <span class="badge-soft-{{ bg_color }} px-2 py-1 rounded-pill fw-bold" style="font-size: 0.75rem; display: inline-block; line-height: 1;">
-    {{ post.category }}
+  {% set style = cat_styles.get(post.category, cat_styles['General']) %}
+  <span class="badge rounded-pill" 
+        style="background-color: {{ style.bg }}; color: {{ style.text }}; border: 1px solid {{ style.border }}; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.3px;">
+    {{ post.category | upper }}
   </span>
 {% endif %}
             
@@ -168,55 +192,69 @@
   <h6 class="fw-bold text-muted mb-3"><i class="bi bi-file-earmark-text me-2"></i>Saved Posts</h6>
   <div class="list-group shadow-sm mb-5">
     {% for post in posts %}
-    <a href="{{ url_for('forum.post_detail', post_id=post.id) }}"
+    <a href="{{ url_for('forum.post_detail', post_id=post.id, ref_user=user_id_filter) }}"
        class="list-group-item list-group-item-action border-0 border-bottom py-3">
+      
       <div class="d-flex justify-content-between align-items-center">
         <div class="flex-grow-1" style="min-width: 0;">
           <h6 class="fw-bold mb-1 text-truncate" title="{{ post.title }}">{{ post.title }}</h6>
           
-          <div class="d-flex align-items-center gap-3">
-            <small class="text-muted"><i class="bi bi-person me-1"></i>{{ post.author.username }}</small>
-            
+          <div class="d-flex align-items-center gap-2">
+            <small class="text-muted transition-hover" 
+                   style="cursor: pointer; position: relative; z-index: 2;" 
+                   onclick="event.preventDefault(); window.location.href='{{ url_for('forum.public_profile', user_id=post.author.id) }}';">
+              <i class="bi bi-person me-1"></i>{{ post.author.username }}
+            </small>
+              
             {% if post.category %}
-  {% set bg_color = category_colors.get(post.category, 'secondary') if category_colors else 'secondary' %}
-  <span class="badge-soft-{{ bg_color }} px-2 py-1 rounded-pill fw-bold" style="font-size: 0.75rem; display: inline-block; line-height: 1;">
-    {{ post.category }}
-  </span>
-{% endif %}
-            
+              {% set style = cat_styles.get(post.category, cat_styles['General']) %}
+              <span class="badge rounded-pill" 
+                    style="background-color: {{ style.bg }}; color: {{ style.text }}; border: 1px solid {{ style.border }}; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.3px;">
+                {{ post.category | upper }}
+              </span>
+            {% endif %}
           </div>
         </div>
-        <span class="badge bg-warning text-dark rounded-pill ms-3 flex-shrink-0"><i class="bi bi-bookmark-fill me-1"></i>Post</span>
+        
+        <span class="badge bg-warning text-dark rounded-pill ms-3 flex-shrink-0">
+          <i class="bi bi-bookmark-fill me-1"></i>Post
+        </span>
       </div>
     </a>
     {% endfor %}
   </div>
   {% endif %}
 
-{% if saved_comments %}
+  {% if saved_comments %}
   <h6 class="fw-bold text-muted mb-3"><i class="bi bi-chat-left-text me-2"></i>Saved Comments</h6>
   <div class="list-group shadow-sm mb-4">
     {% for comment in saved_comments %}
-    <a href="{{ url_for('forum.post_detail', post_id=comment.post_id) }}#comment-{{ comment.id }}"
+    <a href="{{ url_for('forum.post_detail', post_id=comment.post_id, ref_user=user_id_filter) }}#comment-{{ comment.id }}"
        class="list-group-item list-group-item-action border-0 border-bottom py-3">
-      <div class="d-flex justify-content-between align-items-center mb-1">
-        <small class="text-muted fw-semibold"><i class="bi bi-person me-1"></i>{{ comment.author.username }}</small>
-        
-        <div class="text-end">
+      
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex align-items-center gap-2">
+          <small class="text-muted fw-semibold transition-hover" 
+                 style="cursor: pointer; position: relative; z-index: 2;" 
+                 onclick="event.preventDefault(); window.location.href='{{ url_for('forum.public_profile', user_id=comment.author.id) }}';">
+            <i class="bi bi-person me-1"></i>{{ comment.author.username }}
+          </small>
+          
           {% if comment.post.category %}
-            {% set bg_color = category_colors.get(comment.post.category, 'secondary') if category_colors else 'secondary' %}
-            <span class="badge-soft-{{ bg_color }} px-2 py-1 rounded-pill fw-bold d-inline-block mb-1" style="font-size: 0.75rem;">
-              {{ comment.post.category }}
+            {% set style = cat_styles.get(comment.post.category, cat_styles['General']) %}
+            <span class="badge rounded-pill" 
+                  style="background-color: {{ style.bg }}; color: {{ style.text }}; border: 1px solid {{ style.border }}; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.3px;">
+              {{ comment.post.category | upper }}
             </span>
-            <br>
           {% endif %}
-          <span class="badge bg-white text-secondary border border-secondary border-opacity-25 rounded-pill d-inline-block mt-1" style="font-weight: normal; font-size: 0.75rem;">
-  <i class="bi bi-chat-dots me-1"></i>Comment in: {{ comment.post.title|truncate(20) }}
-</span>
         </div>
         
+        <span class="badge bg-white text-secondary border border-secondary border-opacity-25 rounded-pill flex-shrink-0" style="font-weight: normal; font-size: 0.75rem;">
+          <i class="bi bi-chat-dots me-1"></i>Comment in: {{ comment.post.title|truncate(20) }}
+        </span>
       </div>
-      <p class="mb-0 small text-truncate" style="max-width: 90%;">{{ comment.content }}</p>
+        
+      <p class="mb-0 small text-break" style="max-width: 90%;">{{ comment.content }}</p>
     </a>
     {% endfor %}
   </div>

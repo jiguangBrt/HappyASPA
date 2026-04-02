@@ -98,6 +98,64 @@
             data-bs-toggle="collapse" data-bs-target="#transcript-{{ ex.id }}">
             <i class="bi bi-file-text me-1"></i>Overview
           </button>
+          <button class="btn btn-outline-secondary btn-sm w-100 mt-2"
+            data-bs-toggle="modal"
+            data-bs-target="#attributionModal-{{ ex.id }}">
+            <i class="bi bi-info-circle me-1"></i> Attribution
+          </button>
+          <div class="modal fade" id="attributionModal-{{ ex.id }}" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content p-3">
+      <h5 class="fw-bold mb-3">
+        <i class="bi bi-info-circle me-2"></i>Source Information
+      </h5>
+
+      <!-- Source Platform -->
+      <p>
+        <strong><i class="bi bi-globe me-1"></i>Source:</strong>
+        {{ ex.source_platform if ex.source_platform else 'Unknown platform' }}
+      </p>
+
+      <!-- Author -->
+      <p>
+        <strong><i class="bi bi-person me-1"></i>Author:</strong>
+        {{ ex.source_author if ex.source_author else 'Unknown' }}
+      </p>
+
+      <!-- License -->
+      <p>
+        <strong><i class="bi bi-shield-check me-1"></i>License:</strong>
+        {{ ex.license_type if ex.license_type else 'Not specified' }}
+      </p>
+
+      <!-- Original Video -->
+      <p>
+        <strong><i class="bi bi-link-45deg me-1"></i>Original video:</strong><br>
+        {% if ex.source_url %}
+          <a href="{{ ex.source_url }}" target="_blank">
+            {{ ex.source_url }}
+          </a>
+        {% else %}
+          <span class="text-muted">No URL available</span>
+        {% endif %}
+      </p>
+
+      <!-- Modified -->
+      <p>
+        <strong><i class="bi bi-pencil-square me-1"></i>Modified:</strong>
+        {% if ex.is_modified %}
+          Yes (subtitles added)
+        {% else %}
+          No
+        {% endif %}
+      </p>
+
+      <div class="text-end mt-3">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
           <div class="collapse mt-2" id="transcript-{{ ex.id }}">
             <div class="bg-light rounded p-3 small" style="max-height:160px;overflow-y:auto;">
               {% if ex.transcript %}{{ ex.transcript }}{% else %}<em class="text-muted">No transcript available.</em>{%

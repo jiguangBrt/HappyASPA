@@ -3,6 +3,7 @@
 功能模块：荣誉果实陈列室、学识农田核心区、丰收排行榜
 """
 from datetime import datetime, date, timedelta, timezone
+from time_utils import utcnow_naive
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from flask_login import login_required, current_user
 from sqlalchemy import func, desc
@@ -116,7 +117,7 @@ def index():
     lands = UserLand.query.filter_by(orchard_id=orchard.id).order_by(UserLand.position).all()
     
     # 更新土地状态（检查是否已成熟）
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = utcnow_naive()
     for land in lands:
         if land.plant_status == 'growing' and land.matures_at and now >= land.matures_at:
             land.plant_status = 'mature'
@@ -209,7 +210,7 @@ def index():
         item_inventory=item_inventory,
         available_rare_fruits=available_rare_fruits,
         land_timing_map=land_timing_map,
-        now=datetime.now(timezone.utc).replace(tzinfo=None)
+        now=utcnow_naive()
     )
 
 
@@ -343,7 +344,7 @@ def plant_seed():
         db.session.delete(inventory)
     
     # 更新土地状态
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = utcnow_naive()
     mature_delta = calculate_mature_time(seed, land)
     
     land.current_seed_id = seed_id
@@ -381,7 +382,7 @@ def harvest():
         return jsonify({'success': False, 'message': 'Not your land'}), 403
     
     # 检查是否已成熟
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = utcnow_naive()
     if land.plant_status == 'growing' and land.matures_at and now >= land.matures_at:
         land.plant_status = 'mature'
     
@@ -500,7 +501,7 @@ def use_item():
         land.matures_at -= delta
         
         # 检查是否已经成熟
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = utcnow_naive()
         if land.matures_at <= now:
             land.plant_status = 'mature'
     
@@ -588,7 +589,7 @@ def get_land_status():
     orchard = get_or_create_user_orchard(current_user.id)
     lands = UserLand.query.filter_by(orchard_id=orchard.id).order_by(UserLand.position).all()
     
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = utcnow_naive()
     land_data = []
     
     for land in lands:
