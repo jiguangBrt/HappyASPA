@@ -15,6 +15,14 @@
 <div id="categorySection">
   <h5 class="fw-bold mb-3"><i class="bi bi-grid-3x3-gap-fill me-2"></i>Word Books</h5>
   <div class="row g-3" id="categoryGrid"></div>
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm bg-gradient-primary text-white p-4 text-center" id="enterPuzzleBtn" style="cursor: pointer; background: linear-gradient(45deg, #0d6efd, #0dcaf0);">
+        <h4 class="mb-0"><i class="bi bi-controller me-2"></i>Word Search Challenge</h4>
+        <p class="mb-0 opacity-75">Find 5 hidden words in the 15x15 grid!</p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- 单词学习区域（初始隐藏） -->
@@ -32,7 +40,7 @@
   <div class="card border-0 shadow-sm text-center p-4 mb-4">
     <div class="card-body">
       <div id="wordDisplay" class="display-1 fw-bold text-primary mb-3">--</div>
-      
+
       <!-- 释义区域（初始隐藏） -->
       <div id="meaningContainer" style="display: none;" class="mb-3">
         <div class="text-muted small">Chinese Meaning</div>
@@ -70,6 +78,36 @@
 
       <!-- 错误信息 -->
       <div id="errorMsg" class="text-danger mt-3"></div>
+    </div>
+  </div>
+</div>
+
+
+<div id="puzzleSection" style="display: none;">
+  <div class="d-flex align-items-center mb-3">
+    <button class="btn btn-outline-secondary btn-sm me-2" onclick="location.reload()">
+      <i class="bi bi-arrow-left"></i> Back
+    </button>
+    <h5 class="fw-bold mb-0">Word Search Puzzle</h5>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8 d-flex justify-content-center">
+      <div id="puzzleGrid" class="puzzle-container shadow-sm"></div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm p-3">
+        <h6 class="fw-bold border-bottom pb-2 mb-3">Words to Find (5)</h6>
+        <ul id="puzzleWordList" class="list-group list-group-flush">
+          </ul>
+        <div class="mt-4 small text-muted">
+          <p class="fw-bold mb-1"><i class="bi bi-info-circle me-1"></i>How to play:</p>
+          <ul class="ps-3 mb-0">
+            <li>Click the <strong>first</strong> letter.</li>
+            <li>Click the <strong>last</strong> letter.</li>
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -148,6 +186,10 @@
   let unknownBtn = document.getElementById('unknownBtn');
   let nextBtn = document.getElementById('nextBtn');
   let mistakeBtn = document.getElementById('mistakeBtn');
+  let puzzleTargetWords = [];   // 后端传来的 5 个词
+  let puzzleSelectedCells = []; // 存储用户点击的 [起点, 终点]
+  let puzzleFoundCount = 0;    // 已找到的单词数量
+
   // DOM 元素
   const categoryGrid = document.getElementById('categoryGrid');
   const learningSection = document.getElementById('learningSection');
@@ -191,6 +233,135 @@
       showLoader(false);
     }
   }
+
+// 绑定按钮点击事件
+document.getElementById('enterPuzzleBtn').addEventListener('click', startPuzzleGame);
+
+async function startPuzzleGame() {
+  // 切换界面显示
+  document.getElementById('categorySection').style.display = 'none';
+  document.getElementById('puzzleSection').style.display = 'block';
+
+  showLoader(true); // 显示加载中动画
+
+  try {
+    const res = await fetch('/vocabulary/api/puzzle');
+    const data = await res.json();
+
+    renderPuzzleGrid(data.grid, data.target_words);
+  } catch (e) {
+    showError("Failed to load puzzle.");
+  } finally {
+    showLoader(false);
+  }
+}
+
+function renderPuzzleGrid(grid, words) {
+  console.log("Grid received:", grid); // 看看控制台是否打印出 15x15 的数组
+  console.log("Words received:", words);
+  const container = document.getElementById('puzzleGrid');
+  const listContainer = document.getElementById('puzzleWordList');
+
+  if (!container) {
+        console.error("Cannot find element with id 'puzzleGrid'");
+        return;
+  }
+
+  container.innerHTML = '';
+  listContainer.innerHTML = '';
+  puzzleTargetWords = words;
+  puzzleFoundCount = 0;
+
+  // 1. 生成 15x15 的网格 HTML
+  grid.forEach((row, r) => {
+    row.forEach((char, c) => {
+      const cell = document.createElement('div');
+      cell.className = 'puzzle-cell';
+      cell.innerText = char;
+      // 存储坐标以便逻辑判断
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+      cell.onclick = () => onPuzzleCellClick(r, c, cell);
+      container.appendChild(cell);
+    });
+  });
+
+  // 2. 生成右侧单词清单
+  words.forEach(w => {
+    const li = document.createElement('li');
+    li.className = 'list-group-item d-flex justify-content-between align-items-center py-2';
+    li.id = `puzzle-word-${w}`;
+    li.innerText = w;
+    listContainer.appendChild(li);
+  });
+}
+
+function onPuzzleCellClick(r, c, el) {
+  if (puzzleSelectedCells.length === 0) {
+    // 第一次点击：设为起点
+    puzzleSelectedCells.push({r, c, el});
+    el.classList.add('selected');
+  } else {
+    // 第二次点击：设为终点
+    const start = puzzleSelectedCells[0];
+    const end = {r, c, el};
+
+    // 检查这两点之间是否是一个目标单词
+    checkPuzzleMatch(start, end);
+
+    // 无论是否匹配，都要清除起点的黄色高亮
+    start.el.classList.remove('selected');
+    puzzleSelectedCells = [];
+  }
+}
+
+function checkPuzzleMatch(start, end) {
+  let selectedWord = "";
+  let cells = [];
+
+  // 逻辑：必须是同行或同列
+  if (start.r === end.r) { // 水平方向
+    const row = start.r;
+    const c1 = Math.min(start.c, end.c);
+    const c2 = Math.max(start.c, end.c);
+    for (let i = c1; i <= c2; i++) {
+      const target = document.querySelector(`.puzzle-cell[data-r="${row}"][data-c="${i}"]`);
+      selectedWord += target.innerText;
+      cells.push(target);
+    }
+  } else if (start.c === end.c) { // 垂直方向
+    const col = start.c;
+    const r1 = Math.min(start.r, end.r);
+    const r2 = Math.max(start.r, end.r);
+    for (let i = r1; i <= r2; i++) {
+      const target = document.querySelector(`.puzzle-cell[data-r="${i}"][data-c="${col}"]`);
+      selectedWord += target.innerText;
+      cells.push(target);
+    }
+  }
+
+  // 校验：正向或反向匹配
+  const reversed = selectedWord.split('').reverse().join('');
+  const match = puzzleTargetWords.find(w => w === selectedWord || w === reversed);
+
+  if (match) {
+    const li = document.getElementById(`puzzle-word-${match}`);
+    // 如果还没被找到过
+    if (!li.classList.contains('word-found')) {
+      cells.forEach(c => c.classList.add('found')); // 格子变绿
+      li.classList.add('word-found'); // 列表划掉
+      li.innerHTML += ' <i class="bi bi-check-lg text-success"></i>';
+      puzzleFoundCount++;
+
+      // 全部找完
+      if (puzzleFoundCount === puzzleTargetWords.length) {
+        setTimeout(() => {
+            finishModal.show(); // 弹出你原有的“完成”弹窗
+        }, 500);
+      }
+    }
+  }
+}
 
   // 渲染分类卡片
   function renderCategories(categories) {
@@ -336,8 +507,8 @@ async function submitFinal(known) {
     const response = await fetch('/vocabulary/api/record', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        word_id: currentWordId, 
+      body: JSON.stringify({
+        word_id: currentWordId,
         known: known,
         completed_set: isCompletedSet   // ⭐ 关键新增
       })
@@ -350,7 +521,7 @@ async function submitFinal(known) {
       currentBatch.push({
         id: currentWordId,
         word: wordDisplay.innerText,
-        meaning: currentMeaning 
+        meaning: currentMeaning
       });
     }
 
@@ -621,7 +792,7 @@ function quitSpelling() {
     margin-bottom: 6px;
     font-weight: 600;
   }
-  
+
   #meaningContainer {
     animation: fadeIn 0.3s;
   }
@@ -667,5 +838,53 @@ function quitSpelling() {
   opacity: 0;
   pointer-events: none; /* 防止挡住点击 */
 }
+
+  /* 拼图容器：使用 CSS Grid 布局 */
+.puzzle-container {
+    display: grid !important; /* 强制启用 grid */
+    grid-template-columns: repeat(15, 35px);
+    grid-template-rows: repeat(15, 35px); /* 显式指定行高 */
+    width: fit-content; /* 自动适应内容宽度 */
+    margin: 0 auto; /* 居中显示 */
+    background-color: #eee; /* 给个明显的灰色背景 */
+    min-height: 525px;
+}
+
+/* 每个小格子样式 */
+.puzzle-cell {
+  width: 35px;
+  height: 35px;
+  background-color: white;
+  border: 1px solid #e9ecef;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.puzzle-cell:hover { background-color: #e7f1ff; }
+
+/* 选中第一个字母时的黄色状态 */
+.puzzle-cell.selected {
+  background-color: #ffc107 !important;
+  color: #000;
+}
+
+/* 成功找到单词后的绿色状态 */
+.puzzle-cell.found {
+  background-color: #198754 !important;
+  color: white;
+  border-color: #198754;
+}
+
+/* 右侧列表单词被找到后的划掉效果 */
+.word-found {
+  text-decoration: line-through;
+  color: #adb5bd;
+  background-color: #f8f9fa;
+}
+
 </style>
 {% endblock %}
