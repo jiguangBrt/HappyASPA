@@ -1,4 +1,5 @@
 import random
+import string
 from datetime import datetime, timezone
 from time_utils import utcnow_naive
 from flask import Blueprint, render_template, jsonify, request
@@ -123,4 +124,58 @@ def record_choice():
         'success': True,
         'new_status': progress.status,
         'coins': current_user.coins
+    })
+
+
+# 辅助函数：生成拼图矩阵
+def generate_puzzle(words, size=15):
+    grid = [['' for _ in range(size)] for _ in range(size)]
+    actual_placed = []
+
+    for word_obj in words:
+        word = word_obj.word.upper().replace(" ", "")  # 转大写并去空格
+        placed = False
+        for _ in range(50):  # 尝试50次放置
+            direction = random.choice(['H', 'V'])  # H: 水平, V: 垂直
+            row = random.randint(0, size - 1)
+            col = random.randint(0, size - 1)
+
+            # 检查是否越界
+            if direction == 'H' and col + len(word) > size: continue
+            if direction == 'V' and row + len(word) > size: continue
+
+            # 检查冲突
+            can_place = True
+            for i in range(len(word)):
+                r, c = (row, col + i) if direction == 'H' else (row + i, col)
+                if grid[r][c] != '' and grid[r][c] != word[i]:
+                    can_place = False
+                    break
+
+            if can_place:
+                for i in range(len(word)):
+                    r, c = (row, col + i) if direction == 'H' else (row + i, col)
+                    grid[r][c] = word[i]
+                actual_placed.append(word)
+                placed = True
+                break
+
+    # 填充随机字母
+    for r in range(size):
+        for c in range(size):
+            if grid[r][c] == '':
+                grid[r][c] = random.choice(string.ascii_uppercase)
+    return grid, actual_placed
+
+
+@vocabulary_bp.route('/api/puzzle')
+@login_required
+def get_puzzle():
+    # 随机获取5个单词
+    words = VocabularyWord.query.order_by(func.random()).limit(5).all()
+    grid, placed_words = generate_puzzle(words)
+
+    return jsonify({
+        'grid': grid,
+        'target_words': placed_words
     })
