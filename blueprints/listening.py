@@ -98,6 +98,9 @@ def save_progress():
     progress = UserListeningProgress.query.filter_by(
         user_id=current_user.id, exercise_id=exercise_id
     ).first()
+    
+    # 记录首次正确答题的题目索引，用于前端显示奖励提示
+    first_correct_questions = []
     if not progress:
         progress = UserListeningProgress(
             user_id=current_user.id, exercise_id=exercise_id
@@ -142,6 +145,7 @@ def save_progress():
                     continue
 
                 # 记录到永久已答（第一次答）
+                # 只有正确答题才记录到永久已答，错题下次重新出现
                 if q_idx not in progress.permanent_answered:
                     progress.permanent_answered.append(q_idx)
                     flag_modified(progress, "permanent_answered")
@@ -163,7 +167,16 @@ def save_progress():
                         if current_user.total_correct_questions is None:
                             current_user.total_correct_questions = 0
                         current_user.total_correct_questions += 1
+                        
+                        # 首次正确答题奖励金币
+                        if current_user.coins is None:
+                            current_user.coins = 0
+                        current_user.coins += 1
+                        
                         db.session.add(current_user)
+                        
+                        # 记录首次正确答题的题目索引，用于前端显示奖励提示
+                        first_correct_questions.append(q_idx)
 
             # 合并临时答案
             if progress.answers is None:
@@ -194,7 +207,16 @@ def save_progress():
     flag_modified(progress, "answers")
 
     db.session.commit()
-    return jsonify({"success": True})
+    
+    # 返回金币奖励信息
+    response_data = {"success": True}
+    if first_correct_questions:
+        response_data["coin_reward"] = len(first_correct_questions)
+        response_data["first_correct_questions"] = first_correct_questions
+        response_data["coins"] = current_user.coins
+        response_data["message"] = f"🎉 This is your first time getting this question right! You are rewarded with {len(first_correct_questions)} coin！"
+    
+    return jsonify(response_data)
 
 
 @listening_bp.route("/progress/<int:exercise_id>", methods=["GET"])
