@@ -234,11 +234,21 @@ def index():
     ).filter(UserVocabularyProgress.user_id == current_user.id, UserVocabularyProgress.status == "mastered") \
      .group_by(func.date(UserVocabularyProgress.last_reviewed_at)).all()
 
-    daily_listening = db.session.query(
-        func.date(UserListeningProgress.last_attempt_at).label('date'),
-        func.count(UserListeningProgress.id).label('count')
-    ).filter(UserListeningProgress.user_id == current_user.id) \
-     .group_by(func.date(UserListeningProgress.last_attempt_at)).all()
+    # Daily listening: use last_attempt_at date, split into completed lectures + correct answers.
+    listening_daily_lectures = {}
+    listening_daily_correct = {}
+    # TODO: once the per-question correct timestamps are available, switch
+    # daily correct counts to "newly correct on that day" instead of grouping
+    # by the last_attempt_at date.
+    for prog in progresses:
+        if not prog.last_attempt_at:
+            continue
+        day = prog.last_attempt_at.date().isoformat()
+        if prog.completed:
+            listening_daily_lectures[day] = listening_daily_lectures.get(day, 0) + 1
+        pc = prog.permanent_correct
+        if isinstance(pc, list):
+            listening_daily_correct[day] = listening_daily_correct.get(day, 0) + len(pc)
 
     daily_speaking = db.session.query(
         func.date(UserSpeakingSubmission.submitted_at).label('date'),
@@ -264,23 +274,27 @@ def index():
     
     for d, c in daily_vocab:
         if d and c > 0: 
-            growth_milestones.append({"kind": "vocabulary", "title": "Words Mastered", "value": c, "unit": "words", "event_date": safe_iso(d)})
+            growth_milestones.append({"key": "vocab_mastered", "kind": "vocabulary", "title": "Words Mastered", "value": c, "unit": "words", "event_date": safe_iso(d)})
     
-    for d, c in daily_listening:
-        if d and c > 0: 
-            growth_milestones.append({"kind": "listening", "title": "Listening Practice", "value": c, "unit": "sessions", "event_date": safe_iso(d)})
+    for d, c in listening_daily_lectures.items():
+        if d and c > 0:
+            growth_milestones.append({"key": "listening_lecture", "kind": "listening", "title": "Lectures Completed", "value": c, "unit": "lectures", "event_date": safe_iso(d)})
+
+    for d, c in listening_daily_correct.items():
+        if d and c > 0:
+            growth_milestones.append({"key": "listening_correct", "kind": "listening", "title": "Correct Answers", "value": c, "unit": "questions", "event_date": safe_iso(d)})
 
     for d, c in daily_speaking:
         if d and c > 0: 
-            growth_milestones.append({"kind": "speaking", "title": "English Corner", "value": c, "unit": "exercises", "event_date": safe_iso(d)})
+            growth_milestones.append({"key": "speaking", "kind": "speaking", "title": "English Corner", "value": c, "unit": "exercises", "event_date": safe_iso(d)})
 
     for d, c in daily_scenarios:
         if d and c > 0: 
-            growth_milestones.append({"kind": "scenario", "title": "Academic Scenario", "value": c, "unit": "sessions", "event_date": safe_iso(d)})
+            growth_milestones.append({"key": "scenario", "kind": "scenario", "title": "Academic Scenario", "value": c, "unit": "sessions", "event_date": safe_iso(d)})
 
     for d, c in daily_shadowing:
         if d and c > 0: 
-            growth_milestones.append({"kind": "shadowing", "title": "Shadowing Practice", "value": c, "unit": "exercises", "event_date": safe_iso(d)})
+            growth_milestones.append({"key": "shadowing", "kind": "shadowing", "title": "Shadowing Practice", "value": c, "unit": "exercises", "event_date": safe_iso(d)})
 
     streak_count = calculate_streak([m.event_date for m in journal_markers])
 
