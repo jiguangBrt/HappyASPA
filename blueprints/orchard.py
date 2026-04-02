@@ -122,6 +122,20 @@ def index():
         if land.plant_status == 'growing' and land.matures_at and now >= land.matures_at:
             land.plant_status = 'mature'
     db.session.commit()
+
+    # 统一按 UTC 传给前端，避免本地时区解释 naive datetime 导致计时偏移
+    land_timing_map = {}
+    for land in lands:
+        start_ts = None
+        end_ts = None
+        if land.planted_at:
+            start_ts = land.planted_at.replace(tzinfo=timezone.utc).timestamp()
+        if land.matures_at:
+            end_ts = land.matures_at.replace(tzinfo=timezone.utc).timestamp()
+        land_timing_map[land.id] = {
+            'start_ts': start_ts,
+            'end_ts': end_ts,
+        }
     
     # 获取展示柜果实
     showcase_fruits = UserShowcaseFruit.query.filter_by(orchard_id=orchard.id)\
@@ -195,7 +209,8 @@ def index():
         seed_inventory=seed_inventory,
         item_inventory=item_inventory,
         available_rare_fruits=available_rare_fruits,
-    now=utcnow_naive()
+        land_timing_map=land_timing_map,
+        now=utcnow_naive()
     )
 
 
@@ -474,10 +489,16 @@ def use_item():
     if inventory.quantity <= 0:
         db.session.delete(inventory)
     
-    # 应用效果（加速）
+    # 应用效果（推进进度，不改变总生长时长）
     if item.item_type in ['fertilizer', 'water'] and land.matures_at:
         speed_hours = item.effect_value
-        land.matures_at -= timedelta(hours=speed_hours)
+        delta = timedelta(hours=speed_hours)
+        # 同时前移 planted_at 与 matures_at：
+        # - 总时长（matures_at - planted_at）保持不变
+        # - 已用时增加，剩余时间减少
+        if land.planted_at:
+            land.planted_at -= delta
+        land.matures_at -= delta
         
         # 检查是否已经成熟
         now = utcnow_naive()

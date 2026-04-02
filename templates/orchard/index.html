@@ -93,10 +93,46 @@
 
   .land-actions {
     position: absolute;
-    bottom: -15px;
-    z-index: 2;
+    z-index: 3;
     display: flex;
     gap: 5px;
+  }
+
+  .land-action-center {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .land-plot:hover .land-action-center {
+    opacity: 0.7;
+    pointer-events: auto;
+  }
+
+  .plant-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 0.45rem 1rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    color: #ffffff;
+    background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+    box-shadow: 0 8px 18px rgba(46, 125, 50, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  }
+
+  .plant-btn:hover {
+    transform: translateY(-1px) scale(1.03);
+    box-shadow: 0 10px 20px rgba(46, 125, 50, 0.45);
+    filter: brightness(1.06);
+  }
+
+  .plant-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 5px 12px rgba(46, 125, 50, 0.35);
   }
   
   @keyframes float {
@@ -206,14 +242,19 @@
             <div class="land-plot">
               {% if land.plant_status == 'idle' %}
                 <img src="{{ url_for('static', filename='orchard/soild/soil_empty.png') }}" class="land-image" alt="Empty Land">
-                <div class="land-actions">
-                  <button class="btn btn-sm btn-success" onclick="openPlantModal({{ land.id }})">Plant</button>
+                <div class="land-actions land-action-center">
+                  <button class="btn btn-sm plant-btn" onclick="openPlantModal({{ land.id }})">
+                    <i class="bi bi-flower1 me-1"></i>Plant
+                  </button>
                 </div>
               {% elif land.plant_status == 'growing' %}
                 <img src="{{ url_for('static', filename='orchard/soild/soil_planted.png') }}" class="land-image" alt="Planted Land">
                 <div class="land-actions" style="bottom: 10px; flex-direction: column; align-items: center; width: 100%;">
                   <div class="progress-container" style="width: 90%; margin-bottom: 5px;">
-                    <div class="progress-bar-custom" id="progress-{{ land.id }}" data-start="{{ land.planted_at.timestamp() }}" data-end="{{ land.matures_at.timestamp() }}"></div>
+                    <div class="progress-bar-custom"
+                         id="progress-{{ land.id }}"
+                         data-start="{{ land_timing_map[land.id]['start_ts'] }}"
+                         data-end="{{ land_timing_map[land.id]['end_ts'] }}"></div>
                   </div>
                   <div class="text-white small mb-1" id="timer-{{ land.id }}" style="text-shadow: 1px 1px 2px black;">Calculating...</div>
                   <div>
@@ -223,7 +264,7 @@
                 </div>
               {% elif land.plant_status == 'mature' %}
                 <img src="{{ land.current_seed.plant_image_url | default(url_for('static', filename='orchard/soild/soild_ripened_1.png')) }}" class="land-image" alt="Mature Plant">
-                <div class="land-actions">
+                <div class="land-actions land-action-center">
                   <button class="btn btn-sm btn-primary" onclick="harvest({{ land.id }})">Harvest</button>
                 </div>
               {% endif %}
@@ -241,28 +282,54 @@
         <h5 class="mb-0"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Harvest Leaderboard</h5>
       </div>
       <div class="card-body p-0">
+        <div class="px-3 pt-3">
+          <h6 class="mb-2 text-muted">This Week</h6>
+        </div>
         <ul class="list-group list-group-flush">
-          {% for entry in leaderboard %}
-            <li class="list-group-item d-flex justify-content-between align-items-center {% if entry.user_id == current_user.id %}bg-light{% endif %}">
+          {% for entry in weekly_leaderboard %}
+            <li class="list-group-item d-flex justify-content-between align-items-center {% if entry.id == current_user.id %}bg-light{% endif %}">
               <div class="d-flex align-items-center">
                 <span class="me-3 fw-bold rank-{{ loop.index }}">
                   {% if loop.index == 1 %}👑{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
                 </span>
                 <span>{{ entry.username }}</span>
               </div>
-              <span class="badge bg-primary rounded-pill">{{ entry.total_points }} pts</span>
+              <span class="badge bg-primary rounded-pill">{{ entry.weekly_points }} pts</span>
             </li>
           {% else %}
-            <li class="list-group-item text-center text-muted">No data available yet.</li>
+            <li class="list-group-item text-center text-muted">No weekly data yet.</li>
+          {% endfor %}
+        </ul>
+
+        <div class="px-3 pt-3">
+          <h6 class="mb-2 text-muted">All Time</h6>
+        </div>
+        <ul class="list-group list-group-flush">
+          {% for entry in total_leaderboard %}
+            <li class="list-group-item d-flex justify-content-between align-items-center {% if entry.id == current_user.id %}bg-light{% endif %}">
+              <div class="d-flex align-items-center">
+                <span class="me-3 fw-bold rank-{{ loop.index }}">
+                  {% if loop.index == 1 %}👑{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+                </span>
+                <span>{{ entry.username }}</span>
+              </div>
+              <span class="badge bg-secondary rounded-pill">{{ entry.total_points }} pts</span>
+            </li>
+          {% else %}
+            <li class="list-group-item text-center text-muted">No all-time data yet.</li>
           {% endfor %}
         </ul>
       </div>
-      {% if current_user_rank %}
-      <div class="card-footer bg-light d-flex justify-content-between align-items-center">
-        <span class="fw-bold text-primary">Your Rank: #{{ current_user_rank.rank }}</span>
-        <span class="badge bg-secondary">{{ current_user_rank.total_points }} pts</span>
+      <div class="card-footer bg-light">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="fw-bold text-primary">Your Weekly Rank: #{{ user_weekly_rank }}</span>
+          <span class="badge bg-primary">{{ orchard.weekly_points }} pts</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="fw-bold text-secondary">Your Total Rank: #{{ user_total_rank }}</span>
+          <span class="badge bg-secondary">{{ orchard.total_points }} pts</span>
+        </div>
       </div>
-      {% endif %}
     </div>
   </div>
 </div>
@@ -426,6 +493,21 @@
   })
 
   // Update progress bars and timers
+  function formatDuration(totalSeconds) {
+    const seconds = Math.max(0, Math.floor(totalSeconds));
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${secs}s`;
+    }
+    if (minutes > 0) {
+      return `${minutes}m ${secs}s`;
+    }
+    return `${secs}s`;
+  }
+
   function updateTimers() {
     const now = Date.now() / 1000;
     document.querySelectorAll('.progress-bar-custom').forEach(bar => {
@@ -433,22 +515,37 @@
       const end = parseFloat(bar.dataset.end);
       const landId = bar.id.split('-')[1];
       const timerEl = document.getElementById(`timer-${landId}`);
-      
+
+      if (!timerEl || Number.isNaN(start) || Number.isNaN(end)) {
+        return;
+      }
+
+      // 道具触发“理论成熟”后的前端过渡锁，避免定时器把 100% 文案覆盖回旧时间
+      if (bar.dataset.forceComplete === '1') {
+        const totalLocked = end - start;
+        if (totalLocked > 0) {
+          bar.style.width = '100%';
+          timerEl.textContent = `${formatDuration(totalLocked)} / ${formatDuration(totalLocked)} (100%)`;
+        } else {
+          timerEl.textContent = 'Ready to harvest!';
+        }
+        return;
+      }
+
       if (now >= end) {
         bar.style.width = '100%';
         timerEl.textContent = 'Ready to harvest! Refreshing...';
-        setTimeout(() => location.reload(), 2000);
+        if (!bar.dataset.refreshScheduled) {
+          bar.dataset.refreshScheduled = '1';
+          setTimeout(() => location.reload(), 3000);
+        }
       } else {
         const total = end - start;
         const elapsed = now - start;
         const percent = Math.min(100, Math.max(0, (elapsed / total) * 100));
         bar.style.width = `${percent}%`;
-        
-        const remaining = end - now;
-        const hours = Math.floor(remaining / 3600);
-        const minutes = Math.floor((remaining % 3600) / 60);
-        const seconds = Math.floor(remaining % 60);
-        timerEl.textContent = `${hours}h ${minutes}m ${seconds}s left`;
+
+        timerEl.textContent = `${formatDuration(elapsed)} / ${formatDuration(total)} (${Math.floor(percent)}%)`;
       }
     });
   }
@@ -461,17 +558,24 @@
     if (!confirm(`Buy this ${type} for ${price} coins?`)) return;
     
     try {
-      const res = await fetch('{{ url_for("orchard.buy_item") }}', {
+      const endpoint = type === 'seed'
+        ? '{{ url_for("orchard.buy_seed") }}'
+        : '{{ url_for("orchard.buy_item") }}';
+      const payload = type === 'seed'
+        ? { seed_id: itemId, quantity: 1 }
+        : { item_id: itemId, quantity: 1 };
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ item_type: type, item_id: itemId })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (data.success) {
         alert('Purchase successful!');
         location.reload();
       } else {
-        alert(data.error || 'Purchase failed');
+        alert(data.message || 'Purchase failed');
       }
     } catch (e) {
       alert('An error occurred');
@@ -495,7 +599,7 @@
       if (data.success) {
         location.reload();
       } else {
-        alert(data.error || 'Failed to plant seed');
+        alert(data.message || 'Failed to plant seed');
       }
     } catch (e) {
       alert('An error occurred');
@@ -530,9 +634,39 @@
       });
       const data = await res.json();
       if (data.success) {
+        const accelerateModalEl = document.getElementById('accelerateModal');
+        const accelerateModal = bootstrap.Modal.getInstance(accelerateModalEl);
+        if (accelerateModal) {
+          accelerateModal.hide();
+        }
+
+        if (data.land && data.land.status === 'mature') {
+          const bar = document.getElementById(`progress-${landId}`);
+          const timerEl = document.getElementById(`timer-${landId}`);
+
+          if (bar) {
+            bar.style.width = '100%';
+            bar.dataset.refreshScheduled = '1';
+            bar.dataset.forceComplete = '1';
+
+            const start = parseFloat(bar.dataset.start);
+            const end = parseFloat(bar.dataset.end);
+            if (timerEl && !Number.isNaN(start) && !Number.isNaN(end) && end > start) {
+              const total = end - start;
+              timerEl.textContent = `${formatDuration(total)} / ${formatDuration(total)} (100%)`;
+            }
+          }
+          if (timerEl && !timerEl.textContent) {
+            timerEl.textContent = 'Ready to harvest!';
+          }
+
+          setTimeout(() => location.reload(), 3000);
+          return;
+        }
+
         location.reload();
       } else {
-        alert(data.error || 'Failed to use item');
+        alert(data.message || 'Failed to use item');
       }
     } catch (e) {
       alert('An error occurred');
@@ -555,7 +689,7 @@
         alert(msg);
         location.reload();
       } else {
-        alert(data.error || 'Failed to harvest');
+        alert(data.message || 'Failed to harvest');
       }
     } catch (e) {
       alert('An error occurred');
