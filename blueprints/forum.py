@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy import func  # <--- 新增：用于统计点赞数
-from datetime import datetime, timezone
+from datetime import datetime
+from time_utils import utcnow_naive, ensure_naive_utc
 from models import db, ForumPost, ForumComment, ForumLike, ForumFavorite, CommentLike, CommentFavorite
 
 import os
@@ -20,7 +21,7 @@ def allowed_file(filename, allowed_set):
 # ==========================================
 # 🔍 检查用户今天是否已经完成互动的工具函数
 def has_user_interacted_today():
-    now = datetime.now(timezone.utc)
+    now = utcnow_naive()
     today_start = datetime(now.year, now.month, now.day)
     
     # 只要发帖数 + 评论数 > 0，就说明今天任务已完成
@@ -35,7 +36,7 @@ def reward_daily_forum_coin():
     因为这个函数会在刚才的帖子/评论保存到数据库 *之后* 调用，
     所以如果今天的总数刚好等于 1，就说明刚刚那条是今天的首发！
     """
-    now = datetime.now(timezone.utc)
+    now = utcnow_naive()
     # 获取今天 UTC 时间的零点
     today_start = datetime(now.year, now.month, now.day)
     
@@ -81,8 +82,9 @@ def calculate_hot_score(post):
                  (post.like_count * 5) + \
                  (post.favorite_count * 10)
 
-    now = datetime.now(timezone.utc)
-    age_timedelta = now - post.created_at
+    now = utcnow_naive()
+    post_created_at = ensure_naive_utc(post.created_at)
+    age_timedelta = now - post_created_at
     age_hours = age_timedelta.total_seconds() / 3600
 
     # ==========================================

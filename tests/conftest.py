@@ -11,18 +11,46 @@ from app import create_app
 from models import db, User
 
 
+def _get_test_database_uri():
+    """
+    Resolve a safe test database URI.
+    Priority:
+    1) TEST_DATABASE_URL (explicit test DB)
+    2) Temporary sqlite file (auto-generated)
+    """
+    test_db = os.environ.get("TEST_DATABASE_URL")
+    if test_db:
+        return test_db, None
+
+    os.makedirs("instance", exist_ok=True)
+    db_fd, db_path = tempfile.mkstemp(prefix="happyaspa_test_", suffix=".db")
+    os.close(db_fd)
+    return f"sqlite:///{db_path}", db_path
+
+
+def _assert_safe_test_db(uri, temp_path):
+    # Never allow tests to run against production DATABASE_URL by accident.
+    prod_db = os.environ.get("DATABASE_URL")
+    if prod_db and uri == prod_db:
+        raise RuntimeError("Refusing to run tests against DATABASE_URL. Set TEST_DATABASE_URL.")
+
+    # If not using a temp DB, require explicit TEST_DATABASE_URL to be set.
+    if temp_path is None and not os.environ.get("TEST_DATABASE_URL"):
+        raise RuntimeError("Non-temp test DB requires TEST_DATABASE_URL to be set explicitly.")
+
+
 @pytest.fixture
 def app():
-    """Create a Flask app configured for testing with a temp SQLite database."""
+    """Create a Flask app configured for testing with a safe test database."""
     app = create_app()
 
     os.makedirs(app.instance_path, exist_ok=True)
-    db_fd, db_path = tempfile.mkstemp(prefix="happyaspa_test_", suffix=".db")
-    os.close(db_fd)
+    db_uri, temp_path = _get_test_database_uri()
+    _assert_safe_test_db(db_uri, temp_path)
 
     app.config.update(
         TESTING=True,
-        SQLALCHEMY_DATABASE_URI=f"sqlite:///{db_path}",
+        SQLALCHEMY_DATABASE_URI=db_uri,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         SQLALCHEMY_EXPIRE_ON_COMMIT=False,
         WTF_CSRF_ENABLED=False,
@@ -34,8 +62,8 @@ def app():
         db.session.remove()
         db.drop_all()
 
-    if os.path.exists(db_path):
-        os.remove(db_path)
+    if temp_path and os.path.exists(temp_path):
+        os.remove(temp_path)
 
 
 @pytest.fixture

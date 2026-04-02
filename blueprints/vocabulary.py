@@ -1,6 +1,7 @@
 import random
 import string
 from datetime import datetime, timezone
+from time_utils import utcnow_naive
 from flask import Blueprint, render_template, jsonify, request
 from flask_login import login_required, current_user
 from sqlalchemy import func
@@ -109,7 +110,7 @@ def record_choice():
     else:
         progress.status = 'new'
 
-    progress.last_reviewed_at = datetime.now(timezone.utc)
+    progress.last_reviewed_at = utcnow_naive()
 
 # ⭐ 每5个词奖励1 coin
     if completed_set:
