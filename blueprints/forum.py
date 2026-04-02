@@ -1,9 +1,9 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import func  # <--- 新增：用于统计点赞数
 from datetime import datetime
 from time_utils import utcnow_naive, ensure_naive_utc
-from models import db, ForumPost, ForumComment, ForumLike, ForumFavorite, CommentLike, CommentFavorite
+from models import db, ForumPost, ForumComment, ForumLike, ForumFavorite, CommentLike, CommentFavorite,User
 
 import os
 import uuid
@@ -105,11 +105,18 @@ def index():
     category_filter = request.args.get('category')
     sort_by = request.args.get('sort_by', 'hot') 
     board = request.args.get('board', 'discussion') 
-    
+    # --- 👇 新增：获取用户 ID 参数 ---
+    user_id_filter = request.args.get('user_id', type=int)
+
     saved_comments = []
 
     # 初始化基础查询
     post_query = db.session.query(ForumPost)
+
+# --- 👇 新增：如果传了 user_id，就只看该用户的帖子 ---
+    if user_id_filter:
+        post_query = post_query.filter(ForumPost.user_id == user_id_filter)
+    # -----------------------------------------------
 
     if tab == 'saved':
         # 👇 NEW: 在查询收藏帖子时，加上 .filter(ForumPost.board == board) 强隔离！
@@ -125,6 +132,12 @@ def index():
             .filter(CommentFavorite.user_id == current_user.id)\
             .filter(ForumPost.board == board)
             
+            # ==========================================
+        # 👇 只需要在这里加上这两行，精准过滤“我自己的评论”
+        if user_id_filter:
+            comment_query = comment_query.filter(ForumComment.user_id == user_id_filter)
+        # ==========================================
+        
         if category_filter:
             comment_query = comment_query.filter(ForumPost.category == category_filter)
                 
@@ -154,6 +167,7 @@ def index():
                            tab=tab, 
                            saved_comments=saved_comments,
                            current_category=category_filter,
+                           user_id_filter=user_id_filter,
                            sort_by=sort_by,
                            daily_done=daily_done,
                            board=board)
@@ -401,3 +415,31 @@ def delete_post(post_id):
     
     flash('Post deleted successfully.', 'success')
     return redirect(url_for('forum.index'))
+
+
+
+
+@forum_bp.route('/user/<int:user_id>')
+@login_required
+def public_profile(user_id):
+    # 如果点的是自己，直接去私密主页
+    if user_id == current_user.id:
+        return redirect(url_for('auth.profile'))
+        
+    # 查询你要看的那个目标用户
+    target_user = User.query.get_or_404(user_id)
+    
+    # 顺便查一下这个人最近发的 5 个帖子
+    recent_posts = ForumPost.query.filter_by(user_id=target_user.id)\
+                                  .order_by(ForumPost.created_at.desc())\
+                                  .limit(5).all()
+                                  
+   # 👇 NEW: 修复 property 报错，通过关联 ForumLike 表来精确统计该用户获得的总赞数
+    total_likes = db.session.query(func.count(ForumLike.id))\
+                            .join(ForumPost, ForumLike.post_id == ForumPost.id)\
+                            .filter(ForumPost.user_id == target_user.id).scalar() or 0
+                                  
+    return render_template('forum/public_profile.html', 
+                           target_user=target_user, 
+                           recent_posts=recent_posts,
+                           total_likes=total_likes)

@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block title %}{{ target_user.username }}'s Profile{% endblock %}
+
+{% block content %}
+
+{# 👇 新增：智能返回按钮，带记忆功能 👇 #}
+<div class="mb-4">
+  <a href="{{ request.referrer or url_for('forum.index') }}" 
+     class="text-decoration-none text-secondary d-inline-flex align-items-center transition-hover" 
+     style="font-weight: 500;">
+    <i class="bi bi-arrow-left-circle-fill me-2 fs-5"></i> Back
+  </a>
+</div>
+
+<div class="container py-4">
+  <div class="row g-4">
+    
+    <div class="col-12 col-lg-4">
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body p-4">
+          <div class="mb-3">
+            {% if target_user.avatar_url %}
+              <img src="{{ target_user.avatar_url }}" alt="Avatar" class="rounded-circle shadow-sm" width="120" height="120" style="object-fit: cover;">
+            {% else %}
+              <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 120px; height: 120px;">
+                <span class="fw-bold text-danger" style="font-size: 3rem;">{{ target_user.username[0]|upper }}</span>
+              </div>
+            {% endif %}
+          </div>
+          
+          {# 名字部分稍微加点底部边距 (mb-2) #}
+          <h4 class="fw-bold mb-2">{{ target_user.username }}</h4>
+          
+          {# 👇 完美复刻你截图里的 Team 标签：白底、细边框、阴影、蓝色群组图标 👇 #}
+          <div class="mb-3">
+            <span class="badge bg-white text-dark border rounded-pill px-3 py-2 shadow-sm" style="font-size: 0.85rem; font-weight: 500;">
+              <i class="bi bi-people-fill text-primary me-1"></i> Web App Dev Team
+            </span>
+          </div>
+          
+          <div class="mb-4">
+            {% if target_user.is_guide_qualified %}
+              <span class="badge-guide-expert"><i class="bi bi-patch-check-fill"></i> Guide Expert</span>
+            {% else %}
+              <span class="badge bg-secondary opacity-50"><i class="bi bi-person"></i> General Member</span>
+            {% endif %}
+          </div>
+
+          <div class="d-flex justify-content-center gap-3 mb-3">
+            <div class="bg-light rounded-3 p-3 w-100 border text-start">
+              <div class="row text-center">
+                <div class="col-6 border-end">
+                  <div class="text-muted small mb-1">Coins</div>
+                  <div class="fs-5 fw-bold text-warning"><i class="bi bi-coin"></i> {{ target_user.coins or 0 }}</div>
+                </div>
+                <div class="col-6">
+                  <div class="text-muted small mb-1">Likes Received</div>
+                  <div class="fs-5 fw-bold text-danger"><i class="bi bi-heart-fill"></i> {{ total_likes }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <button class="btn btn-outline-primary w-100 btn-sm" disabled>
+            <i class="bi bi-person-plus"></i> Invite to Team (Coming Soon)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-8">
+      
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+          <h5 class="fw-bold mb-0"><i class="bi bi-tree text-success me-2"></i>Orchard Showcase</h5>
+        </div>
+        <div class="card-body p-4 text-center text-muted">
+          <div class="py-4 bg-light rounded" style="border: 2px dashed #dee2e6;">
+            <i class="bi bi-lock fs-2 text-secondary opacity-50"></i>
+            <p class="mb-0 mt-2 small">Orchard data will be synchronized here soon.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+          <h5 class="fw-bold mb-0"><i class="bi bi-journal-text text-primary me-2"></i>Recent Posts</h5>
+        </div>
+        <div class="card-body p-4">
+          {% if recent_posts %}
+            <div class="list-group list-group-flush">
+              {% for p in recent_posts %}
+                <a href="{{ url_for('forum.post_detail', post_id=p.id) }}" class="list-group-item list-group-item-action px-0 py-3 border-bottom">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-truncate" style="max-width: 70%;">{{ p.title }}</span>
+                    <small class="text-muted">{{ p.created_at.strftime('%b %d, %Y') }}</small>
+                  </div>
+                </a>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center py-4 text-muted bg-light rounded" style="border: 2px dashed #dee2e6;">
+              <i class="bi bi-inbox fs-2 text-secondary opacity-50"></i>
+              <p class="mt-2 mb-0 small">This user hasn't posted anything yet.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

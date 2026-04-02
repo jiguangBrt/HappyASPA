@@ -19,6 +19,13 @@
           <h4 class="fw-bold">{{ current_user.username }}</h4>
           <p class="text-muted">{{ current_user.email }}</p>
           
+{# 👇 新增的 Team 标签占位 #}
+<div class="mb-4">
+  <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm" style="font-weight: 500;">
+    <i class="bi bi-people-fill text-primary me-2"></i>Web App Dev Team
+  </span>
+</div>
+
           <div class="mb-4" id="guideBadgeContainer">
             {% if current_user.is_guide_qualified %}
               <span class="badge" style="background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%); color: #fff; padding: 0.4rem 0.8rem; border-radius: 50rem; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(255, 140, 0, 0.4);">
@@ -30,9 +37,19 @@
           </div>
 
           <div class="d-flex justify-content-center gap-3 mb-3">
-            <div class="bg-light rounded-3 p-3 w-100 border">
-              <div class="text-muted small mb-1">My Coins</div>
-              <div class="fs-3 fw-bold text-warning"><i class="bi bi-coin"></i> {{ current_user.coins or 0 }}</div>
+            <div class="bg-light rounded-3 p-3 w-100 border text-start">
+              <div class="row text-center">
+                <div class="col-6 border-end">
+                  <div class="text-muted small mb-1">Coins</div>
+                  <div class="fs-5 fw-bold text-warning"><i class="bi bi-coin"></i> {{ current_user.coins or 0 }}</div>
+                </div>
+                <div class="col-6">
+                  <div class="text-muted small mb-1">Likes Received</div>
+                  <div class="fs-5 fw-bold text-danger">
+                    <i class="bi bi-heart-fill me-1"></i>{{ total_likes | default(0) }}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -44,6 +61,86 @@
     </div>
 
     <div class="col-12 col-lg-8">
+      
+      
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+          <h5 class="fw-bold mb-0"><i class="bi bi-journal-text text-primary me-2"></i>My Recent Posts</h5>
+        </div>
+        <div class="card-body p-4">
+          {% if recent_posts %}
+            <div class="list-group list-group-flush">
+             {% set recent_posts = current_user.forum_posts[-3:] %} {# 假设模型关联名是 forum_posts #}
+
+{# 1. 定义视觉映射：直接使用十六进制颜色，彻底绕过 Bootstrap 的兼容问题 #}
+{% set board_visuals = {
+    'discussion': {'icon': 'bi bi-chat-right-text', 'bg': '#e7f1ff', 'text': '#0d6efd'},
+    'guide':      {'icon': 'bi bi-mortarboard',     'bg': '#fff3cd', 'text': '#ffc107'}
+} %}
+
+{# 2. 分类标签的马卡龙色系映射 #}
+{% set category_colors = {
+    'Vocabulary': 'info',
+    'Grammar':    'indigo',
+    'Listening':  'success',
+    'Speaking':   'danger',
+    'Writing':    'orange',
+    'Reading':    'primary'
+} %}
+
+<div class="list-group list-group-flush">
+  {% for p in recent_posts %}
+    {% set p_visual = board_visuals[p.board] if p.board in board_visuals else {'icon': 'bi bi-file-earmark', 'bg': '#f8f9fa', 'text': '#6c757d'} %}
+    {% set cat_color = category_colors[p.category] if p.category in category_colors else 'secondary' %}
+
+    <a href="{{ url_for('forum.post_detail', post_id=p.id) }}" class="list-group-item list-group-item-action px-0 py-3 border-bottom border-light">
+      <div class="d-flex justify-content-between align-items-center">
+        
+        <div class="d-flex align-items-center text-truncate" style="max-width: 75%;">
+          {# 👇 核心修改：移除 bg-primary，直接用内联的 background-color，保证 100% 渲染为浅色 #}
+          <div class="d-flex align-items-center justify-content-center rounded-circle me-3" 
+               style="width: 42px; height: 42px; flex-shrink: 0; background-color: {{ p_visual.bg }}; color: {{ p_visual.text }};">
+            <i class="{{ p_visual.icon }}" style="font-size: 1.2rem;"></i>
+          </div>
+
+          <div class="d-flex flex-column text-truncate">
+            <span class="fw-bold text-dark mb-0 text-truncate" style="font-size: 1rem;">{{ p.title }}</span>
+            <small class="text-muted opacity-75" style="font-size: 0.75rem;">
+               <i class="bi bi-dot"></i> In {{ p.board | capitalize }}
+            </small>
+          </div>
+        </div>
+        
+        <div class="text-end flex-shrink-0">
+          {% if p.category %}
+            <span class="badge bg-{{ cat_color }} bg-opacity-10 text-{{ cat_color }} border border-{{ cat_color }} border-opacity-10 rounded-pill mb-1" 
+                  style="font-size: 0.65rem; font-weight: 600; letter-spacing: 0.3px;">
+              {{ p.category | upper }}
+            </span>
+          {% endif %}
+          <small class="text-secondary d-block opacity-50" style="font-size: 0.7rem; font-weight: 500;">
+            {{ p.created_at.strftime('%b %d') }}
+          </small>
+        </div>
+
+      </div>
+    </a>
+  {% endfor %}
+</div>
+            </div>
+           <div class="text-end mt-2">
+  <a href="{{ url_for('forum.index', user_id=current_user.id) }}" class="small text-decoration-none text-primary">
+    View all my posts ({{ current_user.forum_posts|length }}) →
+  </a>
+</div>
+          {% else %}
+            <div class="text-center py-3 text-muted bg-light rounded" style="border: 2px dashed #dee2e6;">
+              <p class="mb-0 small"><i class="bi bi-inbox me-1"></i>You haven't posted anything yet.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+      
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
           <h5 class="fw-bold mb-0"><i class="bi bi-award text-primary me-2"></i>English Proficiency Certification</h5>
