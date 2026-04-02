@@ -19,6 +19,13 @@
           <h4 class="fw-bold">{{ current_user.username }}</h4>
           <p class="text-muted">{{ current_user.email }}</p>
           
+{# 👇 新增的 Team 标签占位 #}
+<div class="mb-4">
+  <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm" style="font-weight: 500;">
+    <i class="bi bi-people-fill text-primary me-2"></i>Web App Dev Team
+  </span>
+</div>
+
           <div class="mb-4" id="guideBadgeContainer">
             {% if current_user.is_guide_qualified %}
               <span class="badge" style="background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%); color: #fff; padding: 0.4rem 0.8rem; border-radius: 50rem; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(255, 140, 0, 0.4);">
@@ -65,10 +72,10 @@
             <div class="list-group list-group-flush">
              {% set recent_posts = current_user.forum_posts[-3:] %} {# 假设模型关联名是 forum_posts #}
 
-{# 1. 定义视觉映射：只用线条图标，拒绝填充色块 #}
+{# 1. 定义视觉映射：直接使用十六进制颜色，彻底绕过 Bootstrap 的兼容问题 #}
 {% set board_visuals = {
-    'discussion': {'icon': 'bi bi-chat-right-text', 'color': 'primary'},
-    'guide':      {'icon': 'bi bi-mortarboard',     'color': 'warning'}
+    'discussion': {'icon': 'bi bi-chat-right-text', 'bg': '#e7f1ff', 'text': '#0d6efd'},
+    'guide':      {'icon': 'bi bi-mortarboard',     'bg': '#fff3cd', 'text': '#ffc107'}
 } %}
 
 {# 2. 分类标签的马卡龙色系映射 #}
@@ -83,16 +90,16 @@
 
 <div class="list-group list-group-flush">
   {% for p in recent_posts %}
-    {% set p_visual = board_visuals[p.board] if p.board in board_visuals else {'icon': 'bi bi-file-earmark', 'color': 'secondary'} %}
+    {% set p_visual = board_visuals[p.board] if p.board in board_visuals else {'icon': 'bi bi-file-earmark', 'bg': '#f8f9fa', 'text': '#6c757d'} %}
     {% set cat_color = category_colors[p.category] if p.category in category_colors else 'secondary' %}
 
     <a href="{{ url_for('forum.post_detail', post_id=p.id) }}" class="list-group-item list-group-item-action px-0 py-3 border-bottom border-light">
       <div class="d-flex justify-content-between align-items-center">
         
         <div class="d-flex align-items-center text-truncate" style="max-width: 75%;">
-          {# 👇 核心修改：使用 10% 的极浅背景 + 细线条图标 #}
-          <div class="d-flex align-items-center justify-content-center bg-{{ p_visual.color }} bg-opacity-10 text-{{ p_visual.color }} rounded-circle me-3" 
-               style="width: 42px; height: 42px; flex-shrink: 0;">
+          {# 👇 核心修改：移除 bg-primary，直接用内联的 background-color，保证 100% 渲染为浅色 #}
+          <div class="d-flex align-items-center justify-content-center rounded-circle me-3" 
+               style="width: 42px; height: 42px; flex-shrink: 0; background-color: {{ p_visual.bg }}; color: {{ p_visual.text }};">
             <i class="{{ p_visual.icon }}" style="font-size: 1.2rem;"></i>
           </div>
 
@@ -106,7 +113,6 @@
         
         <div class="text-end flex-shrink-0">
           {% if p.category %}
-            {# 👇 这里就是你想要的分类标签 #}
             <span class="badge bg-{{ cat_color }} bg-opacity-10 text-{{ cat_color }} border border-{{ cat_color }} border-opacity-10 rounded-pill mb-1" 
                   style="font-size: 0.65rem; font-weight: 600; letter-spacing: 0.3px;">
               {{ p.category | upper }}

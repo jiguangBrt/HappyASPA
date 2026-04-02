@@ -4,7 +4,14 @@
 {% block content %}
 <nav aria-label="breadcrumb" class="mb-3">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{{ url_for('forum.index') }}">Forum</a></li>
+    {# 👇 核心修复：如果有接力棒传过来，就原路返回个人主页筛选模式；否则回全论坛 #}
+    <li class="breadcrumb-item">
+      {% if request.args.get('ref_user') %}
+        <a href="{{ url_for('forum.index', user_id=request.args.get('ref_user')) }}">Profile Forum</a>
+      {% else %}
+        <a href="{{ url_for('forum.index', board=post.board) }}">Forum</a>
+      {% endif %}
+    </li>
     <li class="breadcrumb-item active text-truncate" style="max-width:300px">{{ post.title }}</li>
   </ol>
 </nav>
@@ -192,12 +199,22 @@ function scrollToComment(commentId) {
     
     if (targetComment) {
         targetComment.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        targetComment.style.transition = "background-color 0.5s ease";
-        targetComment.style.backgroundColor = "#fff3cd"; // 浅黄色高亮
         
+        // 1. 设置动画过渡时间
+        targetComment.style.transition = "background-color 1s ease";
+        
+        // 2. 瞬间变成浅黄色高亮
+        targetComment.style.backgroundColor = "#fff3cd"; 
+        
+        // 3. 延迟后，强制褪色为纯白色 (而不是 transparent)
         setTimeout(() => {
-            targetComment.style.backgroundColor = "transparent";
+            targetComment.style.backgroundColor = "#ffffff"; 
         }, 1500);
+        
+        // 4. 👇 核心修复：清理浏览器地址栏的 hash，彻底干掉原生的灰色 :target 状态！
+        if(window.location.hash) {
+            history.replaceState(null, null, ' ');
+        }
     }
 }
 

@@ -132,6 +132,12 @@ def index():
             .filter(CommentFavorite.user_id == current_user.id)\
             .filter(ForumPost.board == board)
             
+            # ==========================================
+        # 👇 只需要在这里加上这两行，精准过滤“我自己的评论”
+        if user_id_filter:
+            comment_query = comment_query.filter(ForumComment.user_id == user_id_filter)
+        # ==========================================
+        
         if category_filter:
             comment_query = comment_query.filter(ForumPost.category == category_filter)
                 
