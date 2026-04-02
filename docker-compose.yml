@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: happyaspa_web
+    restart: always
+    ports:
+      - "80:5000"
+    volumes:
+      # 防止重启后录音文件和数据库丢失
+      - ./uploads:/app/uploads
+      - ./instance:/app/instance
