@@ -2,6 +2,16 @@
 {% block title %}{{ target_user.username }}'s Profile{% endblock %}
 
 {% block content %}
+
+{# 👇 新增：智能返回按钮，带记忆功能 👇 #}
+<div class="mb-4">
+  <a href="{{ request.referrer or url_for('forum.index') }}" 
+     class="text-decoration-none text-secondary d-inline-flex align-items-center transition-hover" 
+     style="font-weight: 500;">
+    <i class="bi bi-arrow-left-circle-fill me-2 fs-5"></i> Back
+  </a>
+</div>
+
 <div class="container py-4">
   <div class="row g-4">
     
@@ -18,7 +28,15 @@
             {% endif %}
           </div>
           
-          <h4 class="fw-bold">{{ target_user.username }}</h4>
+          {# 名字部分稍微加点底部边距 (mb-2) #}
+          <h4 class="fw-bold mb-2">{{ target_user.username }}</h4>
+          
+          {# 👇 完美复刻你截图里的 Team 标签：白底、细边框、阴影、蓝色群组图标 👇 #}
+          <div class="mb-3">
+            <span class="badge bg-white text-dark border rounded-pill px-3 py-2 shadow-sm" style="font-size: 0.85rem; font-weight: 500;">
+              <i class="bi bi-people-fill text-primary me-1"></i> Web App Dev Team
+            </span>
+          </div>
           
           <div class="mb-4">
             {% if target_user.is_guide_qualified %}
