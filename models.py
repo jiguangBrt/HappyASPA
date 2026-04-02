@@ -26,6 +26,9 @@ class User(UserMixin, db.Model):
     coins                 = db.Column(db.Integer, default=0)
     last_checkin_date     = db.Column(db.Date, nullable=True)
     last_post_reward_date = db.Column(db.Date, nullable=True)
+    # 🌟 NEW: 拼图小游戏每日限制
+    last_puzzle_date = db.Column(db.Date, nullable=True)  # 上次获得拼图奖励的日期
+    daily_puzzle_count = db.Column(db.Integer, default=0)  # 当天已获得奖励的次数
 
     # ==========================================
     # 🎓 NEW: 英语成绩认证与权限字段
