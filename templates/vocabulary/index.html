@@ -92,7 +92,7 @@
   </div>
 
   <div class="row">
-    <div class="col-lg-8 d-flex justify-content-center">
+    <div class="col-lg-8 d-flex justify-content-center align-items-start">
       <div id="puzzleGrid" class="puzzle-container shadow-sm"></div>
     </div>
     <div class="col-lg-4">
@@ -256,29 +256,23 @@ async function startPuzzleGame() {
   }
 }
 
-function renderPuzzleGrid(grid, words) {
-  console.log("Grid received:", grid); // 看看控制台是否打印出 15x15 的数组
-  console.log("Words received:", words);
+function renderPuzzleGrid(grid, wordObjects) {
   const container = document.getElementById('puzzleGrid');
   const listContainer = document.getElementById('puzzleWordList');
 
-  if (!container) {
-        console.error("Cannot find element with id 'puzzleGrid'");
-        return;
-  }
-
   container.innerHTML = '';
   listContainer.innerHTML = '';
-  puzzleTargetWords = words;
+
+  // ⭐ 存储完整的单词对象数组
+  puzzleTargetWords = wordObjects;
   puzzleFoundCount = 0;
 
-  // 1. 生成 15x15 的网格 HTML
+  // 1. 渲染网格 (保持不变)
   grid.forEach((row, r) => {
     row.forEach((char, c) => {
       const cell = document.createElement('div');
       cell.className = 'puzzle-cell';
       cell.innerText = char;
-      // 存储坐标以便逻辑判断
       cell.dataset.r = r;
       cell.dataset.c = c;
       cell.onclick = () => onPuzzleCellClick(r, c, cell);
@@ -286,12 +280,18 @@ function renderPuzzleGrid(grid, words) {
     });
   });
 
-  // 2. 生成右侧单词清单
-  words.forEach(w => {
+  // 2. ⭐ 修改：渲染带释义的单词清单
+  wordObjects.forEach(item => {
     const li = document.createElement('li');
-    li.className = 'list-group-item d-flex justify-content-between align-items-center py-2';
-    li.id = `puzzle-word-${w}`;
-    li.innerText = w;
+    li.className = 'list-group-item py-3'; // 加宽间距
+    li.id = `puzzle-word-${item.word}`;
+    li.innerHTML = `
+      <div class="d-flex justify-content-between align-items-center">
+        <span class="fw-bold word-text">${item.display}</span>
+        <span class="badge bg-light text-dark fw-normal">Pending</span>
+      </div>
+      <div class="small text-muted mt-1 m-text">${item.meaning}</div>
+    `;
     listContainer.appendChild(li);
   });
 }
@@ -340,23 +340,71 @@ function checkPuzzleMatch(start, end) {
     }
   }
 
-  // 校验：正向或反向匹配
   const reversed = selectedWord.split('').reverse().join('');
-  const match = puzzleTargetWords.find(w => w === selectedWord || w === reversed);
 
-  if (match) {
-    const li = document.getElementById(`puzzle-word-${match}`);
-    // 如果还没被找到过
+  // ⭐ 修改：从对象数组中查找匹配的单词
+  const matchObj = puzzleTargetWords.find(item =>
+    item.word === selectedWord || item.word === reversed
+  );
+
+  if (matchObj) {
+    const li = document.getElementById(`puzzle-word-${matchObj.word}`);
     if (!li.classList.contains('word-found')) {
-      cells.forEach(c => c.classList.add('found')); // 格子变绿
-      li.classList.add('word-found'); // 列表划掉
-      li.innerHTML += ' <i class="bi bi-check-lg text-success"></i>';
+      cells.forEach(c => c.classList.add('found'));
+
+      li.classList.add('word-found');
+      const badge = li.querySelector('.badge');
+      if (badge) {
+        badge.className = 'badge bg-success';
+        badge.innerText = 'Found';
+      }
+
+      const mText = li.querySelector('.m-text');
+      if (mText) mText.style.opacity = "0.5";
+
       puzzleFoundCount++;
 
-      // 全部找完
+      // ⭐ 修改点：当所有单词找完时
       if (puzzleFoundCount === puzzleTargetWords.length) {
-        setTimeout(() => {
-            finishModal.show(); // 弹出你原有的“完成”弹窗
+        // 使用 async/await 必须在包裹函数或这里处理
+        setTimeout(async () => {
+          try {
+            // 1. 发送请求到后端结算
+            const response = await fetch('/vocabulary/api/puzzle/complete', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+
+            // 2. 动态修改弹窗的文字内容
+            const modalBody = document.querySelector('#finishModal .modal-content p');
+            if (modalBody) {
+              if (data.rewarded) {
+                // 成功获得金币
+                modalBody.innerHTML = `
+                  <div class="text-success mb-2"><strong>+2 Coins Received!</strong></div>
+                  ${data.message}<br>
+                  <span class="badge bg-warning text-dark mt-2">Total Coins: ${data.coins}</span>
+                `;
+              } else {
+                // 已达上限
+                modalBody.innerHTML = `
+                  <div class="text-muted mb-2">Completed!</div>
+                  ${data.message}
+                `;
+              }
+            }
+
+            // 3. 如果页面上有全局金币显示位置，顺便更新它
+            const globalCoinSpan = document.getElementById('user-coins');
+            if (globalCoinSpan) globalCoinSpan.innerText = data.coins;
+
+          } catch (error) {
+            console.error("Reward claim failed:", error);
+          } finally {
+            // 4. 最后显示弹窗
+            finishModal.show();
+          }
         }, 500);
       }
     }
@@ -842,13 +890,20 @@ function quitSpelling() {
 
   /* 拼图容器：使用 CSS Grid 布局 */
 .puzzle-container {
-    display: grid !important; /* 强制启用 grid */
+    display: grid !important;
     grid-template-columns: repeat(15, 35px);
-    grid-template-rows: repeat(15, 35px); /* 显式指定行高 */
-    width: fit-content; /* 自动适应内容宽度 */
-    margin: 0 auto; /* 居中显示 */
-    background-color: #eee; /* 给个明显的灰色背景 */
-    min-height: 525px;
+    /* 强制行高也是 35px，确保 15 行正好占满 */
+    grid-template-rows: repeat(15, 35px);
+    gap: 2px;
+    padding: 5px; /* 缩小内边距 */
+    background-color: #dee2e6; /* 这里的灰色是格子的缝隙颜色 */
+    border: 3px solid #0d6efd;
+    border-radius: 8px;
+
+    /* ⭐ 关键修改：去掉 min-height，改用 height: fit-content */
+    height: fit-content;
+    width: fit-content;
+    margin-bottom: 0; /* 去掉底部外边距 */
 }
 
 /* 每个小格子样式 */
@@ -885,6 +940,28 @@ function quitSpelling() {
   text-decoration: line-through;
   color: #adb5bd;
   background-color: #f8f9fa;
+}
+
+  /* 单词列表条目微调 */
+.list-group-item {
+  transition: all 0.3s ease;
+  border-left: 4px solid transparent;
+}
+
+/* 找到单词后的左侧边框变绿 */
+.word-found {
+  border-left-color: #198754 !important;
+  background-color: #f8fff9 !important;
+}
+
+.word-text {
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
+}
+
+.m-text {
+  display: block;
+  line-height: 1.4;
 }
 
 </style>
