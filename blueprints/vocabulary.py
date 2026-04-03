@@ -6,6 +6,7 @@ from flask import Blueprint, render_template, jsonify, request
 from flask_login import login_required, current_user
 from sqlalchemy import func
 from models import db, UserVocabularyProgress, VocabularyWord
+from datetime import date
 
 vocabulary_bp = Blueprint('vocabulary', __name__, url_prefix='/vocabulary')
 
@@ -134,6 +135,12 @@ def generate_puzzle(words, size=15):
 
     for word_obj in words:
         word = word_obj.word.upper().replace(" ", "")  # 转大写并去空格
+
+        # 🛡️ 核心防御：如果单词去掉空格后依然比格子长，直接跳过
+        if len(word) > size:
+            print(f"⚠️ Word too long: {word}")
+            continue
+
         placed = False
         for _ in range(50):  # 尝试50次放置
             direction = random.choice(['H', 'V'])  # H: 水平, V: 垂直
@@ -171,11 +178,70 @@ def generate_puzzle(words, size=15):
 @vocabulary_bp.route('/api/puzzle')
 @login_required
 def get_puzzle():
-    # 随机获取5个单词
-    words = VocabularyWord.query.order_by(func.random()).limit(5).all()
-    grid, placed_words = generate_puzzle(words)
+    SIZE = 15  # 定义网格大小
+
+    # 1. 获取所有符合长度要求的候选单词 (长度 <= SIZE)
+    # 过滤掉带空格或特殊字符的词，只取纯单词
+    candidates = VocabularyWord.query.filter(
+        func.length(VocabularyWord.word) <= SIZE
+    ).all()
+
+    if len(candidates) < 5:
+        # 如果单词库太小，不足以抽5个短词，可以报错或放宽限制
+        return jsonify({'error': 'Not enough short words in database'}), 400
+
+    # 2. 从候选词中随机抽取 5 个
+    word_objs = random.sample(candidates, 5)
+
+    # 3. 调用生成函数
+    grid, placed_words_text = generate_puzzle(word_objs, size=SIZE)
+
+    # 4. 构建返回数据 (只返回成功放入网格的单词)
+    word_data = []
+    for obj in word_objs:
+        clean_word = obj.word.upper().replace(" ", "")
+        if clean_word in placed_words_text:
+            word_data.append({
+                'word': clean_word,
+                'display': obj.word,
+                'meaning': obj.definition
+            })
 
     return jsonify({
         'grid': grid,
-        'target_words': placed_words
+        'target_words': word_data
+    })
+
+
+@vocabulary_bp.route('/api/puzzle/complete', methods=['POST'])
+@login_required
+def complete_puzzle():
+    today = date.today()
+
+    # 1. 检查日期，如果跨天了，重置计数器
+    if current_user.last_puzzle_date != today:
+        current_user.last_puzzle_date = today
+        current_user.daily_puzzle_count = 0
+
+    rewarded = False
+    new_coins = current_user.coins
+
+    # 2. 检查是否达到每日 3 次上限
+    if current_user.daily_puzzle_count < 3:
+        current_user.daily_puzzle_count += 1
+        current_user.coins += 2  # 每次奖励 2 硬币
+        rewarded = True
+        new_coins = current_user.coins
+        message = f"Puzzle Complete! +2 Coins earned ({current_user.daily_puzzle_count}/3 today)."
+    else:
+        message = "Daily limit reached. No more coins for today, but keep it up!"
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'rewarded': rewarded,
+        'message': message,
+        'coins': new_coins,
+        'daily_count': current_user.daily_puzzle_count
     })

@@ -10,7 +10,7 @@ from sqlalchemy import func, desc
 import random
 
 from models import (
-    db, User,
+    db, User,Team,
     SeedType, FruitType, LandType, OrchardItem,
     UserOrchard, UserLand, UserOrchardInventory,
     UserHarvestedFruit, UserShowcaseFruit
@@ -122,10 +122,24 @@ def index():
         if land.plant_status == 'growing' and land.matures_at and now >= land.matures_at:
             land.plant_status = 'mature'
     db.session.commit()
+
+    # 统一按 UTC 传给前端，避免本地时区解释 naive datetime 导致计时偏移
+    land_timing_map = {}
+    for land in lands:
+        start_ts = None
+        end_ts = None
+        if land.planted_at:
+            start_ts = land.planted_at.replace(tzinfo=timezone.utc).timestamp()
+        if land.matures_at:
+            end_ts = land.matures_at.replace(tzinfo=timezone.utc).timestamp()
+        land_timing_map[land.id] = {
+            'start_ts': start_ts,
+            'end_ts': end_ts,
+        }
     
     # 获取展示柜果实
     showcase_fruits = UserShowcaseFruit.query.filter_by(orchard_id=orchard.id)\
-        .order_by(UserShowcaseFruit.position).limit(6).all()
+        .order_by(UserShowcaseFruit.position).all()
     
     # 获取排行榜数据
     # 本周榜
@@ -143,6 +157,14 @@ def index():
     ).join(UserOrchard, User.id == UserOrchard.user_id)\
      .order_by(desc(UserOrchard.total_points))\
      .limit(10).all()
+
+    # ==========================================
+    # 👇 NEW: 团队总排行榜逻辑 👇
+    # ==========================================
+    from models import Team  # 确保能查到 Team 模型
+    all_teams = Team.query.all()
+    # 使用 models.py 中定义的 total_team_points 属性，从大到小排序，取前 10 名
+    team_leaderboard = sorted(all_teams, key=lambda t: t.total_team_points, reverse=True)[:10]
     
     # 获取当前用户排名
     user_weekly_rank = db.session.query(func.count(UserOrchard.id))\
@@ -171,22 +193,23 @@ def index():
             if item:
                 item_inventory[item.id] = {'item': item, 'quantity': inv.quantity}
     
-    # 获取用户可展示的稀有果实（未在展示柜中的）
+    # 获取用户可展示果实（未在展示柜中的，包含所有稀有度）
     showcased_ids = [sf.harvested_fruit_id for sf in showcase_fruits]
     available_rare_fruits = UserHarvestedFruit.query\
         .join(FruitType)\
         .filter(
             UserHarvestedFruit.user_id == current_user.id,
-            FruitType.is_showcase_worthy == True,
             ~UserHarvestedFruit.id.in_(showcased_ids) if showcased_ids else True
         ).all()
     
+    # 最终渲染页面，把所有数据传给前端
     return render_template('orchard/index.html',
         orchard=orchard,
         lands=lands,
         showcase_fruits=showcase_fruits,
         weekly_leaderboard=weekly_leaderboard,
         total_leaderboard=total_leaderboard,
+        team_leaderboard=team_leaderboard,  # 👈 新增：把刚才算好的团队榜单传进去！
         user_weekly_rank=user_weekly_rank,
         user_total_rank=user_total_rank,
         seeds=seeds,
@@ -195,7 +218,8 @@ def index():
         seed_inventory=seed_inventory,
         item_inventory=item_inventory,
         available_rare_fruits=available_rare_fruits,
-    now=utcnow_naive()
+        land_timing_map=land_timing_map,
+        now=utcnow_naive()
     )
 
 
@@ -397,18 +421,16 @@ def harvest():
     orchard.weekly_points += fruit.points
     orchard.total_harvests += 1
     
-    # 如果是稀有果实，自动添加到展示柜
+    # 收获后自动添加到展示柜（包含所有稀有度）
     auto_showcase = False
-    if fruit.is_showcase_worthy:
-        showcase_count = UserShowcaseFruit.query.filter_by(orchard_id=orchard.id).count()
-        if showcase_count < 6:  # 展示柜最多6个
-            showcase_fruit = UserShowcaseFruit(
-                orchard_id=orchard.id,
-                harvested_fruit_id=harvested.id,
-                position=showcase_count
-            )
-            db.session.add(showcase_fruit)
-            auto_showcase = True
+    showcase_count = UserShowcaseFruit.query.filter_by(orchard_id=orchard.id).count()
+    showcase_fruit = UserShowcaseFruit(
+        orchard_id=orchard.id,
+        harvested_fruit_id=harvested.id,
+        position=showcase_count
+    )
+    db.session.add(showcase_fruit)
+    auto_showcase = True
     
     # 重置土地状态
     land.current_seed_id = None
@@ -474,10 +496,16 @@ def use_item():
     if inventory.quantity <= 0:
         db.session.delete(inventory)
     
-    # 应用效果（加速）
+    # 应用效果（推进进度，不改变总生长时长）
     if item.item_type in ['fertilizer', 'water'] and land.matures_at:
         speed_hours = item.effect_value
-        land.matures_at -= timedelta(hours=speed_hours)
+        delta = timedelta(hours=speed_hours)
+        # 同时前移 planted_at 与 matures_at：
+        # - 总时长（matures_at - planted_at）保持不变
+        # - 已用时增加，剩余时间减少
+        if land.planted_at:
+            land.planted_at -= delta
+        land.matures_at -= delta
         
         # 检查是否已经成熟
         now = utcnow_naive()
@@ -508,10 +536,8 @@ def add_to_showcase():
     
     orchard = get_or_create_user_orchard(current_user.id)
     
-    # 检查展示柜是否已满
+    # 当前展示数量用于顺序追加 position
     showcase_count = UserShowcaseFruit.query.filter_by(orchard_id=orchard.id).count()
-    if showcase_count >= 6:
-        return jsonify({'success': False, 'message': 'Showcase is full'}), 400
     
     # 验证果实
     harvested = db.session.get(UserHarvestedFruit, harvested_fruit_id)
