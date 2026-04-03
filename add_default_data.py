@@ -1118,9 +1118,9 @@ def add_default_data():
             
     # We need to create seeds first because FruitType has a foreign key to SeedType
     seed_types = [
-        {'name': 'Apple Seed', 'name_en': 'Apple Seed', 'description': 'Grows into an Apple.', 'growth_hours': 1, 'price': 5, 'plant_image_url': '/static/orchard/soild/soild_ripened_1.png'},
-        {'name': 'Strawberry Seed', 'name_en': 'Strawberry Seed', 'description': 'Grows into a Strawberry.', 'growth_hours': 2, 'price': 10, 'plant_image_url': '/static/orchard/soild/soild_ripened_2.png'},
-        {'name': 'Pineapple Seed', 'name_en': 'Pineapple Seed', 'description': 'Grows into a Pineapple.', 'growth_hours': 4, 'price': 20, 'plant_image_url': '/static/orchard/soild/soild_ripened_3.png'}
+        {'name': 'Apple Seed', 'name_en': 'Apple Seed', 'description': 'Grows into an Apple.', 'growth_hours': 1, 'price': 3, 'plant_image_url': '/static/orchard/soild/soild_ripened_1.png'},
+        {'name': 'Strawberry Seed', 'name_en': 'Strawberry Seed', 'description': 'Grows into a Strawberry.', 'growth_hours': 2, 'price': 6, 'plant_image_url': '/static/orchard/soild/soild_ripened_2.png'},
+        {'name': 'Pineapple Seed', 'name_en': 'Pineapple Seed', 'description': 'Grows into a Pineapple.', 'growth_hours': 4, 'price': 12, 'plant_image_url': '/static/orchard/soild/soild_ripened_3.png'}
     ]
     for data in seed_types:
         seed = SeedType.query.filter_by(name=data['name']).first()
@@ -1168,8 +1168,8 @@ def add_default_data():
             
     # Items
     items = [
-        {'name': 'Time Fertilizer', 'name_en': 'Time Fertilizer', 'description': 'Reduces growth time by 2 hours.', 'item_type': 'fertilizer', 'effect_value': 2.0, 'price': 10},
-        {'name': 'Super Fertilizer', 'name_en': 'Super Fertilizer', 'description': 'Reduces growth time by 6 hours.', 'item_type': 'fertilizer', 'effect_value': 6.0, 'price': 25},
+        {'name': 'Time Fertilizer', 'name_en': 'Time Fertilizer', 'description': 'Reduces growth time by 2 hours.', 'item_type': 'fertilizer', 'effect_value': 2.0, 'price': 6},
+        {'name': 'Super Fertilizer', 'name_en': 'Super Fertilizer', 'description': 'Reduces growth time by 4 hours.', 'item_type': 'fertilizer', 'effect_value': 4.0, 'price': 12},
         {'name': 'Water', 'name_en': 'Water', 'description': 'Reduces growth time by 1 hour.', 'item_type': 'water', 'effect_value': 1.0, 'price': 2}
     ]
     for data in items:
