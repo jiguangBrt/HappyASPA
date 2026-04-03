@@ -89,91 +89,98 @@ def add_default_data():
     # ─────────────────────────────────────────────
     # 2. Listening Exercises（听力练习）
     # ─────────────────────────────────────────────
+    # ─────────────────────────────────────────────
+# 2. Listening Exercises（听力练习）
+# ─────────────────────────────────────────────
+
+# ==============================================
+# 🔥 强制删除指定视频 + 清理关联进度（修复报错）
+# ==============================================
+    from models import UserListeningProgress  # 导入进度表
+    
+    print("🗑️ 正在删除旧视频：Try Something New for 30 Days...")
+    
+    # 1. 找到要删除的听力视频
+    target_title = "Try Something New for 30 Days"
+    exercise = ListeningExercise.query.filter_by(title=target_title).first()
+    
+    if exercise:
+        # 2. 先删除所有用户的学习进度（关键！解决报错）
+        UserListeningProgress.query.filter_by(exercise_id=exercise.id).delete()
+        print(f"✅ 已清理该视频的所有用户学习进度")
+        
+        # 3. 再删除视频本身
+        db.session.delete(exercise)
+        print(f"✅ 视频已从数据库彻底删除")
+    else:
+        print(f"ℹ️ 视频不存在，跳过")
+    
+    
     listening_defaults = [
         {
-            'title': 'Try Something New for 30 Days',
-            'description': (
-                'A TED Talk by Matt Cutts encouraging people to try new things '
-                'for 30 days to build positive habits and make life more memorable.'
+            "title": "Fun Writing Activities for ESL Class",
+            "description": "Three fun and practical writing activities for English teachers to use in class.",
+            "audio_url": "/static/video/Fun Writing Activities for ESL Class.mp4",
+            "subtitle_url": "/static/subtitles/Fun_Writing_Activities_for_ESL_Class.vtt",
+            "transcript": (
+                "The video introduces three enjoyable, flexible writing activities—Pass/Switch/Freeze, story collaboration with “freeze” prompts, and postcard writing—to make writing lessons more engaging, help students generate ideas, practice writing structures, and boost creativity while reducing the boredom of traditional writing tasks. These activities can be used for different types of writing, such as cause and effect essays, formal emails, and narrative stories. Postcard writing encourages imagination and short, clear communication, making it popular among students."
             ),
-            'audio_url': '/static/video/TrySomethingNewFor30Days.mp4',
-            'subtitle_url': '/static/subtitles/English_Try_something_new_for_30_days.vtt',
-            'transcript': (
-                "Is there something you've always meant to do, wanted to do, but just … haven't? "
-                "Matt Cutts suggests: Try it for 30 days. This approach has worked for him, "
-                "taking one of the most boring months of his life and turning it into something "
-                "memorable. The idea is surprisingly simple: think about something you've always "
-                "wanted to add to your life and try it for the next 30 days. It turns out, "
-                "30 days is just about the right amount of time to add a new habit or subtract "
-                "one, like watching the news or eating sugar."
-            ),
-            'difficulty': 2,
-            'category': 'Motivation',
-            'accent': 'American',
-            'duration_seconds': 207,
+            "difficulty": 1,
+            "category": "Education",
+            "accent": "American",
+            "duration_seconds": 282,
             "source_platform": "YouTube",
-            "source_author": "UniverseofKorede",
+            "source_author": "ESL with Tas",
             "license_type": "Creative Commons Attribution licence (reuse allowed)",
-            "source_url": "https://www.youtube.com/watch?v=eJU34nRlK5c",
+            "source_url": "https://www.youtube.com/watch?v=NCzn5yk0qNk",
             "is_modified": True,
-            'questions': [
+            "questions": [
                 {
-                    "time": 47.0,
-                    "question": "What does the speaker say about the 30-day duration?",
+                    "time": 60.0,
+                    "question": "What is the first activity called?",
                     "options": [
-                        "It is too short to form a habit.",
-                        "It is just the right amount of time to add a new habit.",
-                        "It is longer than most people can handle.",
-                        "It is only suitable for physical challenges."
+                        "Pass or Switch or Freeze",
+                        "Writing Race",
+                        "Story Match",
+                        "Team Essay"
                     ],
-                    "answer": 1
+                    "answer": 0,
                 },
                 {
-                    "time": 92.0,
-                    "question": "What did the speaker do during his first 30-day challenge?",
+                    "time": 150.0,
+                    "question": "What do students do in the 'freeze' activity?",
                     "options": [
-                        "He took a picture every day.",
-                        "He rode his bike to work every day.",
-                        "He climbed a mountain every day.",
-                        "Both A and B."
+                        "Stop talking and listen",
+                        "Stop writing and pass the paper",
+                        "Rewrite their sentences",
+                        "Choose a new topic"
                     ],
-                    "answer": 3
+                    "answer": 1,
                 },
                 {
-                    "time": 142.0,
-                    "question": "What can be inferred from the speaker’s experience of writing a novel in 30 days?",
+                    "time": 220.0,
+                    "question": "What is the second activity mentioned?",
                     "options": [
-                        "Writing a novel is easier than expected.",
-                        "You can accomplish big things by breaking them into daily tasks.",
-                        "It is necessary to have previous writing experience.",
-                        "The novel he wrote was a bestseller."
+                        "Writing letters",
+                        "Writing postcards",
+                        "Writing diaries",
+                        "Writing poems"
                     ],
-                    "answer": 1
-                },
-                {
-                    "time": 188.0,
-                    "question": " What is the main idea of the talk?",
-                    "options": [
-                        "You should try to write a novel in 30 days.",
-                        "It is impossible to change your life in a month.",
-                        "Taking small steps for 30 days can lead to new habits.",
-                        "Only big challenges are worth trying."
-                    ],
-                    "answer": 2
+                    "answer": 1,
                 }
             ],
-            'key_vocab': [
-                    {"word": "rut", "definition": "a boring fixed routine that is hard to change"},
-                    {"word": "memorable", "definition": "worth remembering or easily remembered"},
-                    {"word": "habit", "definition": "a settled or regular tendency or practice"},
-                    {"word": "challenge", "definition": "a task or situation that tests someone's abilities"},
-                    {"word": "confidence", "definition": "belief in one's own abilities or judgment"},
-                    {"word": "adventurous", "definition": "willing to take risks or try new experiences"},
-                    {"word": "scratch", "definition": "from nothing; with no previous preparation"},
-                    {"word": "novel", "definition": "a long written story"},
-                    {"word": "sustainable", "definition": "able to be maintained over a long period of time"},
-                    {"word": "guarantee", "definition": "a promise that something will be done"}
-                ]
+            "key_vocab": [
+                {"word": "activity", "definition": "a thing to do for learning or fun"},
+                {"word": "essay", "definition": "a short piece of writing on a particular subject"},
+                {"word": "narrative", "definition": "a story or account of events"},
+                {"word": "formal", "definition": "following rules or official style"},
+                {"word": "perspective", "definition": "a point of view or way of thinking about something"},
+                {"word": "engaging", "definition": "interesting and enjoyable"},
+                {"word": "brainstorm", "definition": "to think of many ideas quickly"},
+                {"word": "structure", "definition": "the way parts of something are organized"},
+                {"word": "imagination", "definition": "the ability to create new ideas or pictures in mind"},
+                {"word": "motivating", "definition": "making someone want to do something"}
+            ]
         },
         {
             "title": "How a dead duck changed my life",
@@ -181,15 +188,7 @@ def add_default_data():
             "audio_url": "/static/video/How a dead duck changed my life.mp4",
             "subtitle_url": "/static/subtitles/How_a_dead_duck_changed_my_life.vtt",
             "transcript": (
-                "This is the Natural History Museum in Rotterdam, where I work as a curator. "
-                "On an ordinary day in 1995, a loud bang against the window changed my life — a duck had collided with the glass and died. "
-                "Next to it stood another duck, also male, which then mounted the dead duck and began to copulate. "
-                "As a biologist, I realized this was a rare case of homosexual necrophilia, something never formally documented before. "
-                "I observed and recorded the behavior for over an hour, then collected the specimen for the museum. "
-                "Although it took me several years to publish the finding due to the difficulty in explaining it, I eventually documented it scientifically. "
-                "This unusual observation later earned me an Ig Nobel Prize, which celebrates research that first makes people laugh and then think. "
-                "The experience changed my career, leading me to study and collect remarkable examples of unusual animal behavior. "
-                "It also highlights a serious issue: many birds die each year from collisions with glass, which we should work to prevent."
+                "This talk describes how a biologist working at the Natural History Museum Rotterdam witnessed an unusual event in 1995, when a male duck collided with a window and died, and another male duck immediately engaged in mating behavior with the dead one. He documented and later published this rare case of homosexual necrophilia in animals, which eventually earned him the Ig Nobel Prize. The experience transformed his career, leading him to study and collect examples of strange animal behaviors around the world. Through humorous and surprising stories, he highlights how such observations can both entertain and deepen scientific understanding, while also drawing attention to the serious issue of bird deaths caused by collisions with glass."
             ),
             "difficulty": 4,
             "category": "Science",
@@ -254,15 +253,7 @@ def add_default_data():
             "audio_url": "/static/video/The key to effective educational science videos.mp4",
             "subtitle_url": "/static/subtitles/The_key_to_effective_educational_science_videos.vtt",
             "transcript": (
-                "Derek Muller explores how to create effective educational science videos. "
-                "In his PhD research, he tested whether students actually learned from traditional explanatory videos. "
-                "Although students found these videos clear and easy to understand, their test scores showed almost no improvement. "
-                "This revealed a problem: students often believe they understand concepts but fail to correct their misconceptions. "
-                "To address this, Muller experimented with a different video style that included dialogue and conflicting ideas. "
-                "In these videos, one person expressed common misunderstandings, while another guided the discussion toward the correct explanation. "
-                "Although students found this approach more confusing, they learned significantly more because they had to think actively. "
-                "The key insight is that learning requires mental effort, and effective videos should challenge learners' existing beliefs. "
-                "Muller now applies this approach in his YouTube channel, Veritasium, emphasizing the importance of starting with misconceptions."
+                "This talk explains how to create effective science education videos. The speaker conducted experiments teaching students Newton's First Law and Newton's Second Law, comparing traditional explanatory videos with dialogue-based ones. He found that clear and concise explanations made students feel more confident but did not improve their actual understanding, as they often retained their pre-existing misconceptions. In contrast, videos that included discussion and highlighted common misunderstandings required more mental effort, leading to significantly better learning outcomes. The key insight is that students learn more effectively when their misconceptions are challenged, showing that how information is presented directly impacts how much people truly learn."
             ),
             "difficulty": 4,
             "category": "Education",
@@ -327,14 +318,7 @@ def add_default_data():
             "audio_url": "/static/video/Creativity, Humor, and WTF!.mp4",
             "subtitle_url": "/static/subtitles/Creativity_Humor_and_WTF.vtt",
             "transcript": (
-                "The speaker begins by joking that he was not listed on the program because people might not show up if they knew he was speaking. "
-                "He talks about feeling overwhelmed by negativity in the news, especially during a tense political period in the United States. "
-                "To cope with these frustrations, he started creating art as a response to things that upset him. "
-                "His artwork expressed his feelings about politics and society, and unexpectedly resonated with many people online. "
-                "Encouraged by this, he began collecting stories from others and turning them into creative works like animations and posters. "
-                "He shares a humorous story about his young son denying responsibility for an accident, which adds a lighthearted moment. "
-                "He also shares a more serious story about someone whose father disappeared and died without reconciliation, showing the emotional depth of these experiences. "
-                "Through these stories, he realized that life can be difficult, but creativity and humor can help people process challenges and move forward."
+                "This talk describes how the speaker struggled to cope with overwhelming frustration, especially during a politically tense period in the United States, and eventually found relief through creating art. By turning his anger and confusion into humorous and provocative posters and stories, he was able to process difficult emotions. What began as a personal outlet later resonated with others, leading him to create a project that transforms people’s frustrating or painful experiences into creative works. Through both funny and deeply emotional examples, he shows that art can provide distance, perspective, and healing. The main message is that while life can be full of challenges and negativity, creativity and humor can help people cope and connect with others."
             ),
             "difficulty": 5,
             "category": "Society",
@@ -488,15 +472,17 @@ def add_default_data():
             "audio_url": "/static/video/Harry Hui_ Music dreams empower young Chinese artists.mp4",
             "subtitle_url": "/static/subtitles/Harry_Hui_Music_dreams_empower_young_Chinese_artists.vtt",
             "transcript": (
-                "Harry Hui has been in television production and creation in Asia for 15 years, "
-                "mostly around music, celebrating and promoting Chinese artists. "
-                "He shares stories of young artists overcoming challenges, following their dreams, "
-                "and balancing tradition with modernity in their creative pursuits."
+                "The speaker, a television producer in Asia, shares his experience creating a popular Chinese music talent show and reflects on the dreams of young Chinese artists. Through three stories—a determined boy who taught himself to sing in English, a girl who sacrificed her opportunity for love but later chose independence, and a rural singer who stayed true to his simple life—the speaker highlights different paths in pursuing dreams. He concludes that people should make the most of their opportunities, use fame responsibly, and recognize that China is undergoing a creative renaissance driven by young people blending tradition with modernity."
             ),
             "difficulty": 3,
             "category": "Motivation",
             "accent": "Chinese",
             "duration_seconds": 410,
+            "source_platform": "YouTube",
+            "source_author": "TEDTalentSearch",
+            "license_type": "Creative Commons Attribution licence (reuse allowed)",
+            "source_url": "https://www.youtube.com/watch?v=7sy1gVJcHlk",
+            "is_modified": True,
             "questions": [
                 {
                     "time": 103.0,
@@ -554,15 +540,17 @@ def add_default_data():
             "audio_url": "/static/video/Hossein AMIRABDOLLAHIAN.mp4",
             "subtitle_url": "/static/subtitles/Hossein_AMIRABDOLLAHIAN.vtt",
             "transcript": (
-                "Hossein Amirabdollahian discusses Iran’s view on Saudi Arabia, emphasizing willingness "
-                "to cooperate on regional political solutions in places like Yemen, Lebanon, Iraq, and Syria. "
-                "He comments on changes in Saudi leadership, the impact of military interventions, "
-                "and expresses cautious optimism for future negotiations."
+                "In this interview, an Iranian deputy foreign minister discusses relations between Iran and Saudi Arabia, emphasizing that while there are no fundamental bilateral issues, the two countries have significant disagreements over regional conflicts in places like Syria, Iraq, Lebanon, and Yemen. He notes that tensions worsened after Saudi Arabia’s military involvement in Yemen following King Abdullah’s death. Despite these challenges, he expresses optimism about future relations, highlighting Iran’s willingness to engage in dialogue and pursue political solutions to resolve regional disputes."
             ),
             "difficulty": 5,
             "category": "Politics",
             "accent": "Iranian",
             "duration_seconds": 207,
+            "source_platform": "YouTube",
+            "source_author": "World Policy “WPC TV” Conference TV",
+            "license_type": "Creative Commons Attribution licence (reuse allowed)",
+            "source_url": "https://www.youtube.com/watch?v=gTVKntka2Cg",
+            "is_modified": True,
             "questions": [
                 {
                     "time": 52.0,
@@ -616,11 +604,16 @@ def add_default_data():
             "description": "YS Jagan discusses his independent political stance in Andhra Pradesh, critiques the Congress-TDP alliance, and explains why he keeps all political options open.",
             "audio_url": "/static/video/YS Jagan Exclusive Interview in INDIA TODAY.mp4",
             "subtitle_url": "/static/subtitles/YS_Jagan_Exclusive_Interview_in_INDIA_TODAY.vtt",
-            "transcript": "YS Jagan explains that he does not rely on Rahul Gandhi or any external support. He criticizes the Congress-TDP alliance in Telangana, saying such politics are unethical and misleading. He emphasizes maintaining independence and credibility in politics.",
+            "transcript": "In this interview, the speaker discusses his stance toward the Indian National Congress and potential reconciliation. He emphasizes that his party is not against any individual, including Rahul Gandhi, but prefers to remain independent and not rely on or fully trust others. He criticizes the Congress for losing strength in Andhra Pradesh and lacking consistency, especially pointing out its alliances with former rivals despite previously accusing them of corruption. He argues that such opportunistic politics undermines public trust. Ultimately, he expresses confidence in the people and frames the upcoming elections as a choice between credibility and opportunism, believing voters will reject inconsistent political behavior.",
             "difficulty": 4,
             "category": "Politics",
             "accent": "Indian",
             "duration_seconds": 282,
+             "source_platform": "YouTube",
+            "source_author": "V Sri",
+            "license_type": "Creative Commons Attribution licence (reuse allowed)",
+            "source_url": "https://www.youtube.com/watch?v=gJ22jqWbxwg",
+            "is_modified": True,
             "questions": [
                 {
                     "time": 120.0,
@@ -668,7 +661,72 @@ def add_default_data():
                     {"word": "corruption", "definition": "dishonest or illegal behavior by people in power"},
                     {"word": "credibility", "definition": "the quality of being trusted and believed"}
                 ]
+        },
+        {
+            "title": "The Structure of a Short Story",
+            "description": "A lesson explaining the five key elements of a short story: characters, setting, conflict, theme, and plot. It also covers the plot structure including exposition, rising action, climax, falling action, and resolution.",
+            "audio_url": "/static/video/esl_the_structure_of_a_short_story.mp4",
+            "subtitle_url": "/static/subtitles/esl_the_structure_of_a_short_story.vtt",
+            "transcript": "This lesson explains the structure of a short story, which is a brief narrative containing characters, a simple plot, and a central conflict that leads to a climax and a resolution. It introduces five key elements: characters (including protagonist and antagonist), setting (time and place), conflict (the main problem), theme (the underlying message), and plot. The plot follows a typical structure of exposition, rising action, climax, falling action, and resolution, often visualized as a mountain shape, showing how the story builds tension and then resolves it.",
+            "difficulty": 2,
+            "category": "Education",
+            "accent": "American",
+            "duration_seconds": 407,
+            "source_platform": "YouTube",
+            "source_author": "Englishing",
+            "license_type": "Creative Commons Attribution licence (reuse allowed)",
+            "source_url": "https://www.youtube.com/watch?v=YiS5kdrJhno",
+            "is_modified": True,
+            "questions": [
+                {
+                    "time": 40.0,
+                    "question": "What are the five main elements of a short story?",
+                    "options": [
+                        "Title, author, theme, ending, dialogue",
+                        "Characters, setting, conflict, theme, and plot",
+                        "Beginning, middle, end, lesson, summary",
+                        "Action, humor, drama, music, setting"
+                    ],
+                    "answer": 1
+                },
+                {
+                    "time": 130.0,
+                    "question": "Which of the following is an example of \"man versus nature\"?",
+                    "options": [
+                        "Batman fighting the Joker",
+                        "A person struggling with inner thoughts",
+                        "Titanic hitting an iceberg",
+                        "Robin Hood fighting society"
+                    ],
+                    "answer": 2
+                },
+                {
+                    "time": 250.0,
+                    "question": "What is the climax in a story?",
+                    "options": [
+                        "The introduction of characters",
+                        "The highest point of tension in the story",
+                        "The ending of the story",
+                        "The background information"
+                    ],
+                    "answer": 1
+                }
+            ],
+            "key_vocab": [
+                {"word": "short story", "definition": "a brief narrative with characters, plot and conflict"},
+                {"word": "protagonist", "definition": "the main character or hero of a story"},
+                {"word": "antagonist", "definition": "the character who creates conflict for the main character"},
+                {"word": "setting", "definition": "the time and place where a story happens"},
+                {"word": "conflict", "definition": "the main problem that the protagonist faces"},
+                {"word": "theme", "definition": "the main message or idea the author wants to teach"},
+                {"word": "plot", "definition": "the sequence of events in a story"},
+                {"word": "exposition", "definition": "the introduction of setting, characters and background"},
+                {"word": "climax", "definition": "the highest point of tension and interest in a story"},
+                {"word": "resolution", "definition": "the end of the story where the conflict is solved"}
+            ]
         }
+        
+        
     ]
     for data in listening_defaults:
         exercise = ListeningExercise.query.filter_by(title=data['title']).first()
@@ -680,6 +738,8 @@ def add_default_data():
             print(f"  ✅ 正在插入新听力练习：{data['title']}")
             exercise = ListeningExercise(**data)
             db.session.add(exercise)
+            
+    
 
     # ─────────────────────────────────────────────
     # 3. Speaking Exercises（口语练习 - English Corner）
