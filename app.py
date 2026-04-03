@@ -63,6 +63,10 @@ def create_app():
     app.register_blueprint(listening_bp)
     app.register_blueprint(speaking_bp)
     app.register_blueprint(orchard_bp)
+
+    # ── CLI Commands ─────────────────────────────────────────────────────────
+    from add_default_data import add_default_data
+    app.cli.add_command(add_default_data)
     
     # 👇 2. 注册 team 蓝图
     app.register_blueprint(team_bp)
