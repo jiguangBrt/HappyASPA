@@ -19,20 +19,29 @@
           <h4 class="fw-bold">{{ current_user.username }}</h4>
           <p class="text-muted">{{ current_user.email }}</p>
           
-{# 👇 新增的 Team 标签占位 #}
-<div class="mb-4">
-  <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm" style="font-weight: 500;">
-    <i class="bi bi-people-fill text-primary me-2"></i>Web App Dev Team
-  </span>
-</div>
+{# 👇 拨乱反正：直接读取 current_user.teams 这个列表 👇 #}
+          <div class="mb-4 d-flex flex-wrap justify-content-center align-items-center gap-2">
+            
+            {% if current_user.teams %}
+                {# 取加入的第一个团队 #}
+                {% set my_team = current_user.teams[0] %}
+                <span class="badge bg-success border px-3 py-2 rounded-pill shadow-sm" style="font-weight: 500;" title="{{ my_team.description }}">
+                  <i class="bi bi-people-fill me-2"></i>{{ my_team.name }}
+                  {% if my_team.leader_id == current_user.id %}
+                    <i class="bi bi-star-fill text-warning ms-1" style="font-size: 0.75rem;" data-bs-toggle="tooltip" title="Team Leader"></i>
+                  {% endif %}
+                </span>
+            {% else %}
+              <span class="badge bg-light text-muted border px-3 py-2 rounded-pill shadow-sm" style="font-weight: 500;">
+                <i class="bi bi-person me-2"></i>Not in any team yet
+              </span>
+            {% endif %}
 
-          <div class="mb-4" id="guideBadgeContainer">
+            {# 把 Expert 标签也放进来，消灭下方的重复区块 #}
             {% if current_user.is_guide_qualified %}
-              <span class="badge" style="background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%); color: #fff; padding: 0.4rem 0.8rem; border-radius: 50rem; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(255, 140, 0, 0.4);">
+              <span class="badge shadow-sm" style="background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%); color: #fff; padding: 0.4rem 0.8rem; border-radius: 50rem; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(255, 140, 0, 0.4);">
                 <i class="bi bi-patch-check-fill"></i> Expert 
               </span>
-            {% else %}
-              <span class="badge bg-secondary opacity-50"><i class="bi bi-lock-fill"></i> The guidance area has not been unlocked yet.</span>
             {% endif %}
           </div>
 
@@ -53,6 +62,13 @@
             </div>
           </div>
           
+          {# 👇 只有没队伍的人，才显示建队按钮 👇 #}
+          {% if current_user.orchard and not current_user.orchard.team %}
+            <button class="btn btn-primary w-100 btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#createTeamModal">
+              <i class="bi bi-plus-circle"></i> Create a Team
+            </button>
+          {% endif %}
+
           <button class="btn btn-outline-primary w-100 btn-sm" disabled>
             <i class="bi bi-camera"></i> Change Avatar (Coming Soon)
           </button>
@@ -78,55 +94,59 @@
     'guide':      {'icon': 'bi bi-mortarboard',     'bg': '#fff3cd', 'text': '#ffc107'}
 } %}
 
-{# 2. 分类标签的马卡龙色系映射 #}
-{% set category_colors = {
-    'Vocabulary': 'info',
-    'Grammar':    'indigo',
-    'Listening':  'success',
-    'Speaking':   'danger',
-    'Writing':    'orange',
-    'Reading':    'primary'
-} %}
+{# 👇 必须与 post.html 保持一致的颜色映射表 👇 #}
+            {% set category_colors = {
+                'Vocabulary': 'info',
+                'Grammar':    'secondary',
+                'Listening':  'success',
+                'Speaking':   'danger',
+                'Writing':    'warning',
+                'Reading':    'primary'
+            } %}
 
-<div class="list-group list-group-flush">
-  {% for p in recent_posts %}
-    {% set p_visual = board_visuals[p.board] if p.board in board_visuals else {'icon': 'bi bi-file-earmark', 'bg': '#f8f9fa', 'text': '#6c757d'} %}
-    {% set cat_color = category_colors[p.category] if p.category in category_colors else 'secondary' %}
+            <div class="list-group list-group-flush">
+              {% for p in recent_posts %}
+                {% set p_visual = board_visuals[p.board] if p.board in board_visuals else {'icon': 'bi bi-file-earmark', 'bg': '#f8f9fa', 'text': '#6c757d'} %}
+                
+                {# 👇 核心同步逻辑 👇 #}
+                {% set cat_color = category_colors[p.category] if p.category in category_colors else 'secondary' %}
 
-    <a href="{{ url_for('forum.post_detail', post_id=p.id) }}" class="list-group-item list-group-item-action px-0 py-3 border-bottom border-light">
-      <div class="d-flex justify-content-between align-items-center">
-        
-        <div class="d-flex align-items-center text-truncate" style="max-width: 75%;">
-          {# 👇 核心修改：移除 bg-primary，直接用内联的 background-color，保证 100% 渲染为浅色 #}
-          <div class="d-flex align-items-center justify-content-center rounded-circle me-3" 
-               style="width: 42px; height: 42px; flex-shrink: 0; background-color: {{ p_visual.bg }}; color: {{ p_visual.text }};">
-            <i class="{{ p_visual.icon }}" style="font-size: 1.2rem;"></i>
-          </div>
+                <a href="{{ url_for('forum.post_detail', post_id=p.id) }}" class="list-group-item list-group-item-action px-0 py-3 border-bottom border-light">
+                  <div class="d-flex justify-content-between align-items-center">
+                    
+                    <!-- 左侧图标和标题部分保持不变 -->
+                    <div class="d-flex align-items-center text-truncate" style="max-width: 75%;">
+                      <div class="d-flex align-items-center justify-content-center rounded-circle me-3" 
+                           style="width: 42px; height: 42px; flex-shrink: 0; background-color: {{ p_visual.bg }}; color: {{ p_visual.text }};">
+                        <i class="{{ p_visual.icon }}" style="font-size: 1.2rem;"></i>
+                      </div>
 
-          <div class="d-flex flex-column text-truncate">
-            <span class="fw-bold text-dark mb-0 text-truncate" style="font-size: 1rem;">{{ p.title }}</span>
-            <small class="text-muted opacity-75" style="font-size: 0.75rem;">
-               <i class="bi bi-dot"></i> In {{ p.board | capitalize }}
-            </small>
-          </div>
-        </div>
-        
-        <div class="text-end flex-shrink-0">
-          {% if p.category %}
-            <span class="badge bg-{{ cat_color }} bg-opacity-10 text-{{ cat_color }} border border-{{ cat_color }} border-opacity-10 rounded-pill mb-1" 
-                  style="font-size: 0.65rem; font-weight: 600; letter-spacing: 0.3px;">
-              {{ p.category | upper }}
-            </span>
-          {% endif %}
-          <small class="text-secondary d-block opacity-50" style="font-size: 0.7rem; font-weight: 500;">
-            {{ p.created_at.strftime('%b %d') }}
-          </small>
-        </div>
+                      <div class="d-flex flex-column text-truncate">
+                        <span class="fw-bold text-dark mb-0 text-truncate" style="font-size: 1rem;">{{ p.title }}</span>
+                        <small class="text-muted opacity-75" style="font-size: 0.75rem;">
+                           <i class="bi bi-dot"></i> In {{ p.board | capitalize }}
+                        </small>
+                      </div>
+                    </div>
+                    
+                    <!-- 右侧标签部分 -->
+                    <div class="text-end flex-shrink-0">
+                      {% if p.category %}
+                        {# 👇 终极修复：直接使用与 post.html 完全相同的 badge-soft-* 类名 👇 #}
+                        <span class="badge-soft-{{ cat_color }} px-2 py-1 rounded-pill fw-bold mb-1 d-inline-block" 
+                              style="font-size: 0.70rem; line-height: 1;">
+                          {{ p.category | upper }}
+                        </span>
+                      {% endif %}
+                      <small class="text-secondary d-block opacity-50" style="font-size: 0.7rem; font-weight: 500;">
+                        {{ p.created_at.strftime('%b %d') }}
+                      </small>
+                    </div>
 
-      </div>
-    </a>
-  {% endfor %}
-</div>
+                  </div>
+                </a>
+              {% endfor %}
+            </div>
             </div>
            <div class="text-end mt-2">
   <a href="{{ url_for('forum.index', user_id=current_user.id) }}" class="small text-decoration-none text-primary">
@@ -204,6 +224,30 @@
     
   </div>
 </div>
+
+<!-- Create Team Modal -->
+<div class="modal fade" id="createTeamModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-people-fill text-primary me-2"></i>Create Your Team</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Team Name</label>
+          <input type="text" class="form-control" id="teamNameInput" placeholder="e.g. TOEFL Study Group">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Description (Optional)</label>
+          <textarea class="form-control" id="teamDescInput" rows="2" placeholder="What is your team about?"></textarea>
+        </div>
+        <button type="button" class="btn btn-primary w-100" onclick="createTeam()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -248,5 +292,31 @@
       btn.innerHTML = originalText;
     }
   });
+
+// 创建团队的 API 请求
+  async function createTeam() {
+    const name = document.getElementById('teamNameInput').value;
+    const desc = document.getElementById('teamDescInput').value;
+    
+    if(!name) return alert('Team name is required!');
+    
+    try {
+      const res = await fetch('/team/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, description: desc })
+      });
+      const data = await res.json();
+      if(data.success) {
+        alert('🎉 ' + data.message);
+        location.reload(); 
+      } else {
+        alert('Error: ' + data.message);
+      }
+    } catch (err) {
+      alert('Network error!');
+    }
+  }
+
 </script>
 {% endblock %}

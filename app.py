@@ -52,6 +52,9 @@ def create_app():
     from blueprints.listening  import listening_bp
     from blueprints.speaking   import speaking_bp
     from blueprints.orchard    import orchard_bp
+    
+    # 👇 1. 导入你刚刚写的 team 蓝图
+    from blueprints.team       import team_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -60,10 +63,9 @@ def create_app():
     app.register_blueprint(listening_bp)
     app.register_blueprint(speaking_bp)
     app.register_blueprint(orchard_bp)
-
-    # ── CLI Commands ─────────────────────────────────────────────────────────
-    from add_default_data import add_default_data
-    app.cli.add_command(add_default_data)
+    
+    # 👇 2. 注册 team 蓝图
+    app.register_blueprint(team_bp)
 
     # ── Database initialisation ───────────────────────────────────────────────
     # db.create_all() 已由 Flask-Migrate 的 flask db upgrade 负责管理，此处保留注释
