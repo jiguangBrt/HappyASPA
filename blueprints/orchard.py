@@ -139,7 +139,7 @@ def index():
     
     # 获取展示柜果实
     showcase_fruits = UserShowcaseFruit.query.filter_by(orchard_id=orchard.id)\
-        .order_by(UserShowcaseFruit.position).limit(6).all()
+        .order_by(UserShowcaseFruit.position).all()
     
     # 获取排行榜数据
     # 本周榜
@@ -193,13 +193,12 @@ def index():
             if item:
                 item_inventory[item.id] = {'item': item, 'quantity': inv.quantity}
     
-    # 获取用户可展示的稀有果实（未在展示柜中的）
+    # 获取用户可展示果实（未在展示柜中的，包含所有稀有度）
     showcased_ids = [sf.harvested_fruit_id for sf in showcase_fruits]
     available_rare_fruits = UserHarvestedFruit.query\
         .join(FruitType)\
         .filter(
             UserHarvestedFruit.user_id == current_user.id,
-            FruitType.is_showcase_worthy == True,
             ~UserHarvestedFruit.id.in_(showcased_ids) if showcased_ids else True
         ).all()
     
@@ -422,18 +421,16 @@ def harvest():
     orchard.weekly_points += fruit.points
     orchard.total_harvests += 1
     
-    # 如果是稀有果实，自动添加到展示柜
+    # 收获后自动添加到展示柜（包含所有稀有度）
     auto_showcase = False
-    if fruit.is_showcase_worthy:
-        showcase_count = UserShowcaseFruit.query.filter_by(orchard_id=orchard.id).count()
-        if showcase_count < 6:  # 展示柜最多6个
-            showcase_fruit = UserShowcaseFruit(
-                orchard_id=orchard.id,
-                harvested_fruit_id=harvested.id,
-                position=showcase_count
-            )
-            db.session.add(showcase_fruit)
-            auto_showcase = True
+    showcase_count = UserShowcaseFruit.query.filter_by(orchard_id=orchard.id).count()
+    showcase_fruit = UserShowcaseFruit(
+        orchard_id=orchard.id,
+        harvested_fruit_id=harvested.id,
+        position=showcase_count
+    )
+    db.session.add(showcase_fruit)
+    auto_showcase = True
     
     # 重置土地状态
     land.current_seed_id = None
@@ -539,10 +536,8 @@ def add_to_showcase():
     
     orchard = get_or_create_user_orchard(current_user.id)
     
-    # 检查展示柜是否已满
+    # 当前展示数量用于顺序追加 position
     showcase_count = UserShowcaseFruit.query.filter_by(orchard_id=orchard.id).count()
-    if showcase_count >= 6:
-        return jsonify({'success': False, 'message': 'Showcase is full'}), 400
     
     # 验证果实
     harvested = db.session.get(UserHarvestedFruit, harvested_fruit_id)

@@ -14,17 +14,74 @@
   }
   
   .showcase-container {
-    background: #f8f9fa;
-    border: 2px solid #e9ecef;
-    border-radius: 12px;
-    padding: 1.5rem;
+    position: relative;
+    background:
+      radial-gradient(120% 90% at 50% 0%, rgba(255, 222, 150, 0.22), rgba(0, 0, 0, 0) 60%),
+      linear-gradient(180deg, #5a4124 0%, #3f2d18 55%, #2f2214 100%);
+    border: 1px solid transparent;
+    border-radius: 16px;
+    padding: 0;
     margin-bottom: 2rem;
-    min-height: 150px;
+    height: 260px;
+    overflow: hidden;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 230, 170, 0.2),
+      inset 0 16px 34px rgba(255, 215, 120, 0.08),
+      inset 0 -12px 30px rgba(0, 0, 0, 0.35),
+      0 12px 28px rgba(41, 24, 6, 0.45);
+  }
+
+  .showcase-scroll {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    padding: 1.5rem;
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
-    justify-content: center;
-    align-items: center;
+    justify-content: flex-start;
+    align-content: flex-start;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .showcase-container::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    padding: 2px;
+    background: linear-gradient(135deg, #f2d27a 0%, #b9852b 35%, #f3de9a 60%, #8f6019 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .showcase-container::after {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 12px;
+    right: 12px;
+    height: 22px;
+    border-radius: 999px;
+    background: linear-gradient(to bottom, rgba(255, 242, 201, 0.35), rgba(255, 242, 201, 0));
+    pointer-events: none;
+  }
+
+  .showcase-scroll::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .showcase-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #d6b66a, #a6772a);
+    border-radius: 999px;
+  }
+
+  .showcase-scroll::-webkit-scrollbar-track {
+    background: rgba(255, 234, 184, 0.12);
+    border-radius: 999px;
   }
   
   .fruit-item {
@@ -156,6 +213,47 @@
     width: 0%;
     transition: width 1s linear;
   }
+
+  .timer-text {
+    color: #1f2937;
+    font-weight: 700;
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.45);
+    letter-spacing: 0.2px;
+  }
+
+  .grow-action-btn {
+    border: none;
+    border-radius: 10px;
+    padding: 0.4rem 0.85rem;
+    font-weight: 700;
+    color: #ffffff;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+    transition: transform 0.15s ease, filter 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .grow-action-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.28);
+  }
+
+  .water-btn {
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  }
+
+  .fertilize-btn {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  }
+
+  .shop-qty-input {
+    -moz-appearance: textfield;
+  }
+
+  .shop-qty-input::-webkit-outer-spin-button,
+  .shop-qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
   
   .leaderboard-card {
     border-radius: 12px;
@@ -177,7 +275,7 @@
   </div>
   <div class="text-end">
     <div class="fs-4 fw-bold mb-2">
-      <i class="bi bi-coin text-warning me-1"></i> {{ current_user.coins | default(0) }} Coins
+      <i class="bi bi-coin text-warning me-1"></i> <span id="coin-balance">{{ current_user.coins | default(0) }}</span> Coins
     </div>
     <button class="btn btn-light text-primary fw-bold" data-bs-toggle="modal" data-bs-target="#shopModal">
       <i class="bi bi-shop me-1"></i> Farm Shop
@@ -198,32 +296,34 @@
       </div>
       <div class="card-body">
         <div class="showcase-container">
-          {% if showcase_fruits %}
-            {% for fruit in showcase_fruits %}
-              <div class="fruit-item fruit-{{ fruit.harvested_fruit.fruit_type.rarity|lower }}"
-                   data-bs-toggle="tooltip" data-bs-html="true"
-                   title="<b>{{ fruit.harvested_fruit.fruit_type.name }}</b><br>Rarity: {{ fruit.harvested_fruit.fruit_type.rarity }}<br>Harvested: {{ fruit.harvested_fruit.harvested_at.strftime('%Y-%m-%d') }}<br><i>{{ fruit.harvested_fruit.fruit_type.description }}</i>">
-                {% if fruit.harvested_fruit.fruit_type.image_url %}
-                  <img src="{{ fruit.harvested_fruit.fruit_type.image_url }}" alt="{{ fruit.harvested_fruit.fruit_type.name }}" style="width: 60px; height: 60px; object-fit: contain;">
-                {% else %}
-                  {{ fruit.harvested_fruit.fruit_type.icon | default('🍎') }}
-                {% endif %}
-                <div class="fruit-stars">
-                  {% if fruit.harvested_fruit.fruit_type.rarity == 'N' %}
-                    ⭐
-                  {% elif fruit.harvested_fruit.fruit_type.rarity == 'R' %}
-                    ⭐⭐
-                  {% elif fruit.harvested_fruit.fruit_type.rarity in ['SR', 'SSR'] %}
-                    ⭐⭐⭐
+          <div class="showcase-scroll">
+            {% if showcase_fruits %}
+              {% for fruit in showcase_fruits %}
+                <div class="fruit-item fruit-{{ fruit.harvested_fruit.fruit_type.rarity|lower }}"
+                     data-bs-toggle="tooltip" data-bs-html="true"
+                     title="<b>{{ fruit.harvested_fruit.fruit_type.name }}</b><br>Rarity: {{ fruit.harvested_fruit.fruit_type.rarity }}<br>Points: {{ fruit.harvested_fruit.fruit_type.points }}<br>Harvested: {{ fruit.harvested_fruit.harvested_at.strftime('%Y-%m-%d') }}<br><i>{{ fruit.harvested_fruit.fruit_type.description }}</i>">
+                  {% if fruit.harvested_fruit.fruit_type.image_url %}
+                    <img src="{{ fruit.harvested_fruit.fruit_type.image_url }}" alt="{{ fruit.harvested_fruit.fruit_type.name }}" style="width: 60px; height: 60px; object-fit: contain;">
+                  {% else %}
+                    {{ fruit.harvested_fruit.fruit_type.icon | default('🍎') }}
                   {% endif %}
+                  <div class="fruit-stars">
+                    {% if fruit.harvested_fruit.fruit_type.rarity == 'N' %}
+                      ⭐
+                    {% elif fruit.harvested_fruit.fruit_type.rarity == 'R' %}
+                      ⭐⭐
+                    {% elif fruit.harvested_fruit.fruit_type.rarity in ['SR', 'SSR'] %}
+                      ⭐⭐⭐
+                    {% endif %}
+                  </div>
                 </div>
+              {% endfor %}
+            {% else %}
+              <div class="text-muted text-center w-100">
+                <i class="bi bi-info-circle me-1"></i> Your showcase is empty. Plant seeds to harvest rare fruits!
               </div>
-            {% endfor %}
-          {% else %}
-            <div class="text-muted text-center w-100">
-              <i class="bi bi-info-circle me-1"></i> Your showcase is empty. Plant seeds to harvest rare fruits!
-            </div>
-          {% endif %}
+            {% endif %}
+          </div>
         </div>
       </div>
     </div>
@@ -249,17 +349,17 @@
                 </div>
               {% elif land.plant_status == 'growing' %}
                 <img src="{{ url_for('static', filename='orchard/soild/soil_planted.png') }}" class="land-image" alt="Planted Land">
-                <div class="land-actions" style="bottom: 10px; flex-direction: column; align-items: center; width: 100%;">
+                <div class="land-actions" style="bottom: -10px; flex-direction: column; align-items: center; width: 100%;">
                   <div class="progress-container" style="width: 90%; margin-bottom: 5px;">
                     <div class="progress-bar-custom"
                          id="progress-{{ land.id }}"
                          data-start="{{ land_timing_map[land.id]['start_ts'] }}"
                          data-end="{{ land_timing_map[land.id]['end_ts'] }}"></div>
                   </div>
-                  <div class="text-white small mb-1" id="timer-{{ land.id }}" style="text-shadow: 1px 1px 2px black;">Calculating...</div>
+                  <div class="small mb-1 timer-text" id="timer-{{ land.id }}">Calculating...</div>
                   <div>
-                    <button class="btn btn-sm btn-info" onclick="openAccelerateModal({{ land.id }}, 'water')">Water</button>
-                    <button class="btn btn-sm btn-warning" onclick="openAccelerateModal({{ land.id }}, 'fertilizer')">Fertilize</button>
+                    <button class="btn btn-sm grow-action-btn water-btn" onclick="openAccelerateModal({{ land.id }}, 'water')">Water</button>
+                    <button class="btn btn-sm grow-action-btn fertilize-btn" onclick="openAccelerateModal({{ land.id }}, 'fertilizer')">Fertilize</button>
                   </div>
                 </div>
               {% elif land.plant_status == 'mature' %}
@@ -397,8 +497,13 @@
                     <h6>{{ seed.name }}</h6>
                     <p class="small text-muted">{{ seed.description }}</p>
                     <p class="mb-2"><i class="bi bi-clock me-1"></i>{{ seed.growth_hours }}h</p>
-                    <button class="btn btn-sm btn-primary w-100" onclick="buyItem('seed', {{ seed.id }}, {{ seed.price }})">
-                      <i class="bi bi-coin me-1"></i>{{ seed.price }}
+                    <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="changeShopQty('seed', {{ seed.id }}, -1)">-</button>
+                      <input id="shop-qty-seed-{{ seed.id }}" type="number" min="1" value="1" data-price="{{ seed.price }}" data-name="{{ seed.name | e }}" data-growth-hours="{{ seed.growth_hours }}" class="form-control form-control-sm text-center shop-qty-input" style="width: 64px;" oninput="updateShopSubtotal('seed', {{ seed.id }}, {{ seed.price }})">
+                      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="changeShopQty('seed', {{ seed.id }}, 1)">+</button>
+                    </div>
+                    <button id="shop-buy-seed-{{ seed.id }}" class="btn btn-sm btn-primary w-100" onclick="buyItem('seed', {{ seed.id }}, {{ seed.price }})">
+                      <i class="bi bi-coin me-1"></i>{{ seed.price }} coins
                     </button>
                   </div>
                 </div>
@@ -415,8 +520,13 @@
                     <div class="fs-1 mb-2">🧪</div>
                     <h6>{{ item.name }}</h6>
                     <p class="small text-muted">{{ item.description }}</p>
-                    <button class="btn btn-sm btn-primary w-100" onclick="buyItem('item', {{ item.id }}, {{ item.price }})">
-                      <i class="bi bi-coin me-1"></i>{{ item.price }}
+                    <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="changeShopQty('item', {{ item.id }}, -1)">-</button>
+                      <input id="shop-qty-item-{{ item.id }}" type="number" min="1" value="1" data-price="{{ item.price }}" data-name="{{ item.name | e }}" data-description="{{ item.description | e }}" data-item-type="{{ item.item_type }}" class="form-control form-control-sm text-center shop-qty-input" style="width: 64px;" oninput="updateShopSubtotal('item', {{ item.id }}, {{ item.price }})">
+                      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="changeShopQty('item', {{ item.id }}, 1)">+</button>
+                    </div>
+                    <button id="shop-buy-item-{{ item.id }}" class="btn btn-sm btn-primary w-100" onclick="buyItem('item', {{ item.id }}, {{ item.price }})">
+                      <i class="bi bi-coin me-1"></i>{{ item.price }} coins
                     </button>
                   </div>
                 </div>
@@ -439,21 +549,21 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <ul class="list-group">
+        <ul class="list-group" id="inventory-list">
           {% for inv in seed_inventory.values() %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
+            <li id="inventory-row-seed-{{ inv.seed.id }}" class="list-group-item d-flex justify-content-between align-items-center">
               <div>🌰 {{ inv.seed.name }}</div>
-              <span class="badge bg-primary rounded-pill">x{{ inv.quantity }}</span>
+              <span id="inventory-badge-seed-{{ inv.seed.id }}" class="badge bg-primary rounded-pill">x{{ inv.quantity }}</span>
             </li>
           {% endfor %}
           {% for inv in item_inventory.values() %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
+            <li id="inventory-row-item-{{ inv.item.id }}" class="list-group-item d-flex justify-content-between align-items-center">
               <div>🧪 {{ inv.item.name }}</div>
-              <span class="badge bg-primary rounded-pill">x{{ inv.quantity }}</span>
+              <span id="inventory-badge-item-{{ inv.item.id }}" class="badge bg-primary rounded-pill">x{{ inv.quantity }}</span>
             </li>
           {% endfor %}
           {% if not seed_inventory and not item_inventory %}
-            <li class="list-group-item text-center text-muted">Your inventory is empty.</li>
+            <li id="inventory-empty" class="list-group-item text-center text-muted">Your inventory is empty.</li>
           {% endif %}
         </ul>
       </div>
@@ -474,12 +584,12 @@
         <div class="list-group" id="plantSeedList">
           {% for inv in seed_inventory.values() %}
             {% if inv.quantity > 0 %}
-              <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="plantSeed({{ inv.seed.id }})">
+              <button id="plant-seed-btn-{{ inv.seed.id }}" type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="plantSeed({{ inv.seed.id }})">
                 <div>
                   🌰 {{ inv.seed.name }}
                   <small class="text-muted d-block">{{ inv.seed.growth_hours }}h growth time</small>
                 </div>
-                <span class="badge bg-primary rounded-pill">x{{ inv.quantity }}</span>
+                <span id="plant-seed-badge-{{ inv.seed.id }}" class="badge bg-primary rounded-pill">x{{ inv.quantity }}</span>
               </button>
             {% endif %}
           {% endfor %}
@@ -502,12 +612,12 @@
         <div class="list-group" id="accelItemList">
           {% for inv in item_inventory.values() %}
             {% if inv.quantity > 0 %}
-              <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center accel-item" data-type="{{ inv.item.item_type }}" onclick="useItem({{ inv.item.id }})">
+              <button id="accel-item-btn-{{ inv.item.id }}" type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center accel-item" data-type="{{ inv.item.item_type }}" onclick="useItem({{ inv.item.id }})">
                 <div>
                   🧪 {{ inv.item.name }}
                   <small class="text-muted d-block">{{ inv.item.description }}</small>
                 </div>
-                <span class="badge bg-primary rounded-pill">x{{ inv.quantity }}</span>
+                <span id="accel-item-badge-{{ inv.item.id }}" class="badge bg-primary rounded-pill">x{{ inv.quantity }}</span>
               </button>
             {% endif %}
           {% endfor %}
@@ -543,6 +653,17 @@
     return `${secs}s`;
   }
 
+  // 总时长用紧凑展示，避免换行：小时优先，不显示分秒
+  function formatTotalDurationCompact(totalSeconds) {
+    const seconds = Math.max(0, Math.floor(totalSeconds));
+    const hours = Math.floor(seconds / 3600);
+    if (hours >= 1) {
+      return `${hours}h`;
+    }
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes}m`;
+  }
+
   function updateTimers() {
     const now = Date.now() / 1000;
     document.querySelectorAll('.progress-bar-custom').forEach(bar => {
@@ -560,7 +681,7 @@
         const totalLocked = end - start;
         if (totalLocked > 0) {
           bar.style.width = '100%';
-          timerEl.textContent = `${formatDuration(totalLocked)} / ${formatDuration(totalLocked)} (100%)`;
+          timerEl.textContent = `${formatTotalDurationCompact(totalLocked)} / ${formatTotalDurationCompact(totalLocked)} (100%)`;
         } else {
           timerEl.textContent = 'Ready to harvest!';
         }
@@ -580,25 +701,193 @@
         const percent = Math.min(100, Math.max(0, (elapsed / total) * 100));
         bar.style.width = `${percent}%`;
 
-        timerEl.textContent = `${formatDuration(elapsed)} / ${formatDuration(total)} (${Math.floor(percent)}%)`;
+        timerEl.textContent = `${formatDuration(elapsed)} / ${formatTotalDurationCompact(total)} (${Math.floor(percent)}%)`;
       }
     });
   }
 
   setInterval(updateTimers, 1000);
   updateTimers();
+  initShopSubtotals();
 
   // API Calls
+  function changeShopQty(type, itemId, delta) {
+    const input = document.getElementById(`shop-qty-${type}-${itemId}`);
+    if (!input) return;
+    const current = parseInt(input.value || '1', 10);
+    const next = Math.max(1, current + delta);
+    input.value = next;
+    const price = parseFloat(input.dataset.price || '0');
+    if (price > 0) updateShopSubtotal(type, itemId, price);
+  }
+
+  function getShopQty(type, itemId) {
+    const input = document.getElementById(`shop-qty-${type}-${itemId}`);
+    const qty = input ? parseInt(input.value || '1', 10) : 1;
+    return Number.isNaN(qty) ? 1 : Math.max(1, qty);
+  }
+
+  function updateShopSubtotal(type, itemId, price) {
+    const qty = getShopQty(type, itemId);
+    const subtotal = qty * price;
+    const buyBtn = document.getElementById(`shop-buy-${type}-${itemId}`);
+    if (buyBtn) {
+      buyBtn.innerHTML = `<i class="bi bi-coin me-1"></i>${subtotal} coins`;
+    }
+  }
+
+  function initShopSubtotals() {
+    document.querySelectorAll('[id^="shop-qty-seed-"]').forEach((input) => {
+      const itemId = input.id.replace('shop-qty-seed-', '');
+      const price = parseFloat(input.getAttribute('data-price') || '0');
+      if (price > 0) updateShopSubtotal('seed', itemId, price);
+    });
+    document.querySelectorAll('[id^="shop-qty-item-"]').forEach((input) => {
+      const itemId = input.id.replace('shop-qty-item-', '');
+      const price = parseFloat(input.getAttribute('data-price') || '0');
+      if (price > 0) updateShopSubtotal('item', itemId, price);
+    });
+  }
+
+  function getShopDisplayName(type, itemId) {
+    const qtyInput = document.getElementById(`shop-qty-${type}-${itemId}`);
+    if (!qtyInput) return type;
+    const cardBody = qtyInput.closest('.card-body');
+    if (!cardBody) return type;
+    const titleEl = cardBody.querySelector('h6');
+    return titleEl ? titleEl.textContent.trim() : type;
+  }
+
+  function getShopMeta(type, itemId) {
+    const input = document.getElementById(`shop-qty-${type}-${itemId}`);
+    if (!input) {
+      return { name: type, growthHours: '', description: '', itemType: '' };
+    }
+    return {
+      name: input.dataset.name || type,
+      growthHours: input.dataset.growthHours || '',
+      description: input.dataset.description || '',
+      itemType: input.dataset.itemType || ''
+    };
+  }
+
+  function upsertInventoryEntry(type, itemId, quantity) {
+    const badgeId = `inventory-badge-${type}-${itemId}`;
+    let badge = document.getElementById(badgeId);
+    if (badge) {
+      badge.textContent = `x${quantity}`;
+      return;
+    }
+
+    const list = document.getElementById('inventory-list');
+    if (!list) return;
+
+    const emptyEl = document.getElementById('inventory-empty');
+    if (emptyEl) {
+      emptyEl.remove();
+    }
+
+    const row = document.createElement('li');
+    row.id = `inventory-row-${type}-${itemId}`;
+    row.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+    const label = document.createElement('div');
+    const icon = type === 'seed' ? '🌰' : '🧪';
+    label.textContent = `${icon} ${getShopDisplayName(type, itemId)}`;
+
+    badge = document.createElement('span');
+    badge.id = badgeId;
+    badge.className = 'badge bg-primary rounded-pill';
+    badge.textContent = `x${quantity}`;
+
+    row.appendChild(label);
+    row.appendChild(badge);
+    list.appendChild(row);
+  }
+
+  function upsertPlantSeedEntry(seedId, quantity, name, growthHours) {
+    const badgeId = `plant-seed-badge-${seedId}`;
+    let badge = document.getElementById(badgeId);
+    if (badge) {
+      badge.textContent = `x${quantity}`;
+      return;
+    }
+
+    const list = document.getElementById('plantSeedList');
+    if (!list) return;
+
+    const btn = document.createElement('button');
+    btn.id = `plant-seed-btn-${seedId}`;
+    btn.type = 'button';
+    btn.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+    btn.onclick = () => plantSeed(seedId);
+
+    const text = document.createElement('div');
+    text.innerHTML = `🌰 ${name}<small class="text-muted d-block">${growthHours}h growth time</small>`;
+
+    badge = document.createElement('span');
+    badge.id = badgeId;
+    badge.className = 'badge bg-primary rounded-pill';
+    badge.textContent = `x${quantity}`;
+
+    btn.appendChild(text);
+    btn.appendChild(badge);
+    list.appendChild(btn);
+  }
+
+  function upsertAccelerateItemEntry(itemId, quantity, name, description, itemType) {
+    const badgeId = `accel-item-badge-${itemId}`;
+    let badge = document.getElementById(badgeId);
+    if (badge) {
+      badge.textContent = `x${quantity}`;
+      return;
+    }
+
+    const list = document.getElementById('accelItemList');
+    if (!list) return;
+
+    const btn = document.createElement('button');
+    btn.id = `accel-item-btn-${itemId}`;
+    btn.type = 'button';
+    btn.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center accel-item';
+    btn.dataset.type = itemType || '';
+    btn.onclick = () => useItem(itemId);
+
+    const text = document.createElement('div');
+    text.innerHTML = `🧪 ${name}<small class="text-muted d-block">${description}</small>`;
+
+    badge = document.createElement('span');
+    badge.id = badgeId;
+    badge.className = 'badge bg-primary rounded-pill';
+    badge.textContent = `x${quantity}`;
+
+    btn.appendChild(text);
+    btn.appendChild(badge);
+    list.appendChild(btn);
+  }
+
+  function syncPurchasedInventoryToAllPanels(type, itemId, quantity) {
+    const meta = getShopMeta(type, itemId);
+    upsertInventoryEntry(type, itemId, quantity);
+    if (type === 'seed') {
+      upsertPlantSeedEntry(itemId, quantity, meta.name, meta.growthHours || '0');
+    } else {
+      upsertAccelerateItemEntry(itemId, quantity, meta.name, meta.description, meta.itemType);
+    }
+  }
+
   async function buyItem(type, itemId, price) {
-    if (!confirm(`Buy this ${type} for ${price} coins?`)) return;
+    const quantity = getShopQty(type, itemId);
+    const total = price * quantity;
+    if (!confirm(`Buy ${quantity} ${type}(s) for ${total} coins?`)) return;
     
     try {
       const endpoint = type === 'seed'
         ? '{{ url_for("orchard.buy_seed") }}'
         : '{{ url_for("orchard.buy_item") }}';
       const payload = type === 'seed'
-        ? { seed_id: itemId, quantity: 1 }
-        : { item_id: itemId, quantity: 1 };
+        ? { seed_id: itemId, quantity }
+        : { item_id: itemId, quantity };
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -607,8 +896,14 @@
       });
       const data = await res.json();
       if (data.success) {
-        alert('Purchase successful!');
-        location.reload();
+        const coinEl = document.getElementById('coin-balance');
+        if (coinEl && typeof data.coins !== 'undefined') {
+          coinEl.textContent = data.coins;
+        }
+        if (typeof data.inventory_count !== 'undefined') {
+          syncPurchasedInventoryToAllPanels(type, itemId, data.inventory_count);
+        }
+        alert(`Purchased ${quantity} successfully!`);
       } else {
         alert(data.message || 'Purchase failed');
       }
@@ -688,7 +983,7 @@
             const end = parseFloat(bar.dataset.end);
             if (timerEl && !Number.isNaN(start) && !Number.isNaN(end) && end > start) {
               const total = end - start;
-              timerEl.textContent = `${formatDuration(total)} / ${formatDuration(total)} (100%)`;
+              timerEl.textContent = `${formatTotalDurationCompact(total)} / ${formatTotalDurationCompact(total)} (100%)`;
             }
           }
           if (timerEl && !timerEl.textContent) {

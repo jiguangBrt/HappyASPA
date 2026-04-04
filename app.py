@@ -18,6 +18,9 @@ def create_app():
         'DATABASE_URL', 'sqlite:///happyaspa.db'
     )
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['VOLC_TOS_BUCKET'] = os.environ.get('VOLC_TOS_BUCKET', 'english-practice-audio')
+    app.config['VOLC_TOS_ENDPOINT'] = os.environ.get('VOLC_TOS_ENDPOINT', 'tos-cn-beijing.volces.com')
+    app.config['VOLC_TOS_REGION'] = os.environ.get('VOLC_TOS_REGION', 'cn-beijing')
 
     # 新增：文件上传配置
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads/speaking')  # 音频存储路径
@@ -63,6 +66,10 @@ def create_app():
     app.register_blueprint(listening_bp)
     app.register_blueprint(speaking_bp)
     app.register_blueprint(orchard_bp)
+
+    # ── CLI Commands ─────────────────────────────────────────────────────────
+    from add_default_data import add_default_data
+    app.cli.add_command(add_default_data)
     
     # 👇 2. 注册 team 蓝图
     app.register_blueprint(team_bp)
