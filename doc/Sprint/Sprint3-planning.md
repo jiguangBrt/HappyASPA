@@ -6,7 +6,7 @@
 
 **Developers**: Qiyin Huang, Jing Lu, Xingzhuo Bao, Hang Ge, Jiachi Zhu, Sihan Wang, Yihan Wang, Yukun Wang
 
-**Working Hours**: Sun–Fri, 10:00 AM – 12:00 AM (Saturdays off)
+**Working Hours**: Sun–Sat, 10:00 AM – 2:00 AM
 
 ## Sprint Goal:
 
