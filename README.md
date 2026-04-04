@@ -34,9 +34,15 @@ HappyASPA/
 ├── requirements.txt            # Project dependencies and packages
 ├── add_default_data.py         # CLI command script to add default data
 ├── blueprints/                 # Backend Logic (Modularized by feature)
-│   ├── auth.py                 # Authentication routes 
-│   ├── dashboard.py            # Main Dashboard 
-│   └── ...                     # Other modules (forum, listening, speaking)
+│   ├── __init__.py
+│   ├── auth.py                 # Authentication routes (/login, /register, /logout)
+│   ├── dashboard.py            # Main Dashboard & Learning Progress Tracking
+│   ├── forum.py                # Forum logic (List, View Post, Create Post)
+│   ├── listening.py            # Listening practice logic
+│   ├── orchard.py              # Orchard module logic 
+│   ├── speaking.py             # Speaking practice logic (with audio/video upload)
+│   ├── team.py                 # Team ranking logic
+│   └── vocabulary.py           # Vocabulary module logic
 ├── migrations/                 # Database migrations (Flask-Migrate)
 ├── static/                     # Static assets (subtitles, videos, etc.)
 ├── templates/                  # Frontend Views (Jinja2 Templates)
