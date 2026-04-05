@@ -6,7 +6,9 @@ from models import (
     SeedType,
     FruitType,
     OrchardItem,
+    User,
     UserLand,
+    UserOrchard,
     UserOrchardInventory,
     UserHarvestedFruit,
 )
@@ -160,3 +162,26 @@ def test_get_land_status(client, make_user, app):
     data = response.get_json()
     assert data["success"] is True
     assert len(data["lands"]) >= 1
+
+
+def test_buy_land_slot_adds_plot(client, make_user, app):
+    """Purchasing a land slot adds one UserLand and deducts coins."""
+    setup_orchard_basics(app)
+    user = make_user("landslot", "landslot@example.com", coins=100)
+    login(client, user.username, "password123")
+    with app.app_context():
+        get_or_create_user_orchard(user.id)
+        orchard = UserOrchard.query.filter_by(user_id=user.id).first()
+        assert UserLand.query.filter_by(orchard_id=orchard.id).count() == 3
+
+    response = client.post("/orchard/api/buy-land-slot", json={})
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["success"] is True
+    assert data["land_count"] == 4
+
+    with app.app_context():
+        orchard = UserOrchard.query.filter_by(user_id=user.id).first()
+        assert UserLand.query.filter_by(orchard_id=orchard.id).count() == 4
+        u = db.session.get(User, user.id)
+        assert u.coins == 60

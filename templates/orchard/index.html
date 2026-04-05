@@ -485,6 +485,9 @@
           <li class="nav-item" role="presentation">
             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#items-tab" type="button">Items</button>
           </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#land-tab" type="button">Land</button>
+          </li>
         </ul>
         <div class="tab-content">
           <div class="tab-pane fade show active" id="seeds-tab">
@@ -532,6 +535,37 @@
                 </div>
               </div>
               {% endfor %}
+            </div>
+          </div>
+          <div class="tab-pane fade" id="land-tab">
+            <div class="row g-3 justify-content-center">
+              <div class="col-md-6 col-lg-5">
+                <div class="card h-100 border-success">
+                  <div class="card-body text-center">
+                    <div class="fs-1 mb-2">🟫</div>
+                    <h6>Extra Farmland</h6>
+                    <p class="small text-muted mb-2">
+                      Add one more plot to your Knowledge Farmland. New plots use the same soil type as your starter fields.
+                    </p>
+                    <p class="mb-2">
+                      <span class="text-muted">Your plots:</span>
+                      <strong>{{ orchard_land_count }}</strong> / {{ orchard_max_lands }}
+                    </p>
+                    {% if orchard_can_buy_land_slot and orchard_land_slot_price is not none %}
+                    <p class="mb-3 fw-semibold text-success">Next plot: <i class="bi bi-coin"></i> {{ orchard_land_slot_price }} coins</p>
+                    <button type="button"
+                            id="shop-buy-land-slot"
+                            class="btn btn-success w-100"
+                            data-price="{{ orchard_land_slot_price }}"
+                            onclick="buyLandSlot()">
+                      <i class="bi bi-plus-square me-1"></i>Buy farmland slot
+                    </button>
+                    {% else %}
+                    <p class="mb-0 text-muted">You have reached the maximum number of plots.</p>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -873,6 +907,36 @@
       upsertPlantSeedEntry(itemId, quantity, meta.name, meta.growthHours || '0');
     } else {
       upsertAccelerateItemEntry(itemId, quantity, meta.name, meta.description, meta.itemType);
+    }
+  }
+
+  async function buyLandSlot() {
+    const btn = document.getElementById('shop-buy-land-slot');
+    const price = btn ? parseInt(btn.getAttribute('data-price'), 10) : NaN;
+    if (!price || Number.isNaN(price)) {
+      alert('Land slot is not available for purchase.');
+      return;
+    }
+    if (!confirm(`Buy one extra farmland plot for ${price} coins?`)) return;
+    try {
+      const res = await fetch('{{ url_for("orchard.buy_land_slot") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (data.success) {
+        const coinEl = document.getElementById('coin-balance');
+        if (coinEl && typeof data.coins !== 'undefined') {
+          coinEl.textContent = data.coins;
+        }
+        alert(data.message || 'Purchased!');
+        location.reload();
+      } else {
+        alert(data.message || 'Purchase failed');
+      }
+    } catch (e) {
+      alert('An error occurred');
     }
   }
 

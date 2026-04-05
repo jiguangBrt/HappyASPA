@@ -18,6 +18,22 @@ from models import (
 
 orchard_bp = Blueprint('orchard', __name__, url_prefix='/orchard')
 
+# 新用户赠送农田块数（与 get_or_create_user_orchard 中 range 一致）
+ORCHARD_INITIAL_LAND_COUNT = 3
+# 农田总上限（含赠送）
+ORCHARD_MAX_LAND_SLOTS = 10
+# 第 4 块起每块基础价，之后每多一块递增
+ORCHARD_LAND_SLOT_BASE_PRICE = 40
+ORCHARD_LAND_SLOT_PRICE_STEP = 25
+
+
+def next_land_slot_price(land_count):
+    """当前已有 land_count 块地时，再购买下一块所需金币；不可再买则 None。"""
+    if land_count >= ORCHARD_MAX_LAND_SLOTS:
+        return None
+    extra = max(0, land_count - ORCHARD_INITIAL_LAND_COUNT)
+    return ORCHARD_LAND_SLOT_BASE_PRICE + extra * ORCHARD_LAND_SLOT_PRICE_STEP
+
 
 # ─────────────────────────────────────────────
 # 辅助函数
@@ -34,7 +50,7 @@ def get_or_create_user_orchard(user_id):
         # 为新用户创建初始土地（3块普通土地）
         basic_land_type = LandType.query.filter_by(level=1).first()
         if basic_land_type:
-            for i in range(3):
+            for i in range(ORCHARD_INITIAL_LAND_COUNT):
                 land = UserLand(
                     orchard_id=orchard.id,
                     land_type_id=basic_land_type.id,
@@ -202,10 +218,18 @@ def index():
             ~UserHarvestedFruit.id.in_(showcased_ids) if showcased_ids else True
         ).all()
     
+    land_count = len(lands)
+    land_slot_price = next_land_slot_price(land_count)
+    can_buy_land_slot = land_slot_price is not None
+
     # 最终渲染页面，把所有数据传给前端
     return render_template('orchard/index.html',
         orchard=orchard,
         lands=lands,
+        orchard_land_count=land_count,
+        orchard_max_lands=ORCHARD_MAX_LAND_SLOTS,
+        orchard_land_slot_price=land_slot_price,
+        orchard_can_buy_land_slot=can_buy_land_slot,
         showcase_fruits=showcase_fruits,
         weekly_leaderboard=weekly_leaderboard,
         total_leaderboard=total_leaderboard,
@@ -312,6 +336,45 @@ def buy_item():
         'message': f'Purchased {quantity}x {item.name}!',
         'coins': current_user.coins,
         'inventory_count': inventory.quantity
+    })
+
+
+@orchard_bp.route('/api/buy-land-slot', methods=['POST'])
+@login_required
+def buy_land_slot():
+    """花费金币增加一块农田（普通地）。"""
+    orchard = get_or_create_user_orchard(current_user.id)
+    lands = UserLand.query.filter_by(orchard_id=orchard.id).all()
+    n = len(lands)
+    price = next_land_slot_price(n)
+    if price is None:
+        return jsonify({'success': False, 'message': 'Maximum farmland plots reached'}), 400
+    if current_user.coins < price:
+        return jsonify({'success': False, 'message': 'Not enough coins'}), 400
+
+    basic_land_type = LandType.query.filter_by(level=1).first()
+    if not basic_land_type:
+        return jsonify({'success': False, 'message': 'Land type not configured'}), 500
+
+    max_pos = db.session.query(func.max(UserLand.position)).filter_by(orchard_id=orchard.id).scalar()
+    next_pos = (max_pos if max_pos is not None else -1) + 1
+
+    new_land = UserLand(
+        orchard_id=orchard.id,
+        land_type_id=basic_land_type.id,
+        position=next_pos,
+        plant_status='idle',
+    )
+    db.session.add(new_land)
+    current_user.coins -= price
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'message': 'New farmland plot unlocked!',
+        'coins': current_user.coins,
+        'land_count': n + 1,
+        'price_paid': price,
     })
 
 
