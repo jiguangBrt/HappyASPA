@@ -556,15 +556,228 @@
     margin: 0;
   }
   
-  .leaderboard-card {
-    border-radius: 12px;
-    box-shadow: var(--app-shadow);
+  /* ─── Harvest Leaderboard module ─── */
+  .leaderboard-module-card {
+    border: none;
+    border-radius: 18px;
     overflow: hidden;
+    box-shadow:
+      0 4px 6px -1px rgba(49, 46, 129, 0.08),
+      0 14px 28px -6px rgba(67, 56, 202, 0.14);
   }
-  
-  .rank-1 { color: #ffd700; font-weight: bold; }
-  .rank-2 { color: #c0c0c0; font-weight: bold; }
-  .rank-3 { color: #cd7f32; font-weight: bold; }
+
+  .leaderboard-module-header {
+    background: linear-gradient(125deg, #312e81 0%, #4f46e5 42%, #4338ca 100%);
+    color: #fff;
+    padding: 1.1rem 1.25rem 1rem;
+    border: none;
+  }
+
+  .leaderboard-module-header h5 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  }
+
+  .leaderboard-module-sub {
+    font-size: 0.82rem;
+    opacity: 0.9;
+    margin-top: 0.25rem;
+  }
+
+  .leaderboard-tabs {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .leaderboard-tabs .nav-link {
+    color: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 999px;
+    padding: 0.38rem 0.95rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.08);
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .leaderboard-tabs .nav-link:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  .leaderboard-tabs .nav-link.active {
+    color: #3730a3;
+    background: #fff;
+    border-color: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  }
+
+  .leaderboard-module-body {
+    background:
+      radial-gradient(ellipse 95% 55% at 50% 0%, rgba(199, 210, 254, 0.45), transparent 58%),
+      linear-gradient(180deg, #eef2ff 0%, #e0e7ff 40%, #ddd6fe 100%);
+    padding: 1rem 1.1rem 0.25rem;
+  }
+
+  .leaderboard-section-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #4338ca;
+    opacity: 0.88;
+    margin: 0.85rem 0 0.5rem;
+    padding: 0 0.15rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .leaderboard-section-label:first-child {
+    margin-top: 0;
+  }
+
+  .leaderboard-list {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0.5rem;
+  }
+
+  .leaderboard-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.65rem 0.85rem;
+    margin-bottom: 0.45rem;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(99, 102, 241, 0.14);
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(49, 46, 129, 0.06);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .leaderboard-row:last-child {
+    margin-bottom: 0;
+  }
+
+  .leaderboard-row:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(67, 56, 202, 0.1);
+  }
+
+  .leaderboard-row--self {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.14) 0%, rgba(165, 180, 252, 0.12) 100%);
+    border-color: rgba(79, 70, 229, 0.35);
+  }
+
+  .leaderboard-rank {
+    min-width: 2.35rem;
+    text-align: center;
+    font-weight: 800;
+    font-size: 0.95rem;
+    line-height: 1.2;
+    color: #475569;
+  }
+
+  .leaderboard-rank--1 { color: #ca8a04; }
+  .leaderboard-rank--2 { color: #64748b; }
+  .leaderboard-rank--3 { color: #b45309; }
+
+  .leaderboard-name {
+    font-weight: 600;
+    color: #1e1b4b;
+    font-size: 0.92rem;
+  }
+
+  .leaderboard-badge-weekly {
+    font-weight: 700;
+    font-size: 0.72rem;
+    padding: 0.35em 0.75em;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    color: #fff;
+    border: none;
+    box-shadow: 0 3px 10px rgba(79, 70, 229, 0.35);
+  }
+
+  .leaderboard-badge-total {
+    font-weight: 700;
+    font-size: 0.72rem;
+    padding: 0.35em 0.75em;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #475569, #64748b);
+    color: #fff;
+    border: none;
+    box-shadow: 0 3px 10px rgba(71, 85, 105, 0.25);
+  }
+
+  .leaderboard-badge-team {
+    font-weight: 700;
+    font-size: 0.72rem;
+    padding: 0.4em 0.8em;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: #fff;
+    border: none;
+    box-shadow: 0 3px 10px rgba(5, 150, 105, 0.3);
+  }
+
+  .leaderboard-empty {
+    text-align: center;
+    color: #64748b;
+    padding: 1.25rem 0.75rem;
+    font-size: 0.9rem;
+    background: rgba(255, 255, 255, 0.55);
+    border-radius: 14px;
+    border: 1px dashed rgba(99, 102, 241, 0.22);
+    margin-bottom: 0.5rem;
+  }
+
+  .leaderboard-module-footer {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, #f5f3ff 100%);
+    border-top: 1px solid rgba(99, 102, 241, 0.12);
+    padding: 1rem 1.2rem 1.15rem;
+  }
+
+  .leaderboard-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 0.75rem;
+    margin-bottom: 0.45rem;
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 12px;
+    border: 1px solid rgba(99, 102, 241, 0.1);
+  }
+
+  .leaderboard-stat-row:last-child {
+    margin-bottom: 0;
+  }
+
+  .leaderboard-stat-label {
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: #3730a3;
+  }
+
+  .leaderboard-stat-label--muted {
+    color: #5b21b6;
+    opacity: 0.85;
+  }
+
+  /* legacy rank classes (emoji rows still use rank-N) */
+  .rank-1 { color: #ca8a04; font-weight: bold; }
+  .rank-2 { color: #64748b; font-weight: bold; }
+  .rank-3 { color: #b45309; font-weight: bold; }
 </style>
 {% endblock %}
 
@@ -731,95 +944,112 @@
 
   <div class="col-lg-4">
     <!-- Module 3: Harvest Leaderboard -->
-  <div class="card leaderboard-card">
-    <div class="card-header bg-white pb-0 border-bottom-0">
-      <h5 class="mb-3"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Harvest Leaderboard</h5>
-      <!-- 👇 新增：切换页签 👇 -->
-      <ul class="nav nav-tabs" id="leaderboardTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-          <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#solo-tab" type="button">Solo Rank</button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link text-success fw-bold" data-bs-toggle="tab" data-bs-target="#team-tab" type="button">Team Rank</button>
-        </li>
-      </ul>
-    </div>
-    
-    <div class="card-body p-0 tab-content">
-      <!-- 🏆 页签 1：原本的个人榜单 -->
-      <div class="tab-pane fade show active" id="solo-tab">
-        <div class="px-3 pt-3"><h6 class="mb-2 text-muted">This Week</h6></div>
-        <ul class="list-group list-group-flush">
-          {% for entry in weekly_leaderboard %}
-            <li class="list-group-item d-flex justify-content-between align-items-center {% if entry.id == current_user.id %}bg-light{% endif %}">
-              <div class="d-flex align-items-center">
-                <span class="me-3 fw-bold rank-{{ loop.index }}">
-                  {% if loop.index == 1 %}👑{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+    <div class="card leaderboard-module-card">
+      <div class="leaderboard-module-header">
+        <div class="d-flex flex-column gap-3">
+          <div class="d-flex flex-column flex-sm-row flex-sm-wrap align-items-sm-start justify-content-sm-between gap-2">
+            <div>
+              <h5 class="d-flex align-items-center gap-2">
+                <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-white bg-opacity-20" style="width:2.25rem;height:2.25rem;">
+                  <i class="bi bi-trophy-fill"></i>
                 </span>
-                <span>{{ entry.username }}</span>
+                Harvest Leaderboard
+              </h5>
+              <div class="leaderboard-module-sub">
+                <i class="bi bi-graph-up-arrow me-1"></i>Solo ranks by harvest points · team totals
               </div>
-              <span class="badge bg-primary rounded-pill">{{ entry.weekly_points }} pts</span>
-            </li>
-          {% else %}
-            <li class="list-group-item text-center text-muted">No weekly data yet.</li>
-          {% endfor %}
-        </ul>
-        
-        <div class="px-3 pt-3"><h6 class="mb-2 text-muted">All Time</h6></div>
-        <ul class="list-group list-group-flush mb-2">
-          {% for entry in total_leaderboard %}
-            <li class="list-group-item d-flex justify-content-between align-items-center {% if entry.id == current_user.id %}bg-light{% endif %}">
-              <div class="d-flex align-items-center">
-                <span class="me-3 fw-bold rank-{{ loop.index }}">
-                  {% if loop.index == 1 %}👑{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
-                </span>
-                <span>{{ entry.username }}</span>
-              </div>
-              <span class="badge bg-secondary rounded-pill">{{ entry.total_points }} pts</span>
-            </li>
-          {% else %}
-            <li class="list-group-item text-center text-muted">No all-time data yet.</li>
-          {% endfor %}
-        </ul>
+            </div>
+            <ul class="nav leaderboard-tabs ms-sm-auto flex-shrink-0" id="leaderboardTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#solo-tab" type="button" role="tab" aria-controls="solo-tab" aria-selected="true">Solo</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#team-tab" type="button" role="tab" aria-controls="team-tab" aria-selected="false">Teams</button>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
 
-      <!-- 🤝 页签 2：全新的团队榜单 -->
-      <div class="tab-pane fade" id="team-tab">
-        <div class="px-3 pt-3"><h6 class="mb-2 text-muted">Top Teams (Total Harvest)</h6></div>
-        <ul class="list-group list-group-flush mb-3">
-          {% if team_leaderboard %}
-            {% for team in team_leaderboard %}
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                  <span class="me-3 fw-bold rank-{{ loop.index }}">
+      <div class="leaderboard-module-body tab-content">
+        <div class="tab-pane fade show active" id="solo-tab" role="tabpanel" aria-labelledby="solo-tab" tabindex="0">
+          <div class="leaderboard-section-label">
+            <i class="bi bi-calendar-week"></i> This week
+          </div>
+          <div class="leaderboard-list">
+            {% for entry in weekly_leaderboard %}
+            <div class="leaderboard-row{% if entry.id == current_user.id %} leaderboard-row--self{% endif %}">
+              <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1">
+                <span class="leaderboard-rank leaderboard-rank--{{ loop.index }} rank-{{ loop.index }} flex-shrink-0">
+                  {% if loop.index == 1 %}👑{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+                </span>
+                <span class="leaderboard-name text-truncate">{{ entry.username }}</span>
+              </div>
+              <span class="leaderboard-badge-weekly flex-shrink-0">{{ entry.weekly_points }} pts</span>
+            </div>
+            {% else %}
+            <div class="leaderboard-empty">No weekly data yet.</div>
+            {% endfor %}
+          </div>
+
+          <div class="leaderboard-section-label">
+            <i class="bi bi-infinity"></i> All time
+          </div>
+          <div class="leaderboard-list pb-2">
+            {% for entry in total_leaderboard %}
+            <div class="leaderboard-row{% if entry.id == current_user.id %} leaderboard-row--self{% endif %}">
+              <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1">
+                <span class="leaderboard-rank leaderboard-rank--{{ loop.index }} rank-{{ loop.index }} flex-shrink-0">
+                  {% if loop.index == 1 %}👑{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+                </span>
+                <span class="leaderboard-name text-truncate">{{ entry.username }}</span>
+              </div>
+              <span class="leaderboard-badge-total flex-shrink-0">{{ entry.total_points }} pts</span>
+            </div>
+            {% else %}
+            <div class="leaderboard-empty">No all-time data yet.</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="tab-pane fade" id="team-tab" role="tabpanel" aria-labelledby="team-tab" tabindex="0">
+          <div class="leaderboard-section-label">
+            <i class="bi bi-people-fill"></i> Top teams · total harvest
+          </div>
+          <div class="leaderboard-list pb-2">
+            {% if team_leaderboard %}
+              {% for team in team_leaderboard %}
+              <div class="leaderboard-row">
+                <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1">
+                  <span class="leaderboard-rank leaderboard-rank--{{ loop.index }} rank-{{ loop.index }} flex-shrink-0">
                     {% if loop.index == 1 %}👑{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
                   </span>
-                  <div>
-                    <span class="d-block fw-bold">{{ team.name }}</span>
-                    <small class="text-muted">{{ team.members|length }}/3 Members</small>
+                  <div class="min-w-0">
+                    <span class="leaderboard-name d-block text-truncate">{{ team.name }}</span>
+                    <small class="text-muted">{{ team.members|length }}/3 members</small>
                   </div>
                 </div>
-                <span class="badge bg-success rounded-pill px-3 py-2"><i class="bi bi-lightning-charge-fill me-1"></i>{{ team.total_team_points }} pts</span>
-              </li>
-            {% endfor %}
-          {% else %}
-            <li class="list-group-item text-center text-muted py-4">No teams formed yet.</li>
-          {% endif %}
-        </ul>
+                <span class="leaderboard-badge-team flex-shrink-0 text-nowrap"><i class="bi bi-lightning-charge-fill me-1"></i>{{ team.total_team_points }} pts</span>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="leaderboard-empty py-4">No teams formed yet.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="leaderboard-module-footer">
+        <div class="leaderboard-stat-row">
+          <span class="leaderboard-stat-label"><i class="bi bi-person-badge me-1 text-primary"></i>Your weekly rank · #{{ user_weekly_rank }}</span>
+          <span class="leaderboard-badge-weekly">{{ orchard.weekly_points }} pts</span>
+        </div>
+        <div class="leaderboard-stat-row">
+          <span class="leaderboard-stat-label leaderboard-stat-label--muted"><i class="bi bi-award me-1"></i>Your all-time rank · #{{ user_total_rank }}</span>
+          <span class="leaderboard-badge-total">{{ orchard.total_points }} pts</span>
+        </div>
       </div>
     </div>
-    
-    <div class="card-footer bg-light">
-      <div class="d-flex justify-content-between align-items-center mb-1">
-        <span class="fw-bold text-primary">Your Weekly Rank: #{{ user_weekly_rank }}</span>
-        <span class="badge bg-primary">{{ orchard.weekly_points }} pts</span>
-      </div>
-      <div class="d-flex justify-content-between align-items-center">
-        <span class="fw-bold text-secondary">Your Total Rank: #{{ user_total_rank }}</span>
-        <span class="badge bg-secondary">{{ orchard.total_points }} pts</span>
-      </div>
-    </div>
-  </div>
   </div>
 </div>
 
