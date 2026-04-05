@@ -641,7 +641,10 @@ class UserLand(db.Model):
     plant_status = db.Column(db.String(20), default='idle')       # idle/planted/growing/mature
     planted_at = db.Column(db.DateTime, nullable=True)            # 播种时间
     matures_at = db.Column(db.DateTime, nullable=True)            # 成熟时间
-    
+    # 本轮作物照料（播种时清零；收获后清空）：影响收获时稀有果权重
+    crop_water_count = db.Column(db.Integer, default=0)           # 浇水次数
+    crop_fertilizer_quality = db.Column(db.Float, default=0.0)    # 累计施肥「品质」= 各次肥料 effect_value 之和
+
     created_at = db.Column(db.DateTime, default=utcnow_naive)
     
     # 关系
