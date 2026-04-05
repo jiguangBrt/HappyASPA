@@ -119,25 +119,217 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
   
+  /* ─── Knowledge Farmland module ─── */
+  .farmland-module-card {
+    border: none;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow:
+      0 4px 6px -1px rgba(15, 81, 50, 0.08),
+      0 12px 24px -4px rgba(15, 81, 50, 0.12);
+  }
+
+  .farmland-module-header {
+    background: linear-gradient(125deg, #0f5132 0%, #198754 42%, #157347 100%);
+    color: #fff;
+    padding: 1.1rem 1.35rem;
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .farmland-module-header h5 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  }
+
+  .farmland-module-sub {
+    font-size: 0.82rem;
+    opacity: 0.92;
+    margin-top: 0.2rem;
+  }
+
+  .farmland-module-header .btn-outline-light {
+    border-color: rgba(255, 255, 255, 0.55);
+    color: #fff;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 0.35rem 0.85rem;
+  }
+
+  .farmland-module-header .btn-outline-light:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: #fff;
+    color: #fff;
+  }
+
+  .farmland-module-body {
+    background:
+      radial-gradient(ellipse 90% 60% at 50% 0%, rgba(180, 220, 160, 0.35), transparent 55%),
+      linear-gradient(180deg, #e8f5e9 0%, #d4edda 35%, #c8e6c9 100%);
+    padding: 1.5rem 1.25rem 1.75rem;
+  }
+
   .farmland-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 0;
+    align-items: stretch;
   }
-  
+
+  .land-plot-tile {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    align-self: stretch;
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 253, 248, 0.98) 100%);
+    border-radius: 16px;
+    padding: 0.65rem 0.7rem 0.85rem;
+    box-shadow:
+      0 1px 3px rgba(15, 81, 50, 0.06),
+      0 8px 20px -6px rgba(15, 81, 50, 0.12);
+    border: 1px solid rgba(25, 135, 84, 0.12);
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+  }
+
+  .land-plot-tile-body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 0;
+  }
+
+  /* 主苗床 + 底部状态区总高度固定，各行卡片平齐；进度条只在 footer */
+  .land-plot-stack {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  .land-plot-main-slot {
+    height: 168px;
+    width: 100%;
+    flex-shrink: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .land-plot-main-slot > .land-plot {
+    width: 100%;
+    height: 100%;
+    min-height: 168px;
+  }
+
+  .land-plot-main-slot .land-plot-visual {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    flex: none;
+  }
+
+  .land-plot-footer {
+    height: 54px;
+    width: 100%;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0 0;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .land-plot-footer--spacer {
+    pointer-events: none;
+  }
+
+  .land-plot-tile:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 4px 12px rgba(15, 81, 50, 0.1),
+      0 14px 28px -8px rgba(15, 81, 50, 0.18);
+  }
+
+  .land-plot-tile-head {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.35rem;
+    padding: 0 0.15rem;
+  }
+
+  .land-plot-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #1e4a32;
+    opacity: 0.85;
+  }
+
+  .land-status-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+  }
+
+  .land-status-idle {
+    background: rgba(108, 117, 125, 0.15);
+    color: #495057;
+  }
+
+  .land-status-growing {
+    background: rgba(13, 110, 253, 0.15);
+    color: #0a58ca;
+  }
+
+  .land-status-mature {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.25), rgba(255, 152, 0, 0.2));
+    color: #b45309;
+  }
+
   .land-plot {
     background: transparent;
     border: none;
-    height: 180px;
+    height: 168px;
     position: relative;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     align-items: center;
-    padding-bottom: 10px;
+    padding-bottom: 8px;
+    border-radius: 12px;
+    overflow: hidden;
   }
-  
+
+  .land-plot::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px rgba(25, 135, 84, 0.08);
+    pointer-events: none;
+    z-index: 2;
+  }
+
   .land-image {
     width: 100%;
     height: 100%;
@@ -146,6 +338,7 @@
     top: 0;
     left: 0;
     z-index: 1;
+    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.12));
   }
 
   .land-actions {
@@ -165,8 +358,116 @@
   }
 
   .land-plot:hover .land-action-center {
-    opacity: 0.7;
+    opacity: 1;
     pointer-events: auto;
+  }
+
+  .land-plot-tile .progress-container {
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(25, 135, 84, 0.15);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+
+  .land-plot-tile .progress-bar-custom {
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+    border-radius: 10px;
+  }
+
+  .land-plot-visual {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    outline: none;
+  }
+
+  /* 浇水/施肥：默认隐藏，鼠标悬停（或键盘聚焦）在苗床上时显示 */
+  .land-grow-hover-actions {
+    position: absolute;
+    left: 50%;
+    bottom: 4px;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.35rem;
+    z-index: 6;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 4px 16px rgba(15, 81, 50, 0.18);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .land-grow-hover-actions .grow-action-btn {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.76rem;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .land-plot-visual--care:hover .land-grow-hover-actions,
+    .land-plot-visual--care:focus-within .land-grow-hover-actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  /* 触屏：无精细悬停，始终显示操作钮 */
+  @media (hover: none), (pointer: coarse) {
+    .land-grow-hover-actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  .land-plot-visual--care:focus-visible {
+    outline: 2px solid rgba(25, 135, 84, 0.55);
+    outline-offset: 2px;
+  }
+
+  .land-plot-visual .land-image {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    z-index: 1;
+  }
+
+  .land-plot-footer .progress-container {
+    width: 100%;
+    margin-bottom: 0;
+  }
+
+  .land-plot-footer .timer-text {
+    color: #14532d;
+    text-shadow: none;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .harvest-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 0.45rem 1.15rem;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+    box-shadow: 0 8px 18px rgba(234, 88, 12, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  }
+
+  .harvest-btn:hover {
+    transform: translateY(-1px) scale(1.03);
+    filter: brightness(1.05);
+    color: #fff;
+    box-shadow: 0 10px 22px rgba(234, 88, 12, 0.42);
   }
 
   .plant-btn {
@@ -329,48 +630,101 @@
     </div>
 
     <!-- Module 2: Knowledge Farmland -->
-    <div class="card mb-4">
-      <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="bi bi-flower1 text-success me-2"></i>Knowledge Farmland</h5>
-        <button class="btn btn-sm btn-outline-primary" onclick="location.reload()">
-          <i class="bi bi-arrow-clockwise"></i> Refresh
+    {% set farmland_count = orchard_land_count|default(lands|length) %}
+    {% set farmland_max = orchard_max_lands|default(8) %}
+    <div class="card farmland-module-card mb-4">
+      <div class="farmland-module-header">
+        <div>
+          <h5 class="d-flex align-items-center gap-2">
+            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-white bg-opacity-25" style="width:2.25rem;height:2.25rem;">
+              <i class="bi bi-grid-1x2-fill"></i>
+            </span>
+            Knowledge Farmland
+          </h5>
+          <div class="farmland-module-sub">
+            <i class="bi bi-geo-alt me-1"></i>{{ farmland_count }} active plot{% if farmland_count != 1 %}s{% endif %}
+            <span class="opacity-75">·</span> up to {{ farmland_max }} total
+            <span class="opacity-75">·</span> water, fertilize, and harvest for rewards
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-light" onclick="location.reload()" title="Refresh farmland">
+          <i class="bi bi-arrow-clockwise me-1"></i>Refresh
         </button>
       </div>
-      <div class="card-body">
+      <div class="farmland-module-body">
+        {% if lands %}
         <div class="farmland-grid">
           {% for land in lands %}
-            <div class="land-plot">
-              {% if land.plant_status == 'idle' %}
-                <img src="{{ url_for('static', filename='orchard/soild/soil_empty.png') }}" class="land-image" alt="Empty Land">
-                <div class="land-actions land-action-center">
-                  <button class="btn btn-sm plant-btn" onclick="openPlantModal({{ land.id }})">
-                    <i class="bi bi-flower1 me-1"></i>Plant
-                  </button>
-                </div>
-              {% elif land.plant_status == 'growing' %}
-                <img src="{{ url_for('static', filename='orchard/soild/soil_planted.png') }}" class="land-image" alt="Planted Land">
-                <div class="land-actions" style="bottom: -10px; flex-direction: column; align-items: center; width: 100%;">
-                  <div class="progress-container" style="width: 90%; margin-bottom: 5px;">
-                    <div class="progress-bar-custom"
-                         id="progress-{{ land.id }}"
-                         data-start="{{ land_timing_map[land.id]['start_ts'] }}"
-                         data-end="{{ land_timing_map[land.id]['end_ts'] }}"></div>
+            <div class="land-plot-tile">
+              <div class="land-plot-tile-head">
+                <span class="land-plot-label">Plot {{ loop.index }}</span>
+                {% if land.plant_status == 'idle' %}
+                  <span class="land-status-badge land-status-idle">Empty</span>
+                {% elif land.plant_status == 'growing' %}
+                  <span class="land-status-badge land-status-growing">Growing</span>
+                {% elif land.plant_status == 'mature' %}
+                  <span class="land-status-badge land-status-mature">Ready</span>
+                {% else %}
+                  <span class="land-status-badge land-status-idle">{{ land.plant_status }}</span>
+                {% endif %}
+              </div>
+              <div class="land-plot-tile-body">
+                <div class="land-plot-stack">
+                  <div class="land-plot-main-slot">
+                    {% if land.plant_status == 'idle' %}
+                    <div class="land-plot">
+                      <img src="{{ url_for('static', filename='orchard/soild/soil_empty.png') }}" class="land-image" alt="Empty Land">
+                      <div class="land-actions land-action-center">
+                        <button type="button" class="btn btn-sm plant-btn" onclick="openPlantModal({{ land.id }})">
+                          <i class="bi bi-flower1 me-1"></i>Plant
+                        </button>
+                      </div>
+                    </div>
+                    {% elif land.plant_status == 'growing' %}
+                    <div class="land-plot-visual land-plot-visual--care" tabindex="0" role="group" aria-label="Growing crop — hover for water and fertilize">
+                      <img src="{{ url_for('static', filename='orchard/soild/soil_planted.png') }}" class="land-image" alt="Growing crop">
+                      <div class="land-grow-hover-actions">
+                        <button type="button" class="btn btn-sm grow-action-btn water-btn" onclick="openAccelerateModal({{ land.id }}, 'water')">
+                          <i class="bi bi-droplet me-1"></i>Water
+                        </button>
+                        <button type="button" class="btn btn-sm grow-action-btn fertilize-btn" onclick="openAccelerateModal({{ land.id }}, 'fertilizer')">
+                          <i class="bi bi-lightning-charge me-1"></i>Fertilize
+                        </button>
+                      </div>
+                    </div>
+                    {% elif land.plant_status == 'mature' %}
+                    <div class="land-plot">
+                      <img src="{{ land.current_seed.plant_image_url | default(url_for('static', filename='orchard/soild/soild_ripened_1.png')) }}" class="land-image" alt="Mature Plant">
+                      <div class="land-actions land-action-center">
+                        <button type="button" class="btn btn-sm harvest-btn" onclick="harvest({{ land.id }})">
+                          <i class="bi bi-basket me-1"></i>Harvest
+                        </button>
+                      </div>
+                    </div>
+                    {% endif %}
                   </div>
-                  <div class="small mb-1 timer-text" id="timer-{{ land.id }}">Calculating...</div>
-                  <div>
-                    <button class="btn btn-sm grow-action-btn water-btn" onclick="openAccelerateModal({{ land.id }}, 'water')">Water</button>
-                    <button class="btn btn-sm grow-action-btn fertilize-btn" onclick="openAccelerateModal({{ land.id }}, 'fertilizer')">Fertilize</button>
+                  <div class="land-plot-footer{% if land.plant_status != 'growing' %} land-plot-footer--spacer{% endif %}">
+                    {% if land.plant_status == 'growing' %}
+                    <div class="progress-container">
+                      <div class="progress-bar-custom"
+                           id="progress-{{ land.id }}"
+                           data-start="{{ land_timing_map[land.id]['start_ts'] }}"
+                           data-end="{{ land_timing_map[land.id]['end_ts'] }}"></div>
+                    </div>
+                    <div class="small timer-text" id="timer-{{ land.id }}">Calculating...</div>
+                    {% endif %}
                   </div>
                 </div>
-              {% elif land.plant_status == 'mature' %}
-                <img src="{{ land.current_seed.plant_image_url | default(url_for('static', filename='orchard/soild/soild_ripened_1.png')) }}" class="land-image" alt="Mature Plant">
-                <div class="land-actions land-action-center">
-                  <button class="btn btn-sm btn-primary" onclick="harvest({{ land.id }})">Harvest</button>
-                </div>
-              {% endif %}
+              </div>
             </div>
           {% endfor %}
         </div>
+        {% else %}
+        <div class="text-center text-muted py-5 rounded-3 bg-white bg-opacity-50">
+          <i class="bi bi-inboxes fs-1 d-block mb-2 opacity-50"></i>
+          <p class="mb-0">No farmland plots yet. Open the shop to add land slots.</p>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>

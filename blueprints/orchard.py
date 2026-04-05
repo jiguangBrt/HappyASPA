@@ -21,10 +21,10 @@ orchard_bp = Blueprint('orchard', __name__, url_prefix='/orchard')
 # 新用户赠送农田块数（与 get_or_create_user_orchard 中 range 一致）
 ORCHARD_INITIAL_LAND_COUNT = 3
 # 农田总上限（含赠送）
-ORCHARD_MAX_LAND_SLOTS = 10
+ORCHARD_MAX_LAND_SLOTS = 8
 # 第 4 块起每块基础价，之后每多一块递增
 ORCHARD_LAND_SLOT_BASE_PRICE = 40
-ORCHARD_LAND_SLOT_PRICE_STEP = 25
+ORCHARD_LAND_SLOT_PRICE_STEP = 10
 
 
 def next_land_slot_price(land_count):
