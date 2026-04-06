@@ -76,8 +76,15 @@
                 <div class="card-body">
                     <textarea id="notesTextarea" class="form-control" rows="8"
                         placeholder="Take notes while listening..."></textarea>
+                    <!-- Share按钮 -->
                     <div class="mt-2 d-flex justify-content-between align-items-center">
-                        <small class="text-muted" id="notesStatus"></small>
+                        <small class="text-muted" id="shareNotesStatus"></small>
+                        <button type="button" class="btn btn-sm btn-share-forum" id="shareNotesBtn" disabled>
+                            <i class="bi bi-share me-1"></i>Share to Forum
+                        </button>
+                    </div>
+                    <div class="mt-2 d-flex justify-content-between align-items-center">
+                        <small class="text-muted" id="saveNotesStatus"></small>
                         <button id="saveNotesBtn" class="btn btn-sm btn-soft"><i class="bi bi-save"></i> Save</button>
                     </div>
                 </div>
@@ -113,6 +120,7 @@
 {{ super() }}
 <script>
     const exerciseId = {{ exercise.id }};
+    const exerciseTitle = {{ exercise.title | tojson }};
     let questions = [];
     let userAnswers = new Map();
     let permanentAnswered = new Set();
@@ -133,8 +141,10 @@
     const questionArea = document.getElementById('questionArea');
     const questionCard = document.getElementById('questionCard');
     const notesTextarea = document.getElementById('notesTextarea');
-    const notesStatus = document.getElementById('notesStatus');
+    const shareNotesStatus = document.getElementById('shareNotesStatus');
+    const saveNotesStatus = document.getElementById('saveNotesStatus');
     const saveNotesBtn = document.getElementById('saveNotesBtn');
+    const shareNotesBtn = document.getElementById('shareNotesBtn');
     const fullscreenPopup = document.getElementById('fullscreenPopup');
     const customFullscreenBtn = document.getElementById('customFullscreenBtn');
 
@@ -153,8 +163,8 @@
             const res = await fetch('/listening/progress', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    exercise_id: exerciseId, 
+                body: JSON.stringify({
+                    exercise_id: exerciseId,
                     reset: true,
                     reset_mode: true
                 })
@@ -217,7 +227,7 @@
     async function saveNotesToServer() {
         const notes = notesTextarea.value;
         if (notes === notesContent) return;
-        notesStatus.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
+        saveNotesStatus.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
         try {
             const res = await fetch('/listening/api/notes', {
                 method: 'POST',
@@ -227,21 +237,76 @@
             const data = await res.json();
             if (data.success) {
                 notesContent = notes;
-                notesStatus.innerHTML = '<i class="bi bi-check-circle"></i> Saved';
-                setTimeout(() => { notesStatus.innerHTML = ''; }, 2000);
+                saveNotesStatus.innerHTML = '<i class="bi bi-check-circle"></i> Saved';
+                setTimeout(() => { saveNotesStatus.innerHTML = ''; }, 2000);
             } else {
-                notesStatus.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Save failed';
+                saveNotesStatus.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Save failed';
             }
         } catch (err) {
-            notesStatus.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Network error';
+            saveNotesStatus.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Network error';
         }
+    }
+
+    // 监听笔记内容变化，启用/禁用分享按钮
+    notesTextarea.addEventListener('input', function () {
+        const hasContent = this.value.trim().length > 0;
+        shareNotesBtn.disabled = !hasContent;
+    });
+
+    // 分享笔记到论坛 - 在当前页面跳转到新建帖子页面
+    shareNotesBtn.addEventListener('click', function () {
+        const notesContent = notesTextarea.value.trim();
+        if (!notesContent) return;
+
+        // 构建预填充参数
+        const title = `Listening Notes: ${exerciseTitle}`;
+        const content = notesContent;
+        const category = 'Listening';
+        
+        // 编码URL参数
+        const encodedTitle = encodeURIComponent(title);
+        const encodedContent = encodeURIComponent(content);
+        const encodedCategory = encodeURIComponent(category);
+        
+        // 跳转到论坛新建帖子页面，通过URL参数传递预填充内容
+        const newPostUrl = `/forum/new?title=${encodedTitle}&content=${encodedContent}&category=${encodedCategory}&source=listening&exercise_id=${exerciseId}`;
+        
+        // 在当前页面跳转
+        window.location.href = newPostUrl;
+    });
+
+    // 简单的toast通知函数
+    function showToast(message, type = 'info') {
+        // 创建toast元素
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-bg-${type === 'success' ? 'success' : 'danger'} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+
+        // 添加到页面并显示
+        document.body.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+
+        // 自动移除
+        toast.addEventListener('hidden.bs.toast', () => {
+            toast.remove();
+        });
     }
 
     function showQuestion(question, idx, resumeSeconds = null) {
         const hasAnswered = userAnswers.has(String(idx));
         let isCorrectAlready = false;
         let selectedAnswer = null;
-        
+
         if (hasAnswered) {
             selectedAnswer = userAnswers.get(String(idx));
             isCorrectAlready = (selectedAnswer === question.answer);
@@ -285,7 +350,7 @@
         } else {
             feedbackHtml = '<div class="feedback mt-2" style="font-size: 0.85rem;"></div>';
         }
-        
+
         const timerHtml = !shouldDisable
             ? '<div class="timer text-end mt-2"><span class="timer-seconds"></span>s</div>'
             : '';
@@ -487,17 +552,51 @@
                 historyList.innerHTML = data.history.map(item => `
           <div class="card mb-2">
             <div class="card-body py-2">
-              <div class="text-muted small mb-1">${new Date(item.created_at).toLocaleString()}</div>
+              <div class="d-flex justify-content-between align-items-start mb-1">
+                <div class="text-muted small">${new Date(item.created_at).toLocaleString()}</div>
+                <button type="button" class="btn btn-sm btn-share-forum share-history-btn" data-content="${escapeHtml(item.content)}" data-date="${new Date(item.created_at).toLocaleString()}">
+                  <i class="bi bi-share me-1"></i>Share
+                </button>
+              </div>
               <div class="text-pre-wrap">${escapeHtml(item.content)}</div>
             </div>
           </div>
         `).join('');
+
+                // 为历史记录分享按钮添加事件监听器
+                document.querySelectorAll('.share-history-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const content = this.getAttribute('data-content');
+                        const date = this.getAttribute('data-date');
+                        shareHistoryToForum(content, date);
+                    });
+                });
             } else {
                 historyList.innerHTML = '<div class="text-center text-muted">No historical notes yet.</div>';
             }
         } catch (err) {
             historyList.innerHTML = '<div class="text-center text-danger">Failed to load history.</div>';
         }
+    }
+
+    // 分享历史记录到论坛
+    function shareHistoryToForum(content, date) {
+        if (!content || content.trim().length === 0) return;
+
+        // 构建预填充参数
+        const title = `Listening Notes (${date}): ${exerciseTitle}`;
+        const category = 'Listening';
+        
+        // 编码URL参数
+        const encodedTitle = encodeURIComponent(title);
+        const encodedContent = encodeURIComponent(content);
+        const encodedCategory = encodeURIComponent(category);
+        
+        // 跳转到论坛新建帖子页面，通过URL参数传递预填充内容
+        const newPostUrl = `/forum/new?title=${encodedTitle}&content=${encodedContent}&category=${encodedCategory}&source=listening&exercise_id=${exerciseId}&from_history=true`;
+        
+        // 在当前页面跳转
+        window.location.href = newPostUrl;
     }
 
     function escapeHtml(str) {
@@ -537,6 +636,9 @@
             permanentCorrect = new Set(prog.permanent_correct || []);
             notesContent = prog.notes || '';
             notesTextarea.value = notesContent;
+
+            // 根据已有笔记内容设置分享按钮状态
+            shareNotesBtn.disabled = notesContent.trim().length === 0;
 
             lastPosition = prog.last_position || 0;
             // 只加载正确答题到userAnswers，错题可以重新选择
@@ -621,14 +723,15 @@
         });
 
         window.addEventListener('beforeunload', () => {
-            if (video && !video.paused && playStartTime) {
-                const delta = (Date.now() - playStartTime) / 1000;
-                if (delta > 0) {
-                    navigator.sendBeacon('/listening/progress', JSON.stringify({ exercise_id: exerciseId, duration_spent: delta }));
-                }
+        if (video && !video.paused && playStartTime) {
+            const delta = (Date.now() - playStartTime) / 1000;
+            if (delta > 0) {
+                navigator.sendBeacon('/listening/progress', JSON.stringify({ exercise_id: exerciseId, duration_spent: delta }));
             }
-            saveNotesToServer();
-        });
+        }
+        // 移除自动保存笔记功能，改为手动保存
+        // saveNotesToServer();
+    });
     }
 
     const style = document.createElement('style');
@@ -653,8 +756,8 @@
         initVideo();
         loadData();
     });
-    
-    // ========== 新增：词汇卡片高度与视频区域对齐 ==========
+
+    // ========== 词汇卡片高度与视频区域对齐 ==========
     function syncVocabHeight() {
         const isLg = window.innerWidth >= 992; // Bootstrap lg 断点
         if (!isLg) {
@@ -664,7 +767,7 @@
         const videoContainer = document.getElementById('videoContainer');
         const vocabArea = document.getElementById('vocabArea');
         if (!videoContainer || !vocabArea) return;
-        
+
         // 获取视频容器的实际高度（包括视频和可能的边距）
         const videoHeight = videoContainer.clientHeight;
         // 获取卡片头的高度（固定类 .card-header-soft）
@@ -680,9 +783,9 @@
             vocabArea.style.maxHeight = '';
         }
     }
-    
+
     // 页面加载完成后执行，并监听窗口变化
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         syncVocabHeight();
         // 监听窗口大小变化
         window.addEventListener('resize', syncVocabHeight);
@@ -710,7 +813,7 @@
         font-weight: 500;
         letter-spacing: 0.3px;
         border-radius: 0.375rem 0.375rem 0 0;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
 
     /* 软按钮：清新蓝绿色 */
@@ -720,11 +823,34 @@
         color: #5B8C9E;
         transition: all 0.2s ease;
     }
+
     .btn-soft:hover,
     .btn-soft:focus {
         background-color: #5B8C9E;
         border-color: #5B8C9E;
         color: #fff;
+    }
+
+    /* 分享按钮淡雅绿色样式 - 模仿speaking模块 */
+    .btn-share-forum {
+        border: 1px solid color-mix(in srgb, #198754 40%, #FFFFFF);
+        color: #198754;
+        background: transparent;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-share-forum:hover:not(:disabled) {
+        background: color-mix(in srgb, #198754 12%, #FFFFFF);
+        color: #198754;
+        border-color: color-mix(in srgb, #198754 40%, #FFFFFF);
+    }
+    
+    .btn-share-forum:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        border-color: color-mix(in srgb, #6c757d 40%, #FFFFFF);
+        color: #6c757d;
+        background: transparent;
     }
 
     /* 选项卡片清新风格 */
@@ -747,7 +873,7 @@
         background: rgba(91, 140, 158, 0.12);
         border-left: 3px solid #5B8C9E;
     }
-    
+
     .option-item.wrong-selected {
         background: rgba(220, 53, 69, 0.08);
         border-left: 3px solid #dc3545;
@@ -761,20 +887,25 @@
         padding: 0.5rem 0;
         transition: max-height 0.2s ease;
     }
+
     .vocab-list {
         background: transparent;
     }
+
     .vocab-item {
         background: transparent !important;
         border-color: rgba(91, 140, 158, 0.2);
         color: #2c3e50;
     }
+
     .vocab-item strong {
         color: #2c3e50;
     }
+
     .vocab-item small {
         color: #6B7688 !important;
     }
+
     #vocabArea .text-muted {
         padding: 0.5rem 1rem;
         margin-bottom: 0;
