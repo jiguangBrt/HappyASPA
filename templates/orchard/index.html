@@ -118,6 +118,10 @@
     white-space: nowrap;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
+
+  .showcase-view-tabs .btn {
+    border-radius: 999px;
+  }
   
   /* ─── Knowledge Farmland module ─── */
   .farmland-module-card {
@@ -806,7 +810,13 @@
     <div class="card mb-4">
       <div class="card-header bg-white d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="bi bi-trophy text-warning me-2"></i>Trophy Room</h5>
-        <span class="badge bg-primary rounded-pill">{{ showcase_fruits|length }} Fruits</span>
+        <div class="d-flex align-items-center gap-2">
+          <div class="btn-group btn-group-sm showcase-view-tabs" role="group" aria-label="Showcase view filter">
+            <button type="button" class="btn btn-outline-primary active" data-showcase-view="all">All</button>
+            <button type="button" class="btn btn-outline-primary" data-showcase-view="week">This Week</button>
+          </div>
+          <span class="badge bg-primary rounded-pill"><span id="showcase-count">{{ showcase_fruits|length }}</span> Fruits</span>
+        </div>
       </div>
       <div class="card-body">
         <div class="showcase-container">
@@ -814,6 +824,8 @@
             {% if showcase_fruits %}
               {% for fruit in showcase_fruits %}
                 <div class="fruit-item fruit-{{ fruit.harvested_fruit.fruit_type.rarity|lower }}"
+                     data-showcase-fruit
+                     data-harvested-at="{{ fruit.harvested_fruit.harvested_at.isoformat() }}"
                      data-bs-toggle="tooltip" data-bs-html="true"
                      title="<b>{{ fruit.harvested_fruit.fruit_type.name }}</b><br>Rarity: {{ fruit.harvested_fruit.fruit_type.rarity }}<br>Points: {{ fruit.harvested_fruit.fruit_type.points }}<br>Harvested: {{ fruit.harvested_fruit.harvested_at.strftime('%Y-%m-%d') }}<br><i>{{ fruit.harvested_fruit.fruit_type.description }}</i>">
                   {% if fruit.harvested_fruit.fruit_type.image_url %}
@@ -832,6 +844,9 @@
                   </div>
                 </div>
               {% endfor %}
+              <div id="showcase-empty-filtered" class="text-muted text-center w-100 d-none">
+                <i class="bi bi-calendar-week me-1"></i> 本周还没有新获得的水果
+              </div>
             {% else %}
               <div class="text-muted text-center w-100">
                 <i class="bi bi-info-circle me-1"></i> Your showcase is empty. Plant seeds to harvest rare fruits!
@@ -1249,6 +1264,59 @@
 
 {% block scripts %}
 <script>
+  function getCurrentWeekStart() {
+    const now = new Date();
+    const day = now.getDay();
+    const offset = day === 0 ? -6 : 1 - day; // Monday as start of week
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() + offset);
+    weekStart.setHours(0, 0, 0, 0);
+    return weekStart;
+  }
+
+  function setShowcaseView(view) {
+    const fruitEls = Array.from(document.querySelectorAll('[data-showcase-fruit]'));
+    const countEl = document.getElementById('showcase-count');
+    const emptyFilteredEl = document.getElementById('showcase-empty-filtered');
+    const weekStart = getCurrentWeekStart();
+    let visibleCount = 0;
+
+    fruitEls.forEach((el) => {
+      let visible = true;
+      if (view === 'week') {
+        const harvestedAtStr = el.getAttribute('data-harvested-at');
+        const harvestedAt = harvestedAtStr ? new Date(harvestedAtStr) : null;
+        visible = !!harvestedAt && !Number.isNaN(harvestedAt.getTime()) && harvestedAt >= weekStart;
+      }
+      el.classList.toggle('d-none', !visible);
+      if (visible) visibleCount += 1;
+    });
+
+    if (countEl) {
+      countEl.textContent = visibleCount;
+    }
+
+    if (emptyFilteredEl) {
+      emptyFilteredEl.classList.toggle('d-none', !(view === 'week' && visibleCount === 0 && fruitEls.length > 0));
+    }
+
+    document.querySelectorAll('[data-showcase-view]').forEach((btn) => {
+      btn.classList.toggle('active', btn.getAttribute('data-showcase-view') === view);
+    });
+  }
+
+  function initShowcaseViewToggle() {
+    const buttons = document.querySelectorAll('[data-showcase-view]');
+    if (!buttons.length) return;
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const view = btn.getAttribute('data-showcase-view') || 'all';
+        setShowcaseView(view);
+      });
+    });
+    setShowcaseView('all');
+  }
+
   // Initialize tooltips
   var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -1327,6 +1395,7 @@
   setInterval(updateTimers, 1000);
   updateTimers();
   initShopSubtotals();
+  initShowcaseViewToggle();
 
   // API Calls
   function changeShopQty(type, itemId, delta) {

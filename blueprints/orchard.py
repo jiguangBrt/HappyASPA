@@ -6,7 +6,7 @@ from datetime import datetime, date, timedelta, timezone
 from time_utils import utcnow_naive
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from flask_login import login_required, current_user
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, case
 import random
 
 from models import (
@@ -206,9 +206,30 @@ def index():
             'end_ts': end_ts,
         }
     
-    # 获取展示柜果实
-    showcase_fruits = UserShowcaseFruit.query.filter_by(orchard_id=orchard.id)\
-        .order_by(UserShowcaseFruit.position).all()
+    # 获取展示柜果实：
+    # 1) 同种水果排在一起（按 seed_type 分组）
+    # 2) 星级从高到低（SSR/SR > R > N）
+    # 3) 同组内再按收获时间倒序，最后用展示位次稳定排序
+    rarity_sort = case(
+        (FruitType.rarity == 'SSR', 4),
+        (FruitType.rarity == 'SR', 3),
+        (FruitType.rarity == 'R', 2),
+        (FruitType.rarity == 'N', 1),
+        else_=0
+    )
+    showcase_fruits = (
+        UserShowcaseFruit.query
+        .join(UserHarvestedFruit, UserShowcaseFruit.harvested_fruit_id == UserHarvestedFruit.id)
+        .join(FruitType, UserHarvestedFruit.fruit_type_id == FruitType.id)
+        .filter(UserShowcaseFruit.orchard_id == orchard.id)
+        .order_by(
+            FruitType.seed_type_id.asc(),
+            rarity_sort.desc(),
+            UserHarvestedFruit.harvested_at.desc(),
+            UserShowcaseFruit.position.asc()
+        )
+        .all()
+    )
     
     # 获取排行榜数据
     # 本周榜
