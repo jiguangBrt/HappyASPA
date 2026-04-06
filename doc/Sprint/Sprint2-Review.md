@@ -22,9 +22,16 @@ We launched the Dashboard Learning Journey, integrated spelling and speaking-fol
 | **Dashboard** | Learning journey tracking and calendar reminder system. | 1. Added a "Personal Learning Journey" section. <br> 2. Integrated calendar reminders and populated the introduction guidance panel. | Sihan Wang |
 | **Personal Center** | Core template establishment. | Initial layout is complete, including placeholders for gold coins, exam scores, and user identity badges. | Jiachi Zhu |
 
+## Deferred / Dropped Items
+
+| Item | Decision | Reason |
+| :--- | :--- | :--- |
+| **AI bot for the whole website** | Dropped | After the Sprint 2 review, the client expressed a strong preference for gamification and entertainment features rather than an AI navigation assistant. The team decided to redirect Yihan Wang's effort toward designing the gamified farm system in Sprint 3. The AI bot user story is removed from the backlog. |
+
 ## Feedback Captured
 | Module | Feedback Captured |
 | :--- | :--- |
 | **Dashboard** | 1. Add a "Comprehensive Learning Log" to record both on-site and off-site (external) study behaviors. <br> 2. Include a "Calendar Hint" or usage guide above the calendar to explain its benefits to the user. |
 | **Speaking** | Conduct a review of all speaking topics to ensure they are easy to understand and strictly relevant to the DIICSU curriculum/context. |
 | **Work Management** | Ensure that newly added features (like the reward game data) are seamlessly integrated with the existing progress tracking system. |
+| **Client Request (Sprint 3 Direction)** | The client requested the addition of more engaging and entertaining features to increase user motivation. After discussion, the team agreed to introduce a gamified farm ecosystem in Sprint 3, where users earn gold coins through learning activities and spend them on a virtual academic farm. |
