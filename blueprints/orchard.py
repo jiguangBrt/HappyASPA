@@ -70,36 +70,89 @@ def calculate_mature_time(seed_type, land):
     return timedelta(hours=actual_hours)
 
 
-def determine_fruit(seed_type, land):
-    """根据种子和土地决定产出的果实"""
-    possible_fruits = FruitType.query.filter_by(seed_type_id=seed_type.id).all()
+# ─── 收获权重：稀有度 + 土地 + 照料（浇水 / 施肥品质）────────────────
+RARITY_TIER = {'N': 0, 'R': 1, 'SR': 2, 'SSR': 3}
+WEIGHT_FLOOR = 1e-9
+# 每次浇水对「照料分」的贡献（仅抬高 R+ 档位权重）
+CARE_PER_WATER = 0.10
+# 肥料：累加 item.effect_value；系数偏大——一茬通常只能施 1～2 次肥，单次要对稀有权重足够明显
+CARE_PER_FERTILIZER_EFFECT = 0.18
+# 照料分上限，避免无限叠道具刷爆稀有
+CARE_RAW_SCORE_CAP = 4.0
+# 照料分 × 稀有阶梯 → 乘在 R+ 权重上：tier 越高越吃照料
+CARE_TIER_COEF = 0.18
+
+
+def rarity_tier(rarity):
+    if not rarity:
+        return 0
+    return RARITY_TIER.get(str(rarity).strip().upper(), 0)
+
+
+def _care_raw_score(water_count, fertilizer_quality_sum):
+    w = max(0, int(water_count or 0))
+    f = max(0.0, float(fertilizer_quality_sum or 0.0))
+    raw = w * CARE_PER_WATER + f * CARE_PER_FERTILIZER_EFFECT
+    return min(raw, CARE_RAW_SCORE_CAP)
+
+
+def care_rare_multiplier(water_count, fertilizer_quality_sum, tier):
+    """
+    仅 tier>=1（R/SR/SSR）生效；N 不受照料影响。
+    浇水次数越多、累计肥料 effect 越高，稀有档相对权重越高。
+    """
+    if tier <= 0:
+        return 1.0
+    raw = _care_raw_score(water_count, fertilizer_quality_sum)
+    return 1.0 + raw * CARE_TIER_COEF * tier
+
+
+def determine_fruit(seed_type, land, rng=None):
+    """
+    加权随机产出果实。
+    - drop_rate：相对权重
+    - 土地 rare_boost：抬高 SR/SSR
+    - 本轮 crop_water_count / crop_fertilizer_quality：抬高 R+（肥料用 effect_value 累计，好肥更强）
+    """
+    possible_fruits = (
+        FruitType.query.filter_by(seed_type_id=seed_type.id).order_by(FruitType.id).all()
+    )
     if not possible_fruits:
         return None
-    
+    if len(possible_fruits) == 1:
+        return possible_fruits[0]
+
     land_type = land.land_type
-    rare_boost = land_type.rare_boost if land_type else 0
-    
-    # 计算加权随机
-    total_weight = 0
-    weighted_fruits = []
-    
+    rare_boost = float(land_type.rare_boost if land_type else 0) or 0.0
+    water = getattr(land, 'crop_water_count', None)
+    if water is None:
+        water = 0
+    fert = getattr(land, 'crop_fertilizer_quality', None)
+    if fert is None:
+        fert = 0.0
+
+    weighted = []
     for fruit in possible_fruits:
-        # 稀有度权重调整
-        weight = fruit.drop_rate
-        if fruit.rarity in ['SR', 'SSR']:
-            weight *= (1 + rare_boost)
-        weighted_fruits.append((fruit, weight))
-        total_weight += weight
-    
-    # 随机选择
-    roll = random.random() * total_weight
-    cumulative = 0
-    for fruit, weight in weighted_fruits:
+        tier = rarity_tier(fruit.rarity)
+        weight = max(float(fruit.drop_rate or 0), WEIGHT_FLOOR)
+        if fruit.rarity in ('SR', 'SSR'):
+            weight *= 1.0 + rare_boost
+        if tier > 0:
+            weight *= care_rare_multiplier(water, fert, tier)
+        weighted.append((fruit, weight))
+
+    total_weight = sum(w for _, w in weighted)
+    if total_weight <= 0:
+        return possible_fruits[0]
+
+    roll_fn = rng if rng is not None else random.random
+    roll = roll_fn() * total_weight
+    cumulative = 0.0
+    for fruit, weight in weighted:
         cumulative += weight
         if roll <= cumulative:
             return fruit
-    
-    return possible_fruits[0]  # 默认返回第一个
+    return possible_fruits[-1]
 
 
 # ─────────────────────────────────────────────
@@ -360,7 +413,9 @@ def plant_seed():
     land.plant_status = 'growing'
     land.planted_at = now
     land.matures_at = now + mature_delta
-    
+    land.crop_water_count = 0
+    land.crop_fertilizer_quality = 0.0
+
     db.session.commit()
     
     return jsonify({
@@ -437,7 +492,9 @@ def harvest():
     land.plant_status = 'idle'
     land.planted_at = None
     land.matures_at = None
-    
+    land.crop_water_count = 0
+    land.crop_fertilizer_quality = 0.0
+
     db.session.commit()
     
     return jsonify({
@@ -511,16 +568,26 @@ def use_item():
         now = utcnow_naive()
         if land.matures_at <= now:
             land.plant_status = 'mature'
-    
+
+        # 照料累计：影响收获时稀有果权重（肥料品质 = effect_value，越大越强）
+        if item.item_type == 'water':
+            land.crop_water_count = (land.crop_water_count or 0) + 1
+        elif item.item_type == 'fertilizer':
+            land.crop_fertilizer_quality = float(land.crop_fertilizer_quality or 0) + float(
+                item.effect_value or 0
+            )
+
     db.session.commit()
-    
+
     return jsonify({
         'success': True,
         'message': f'Used {item.name}!',
         'land': {
             'id': land.id,
             'status': land.plant_status,
-            'matures_at': land.matures_at.isoformat() if land.matures_at else None
+            'matures_at': land.matures_at.isoformat() if land.matures_at else None,
+            'crop_water_count': land.crop_water_count or 0,
+            'crop_fertilizer_quality': float(land.crop_fertilizer_quality or 0),
         }
     })
 
@@ -618,7 +685,13 @@ def get_land_status():
                 'name': land.current_seed.name,
                 'icon': land.current_seed.icon
             }
-        
+
+        if land.plant_status == 'growing':
+            land_info['crop_care'] = {
+                'water_count': land.crop_water_count or 0,
+                'fertilizer_quality': float(land.crop_fertilizer_quality or 0),
+            }
+
         if land.matures_at:
             land_info['matures_at'] = land.matures_at.isoformat()
             remaining = (land.matures_at - now).total_seconds()
