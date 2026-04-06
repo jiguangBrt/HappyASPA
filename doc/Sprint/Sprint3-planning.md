@@ -16,7 +16,7 @@ At the end of Sprint 2, the client reviewed the current product and requested a 
 2. **Drop the AI bot feature**: The standalone AI assistant planned in Sprint 2 was deprioritized in favour of the gamification direction, which better addressed the client's stated need for motivation and fun.
 
 ## Sprint Goal:
-
+This week we'll focus on expanding the functionality of each section, connecting the parts to the coin system, and developing interesting games to make the site more fun.
 Connect all learning modules to a unified gold coin reward system and launch the gamified farm ecosystem to increase user engagement, in direct response to client feedback received at the Sprint 2 review.
 
 ## Selected User Story & Task Plan
