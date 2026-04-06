@@ -1,0 +1,15 @@
+# version: '3.8'  <-- 建议删掉这行，Docker Compose V2 已经废弃了 version 字段，留着会报 warning
+
+services:
+  web:
+    build: .
+    container_name: happyaspa_web
+    restart: always
+    ports:
+      - "8080:5000"
+    environment:
+      # 强制指定数据库路径到挂载的 instance 目录中（注意这里是4个斜杠 sqlite://// ）
+      - DATABASE_URL=sqlite:////app/instance/happyaspa.db
+    volumes:
+      - ./uploads:/app/uploads
+      - ./instance:/app/instance

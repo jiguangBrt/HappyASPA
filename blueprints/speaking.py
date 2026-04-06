@@ -1,3 +1,24 @@
+"""
+Speaking Module - English Corner Practice Platform
+
+🤖 AI FEEDBACK ATTRIBUTION:
+This module uses the Doubao (豆包) AI LLM service for providing real-time speaking feedback.
+
+📌 SERVICE DETAILS:
+- Service Provider: ByteDance (字节跳动) / Volcano Engine (火山引擎)
+- Service Name: Doubao (豆包) - An LLM service platform
+- Model: Doubao Seed 2.0 Lite (doubao-seed-2-0-lite-260215)
+- API Endpoint: https://ark.cn-beijing.volces.com/api/v3
+- SDK: volcenginesdkarkruntime (ByteDance Volcano Engine Python SDK)
+- Purpose: Analyzing user speaking recordings and providing constructive feedback
+- Documentation: https://www.volcengine.com/docs/82379
+
+✅ ATTRIBUTION & REQUIREMENTS:
+- All AI-generated feedback must be credited to Doubao (豆包)
+- Users should be informed that feedback is AI-generated
+- This attribution meets academic integrity requirements for AI usage
+"""
+
 from flask import Blueprint, render_template, request, jsonify, current_app, url_for, redirect, flash
 from flask_login import login_required, current_user
 from models import db, UserActivityLog, SpeakingExercise, UserSpeakingSubmission, User, AcademicScenario, UserScenarioSubmission, ShadowingExercise, ShadowingAudio, UserShadowingRecord
@@ -8,11 +29,22 @@ from time_utils import to_beijing
 import os
 import uuid
 # === AI 语音识别与点评依赖 ===
+# AI Feedback provided by Doubao (豆包) - ByteDance Volcano Engine LLM Service
 import requests
 from volcenginesdkarkruntime import Ark
 
 speaking_bp = Blueprint('speaking', __name__, url_prefix='/speaking')
 DAILY_AUDIO_COIN_LIMIT = 10
+
+
+def get_tos_settings():
+    return {
+        "access_key": os.environ.get("VOLC_TOS_AK", "").strip(),
+        "secret_key": os.environ.get("VOLC_TOS_SK", "").strip(),
+        "bucket": current_app.config.get("VOLC_TOS_BUCKET", "english-practice-audio").strip(),
+        "endpoint": current_app.config.get("VOLC_TOS_ENDPOINT", "tos-cn-beijing.volces.com").strip(),
+        "region": current_app.config.get("VOLC_TOS_REGION", "cn-beijing").strip(),
+    }
 
 # 工具函数：验证文件扩展名
 def allowed_file(filename):
@@ -60,20 +92,39 @@ def upload_audio_to_tos(file_storage, filename,file_path):
     独立纯函数：只上传文件到TOS，返回公网URL
     不依赖任何业务，不修改任何数据
     """
-    AK = os.environ.get("VOLC_TOS_AK", "")
-    SK = os.environ.get("VOLC_TOS_SK", "")
-    BUCKET = "english-practice-audio"
-    ENDPOINT = "tos-cn-beijing.volces.com"
-    REGION = "cn-beijing"
+    settings = get_tos_settings()
+
+    if not settings["access_key"] or not settings["secret_key"]:
+        raise RuntimeError("TOS credentials are missing. Please set VOLC_TOS_AK and VOLC_TOS_SK in .env.")
+
+    if not settings["bucket"]:
+        raise RuntimeError("TOS bucket is missing. Please set VOLC_TOS_BUCKET in .env.")
 
     try:
         import tos
-        client = tos.TosClientV2(AK, SK, ENDPOINT, REGION)
-        client.put_object_from_file(BUCKET,filename, file_path)
-        return f"https://{BUCKET}.{ENDPOINT}/{filename}"
+        client = tos.TosClientV2(
+            settings["access_key"],
+            settings["secret_key"],
+            settings["endpoint"],
+            settings["region"],
+        )
+        client.put_object_from_file(settings["bucket"], filename, file_path)
+        return f"https://{settings['bucket']}.{settings['endpoint']}/{filename}"
     except Exception as e:
-        current_app.logger.error(f"TOS上传失败: {str(e)}")
-        return None
+        error_text = str(e)
+        current_app.logger.error(
+            "TOS上传失败: bucket=%s, endpoint=%s, region=%s, error=%s",
+            settings["bucket"],
+            settings["endpoint"],
+            settings["region"],
+            error_text,
+        )
+        if "AccessDenied" in error_text or "Access Denied" in error_text:
+            raise RuntimeError(
+                f"TOS access denied for bucket '{settings['bucket']}'. "
+                "Check whether VOLC_TOS_BUCKET is correct and whether the current AK/SK has TOS PutObject permission."
+            ) from e
+        raise RuntimeError(f"TOS upload failed: {error_text}") from e
 
 # ====================== AI 工具函数 ======================
 def build_topic_context_text(topic_context):
@@ -204,10 +255,38 @@ def audio_to_text(tos_public_url):
         time.sleep(1)
 
 def text_evaluation(text, topic_context_text=""):
+    """
+    Generate AI feedback for user's speaking practice using Doubao LLM.
+    
+    🤖 AI SERVICE ATTRIBUTION:
+    - Service: Doubao (豆包) AI LLM Platform
+    - Provider: ByteDance / Volcano Engine (字节跳动 / 火山引擎)
+    - Model: doubao-seed-2-0-lite-260215
+    - Purpose: Real-time speaking assessment and constructive feedback
+    
+    📚 FEEDBACK INCLUDES:
+    - Pronunciation and clarity evaluation
+    - Fluency and natural rhythm assessment
+    - Grammar and vocabulary analysis
+    - Emotional delivery and confidence
+    - Topic relevance and task completion
+    - Score out of 100 with reasons
+    
+    Args:
+        text: Transcribed speaking text from user
+        topic_context_text: Context about the speaking exercise
+    
+    Returns:
+        str: AI-generated feedback with attribution
+    """
     print("Evaluating text with AI, input length:", len(text))
     api_key = os.environ.get("VOLC_ARK_API_KEY", "")
     if Ark is None:
         return "❌ 未安装volcenginesdkarkruntime"
+    
+    # Initialize Doubao API client
+    # Service: ByteDance Volcano Engine Doubao LLM
+    # Documentation: https://www.volcengine.com/docs/82379
     client = Ark(
         base_url='https://ark.cn-beijing.volces.com/api/v3',
         api_key=api_key,
@@ -252,6 +331,7 @@ def text_evaluation(text, topic_context_text=""):
         )
         if response.output and len(response.output) > 1:
             answer = response.output[1].content[0].text
+            # Feedback generated by Doubao AI (豆包)
             return answer
         else:
             return "⚠️ 未获取到有效点评内容"
@@ -476,8 +556,6 @@ def analyze_audio(sub_id):
             return jsonify({'status': 'error', 'message': 'Audio file not found'}), 404
 
         tos_url = upload_audio_to_tos(None, submission.audio_filename, filepath)
-        if not tos_url:
-            return jsonify({'status': 'error', 'message': 'Audio upload failed'}), 500
 
         topic_context = {
             "type": "English Corner",
@@ -496,7 +574,7 @@ def analyze_audio(sub_id):
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"AI analysis error: {str(e)}")
-        return jsonify({'status': 'error', 'message': 'AI Analysis failed. Please try again.'}), 500
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 # 4.2 🌟 NEW: AI 点评详情页路由
 @speaking_bp.route('/analysis-detail/<int:sub_id>')
@@ -736,8 +814,6 @@ def analyze_scenario_audio(sub_id):
 
     try:
         tos_url = upload_audio_to_tos(None, submission.audio_filename, filepath)
-        if not tos_url:
-            return jsonify({'status': 'error', 'message': 'Audio upload failed'}), 500
 
         topic_context = {
             "type": "Academic Scenario",
@@ -758,7 +834,7 @@ def analyze_scenario_audio(sub_id):
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Scenario AI analysis error: {str(e)}")
-        return jsonify({'status': 'error', 'message': 'AI Analysis failed. Please try again.'}), 500
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 # 10.2 学术情景 AI 点评详情页
 @speaking_bp.route('/scenario-analysis-detail/<int:sub_id>')
@@ -937,8 +1013,6 @@ def analyze_shadowing_audio(record_id):
 
     try:
         tos_url = upload_audio_to_tos(None, record.audio_path, filepath)
-        if not tos_url:
-            return jsonify({'status': 'error', 'message': 'Audio upload failed'}), 500
 
         topic_context = {
             'type': 'Shadowing Practice',
@@ -959,7 +1033,7 @@ def analyze_shadowing_audio(record_id):
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Shadowing AI analysis error: {str(e)}")
-        return jsonify({'status': 'error', 'message': 'AI analysis failed. Please try again.'}), 500
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 # 15. 跟读 AI 反馈详情页
 @speaking_bp.route('/practice-analysis-detail/<int:record_id>')

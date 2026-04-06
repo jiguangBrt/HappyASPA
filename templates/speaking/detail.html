@@ -169,7 +169,9 @@
                                     </a>
                                 {% else %}
                                     {% if current_user.is_authenticated and current_user.username == sub.username %}
-                                    <button class="btn btn-primary btn-sm rounded-pill px-4 fw-medium ai-btn-glow" onclick="requestAIAnalysis('{{ sub.id }}', this)">
+                                    <button class="btn btn-primary btn-sm rounded-pill px-4 fw-medium ai-btn-glow" 
+                                            onclick="requestAIAnalysis('{{ sub.id }}', this)"
+                                            title="Get AI feedback powered by Doubao (豆包)">
                                         <i class="bi bi-stars me-1"></i> Get AI Feedback
                                     </button>
                                     {% else %}
@@ -190,6 +192,7 @@
                         </div>
                     {% endif %}
                 </div>
+
             </div>
 
         </div>
@@ -259,7 +262,9 @@
                     </audio>
                 </div>
                 <div class="d-flex justify-content-end align-items-center" id="action-area-${submissionId}">
-                    <button class="btn btn-primary btn-sm rounded-pill px-4 fw-medium ai-btn-glow" onclick="requestAIAnalysis(${submissionId}, this)">
+                    <button class="btn btn-primary btn-sm rounded-pill px-4 fw-medium ai-btn-glow" 
+                            onclick="requestAIAnalysis(${submissionId}, this)"
+                            title="Get AI feedback powered by Doubao (豆包)">
                         <i class="bi bi-stars me-1"></i> Get AI Feedback
                     </button>
                 </div>

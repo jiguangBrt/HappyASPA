@@ -10,7 +10,7 @@ from sqlalchemy import func, desc
 import random
 
 from models import (
-    db, User,
+    db, User,Team,
     SeedType, FruitType, LandType, OrchardItem,
     UserOrchard, UserLand, UserOrchardInventory,
     UserHarvestedFruit, UserShowcaseFruit
@@ -70,36 +70,89 @@ def calculate_mature_time(seed_type, land):
     return timedelta(hours=actual_hours)
 
 
-def determine_fruit(seed_type, land):
-    """根据种子和土地决定产出的果实"""
-    possible_fruits = FruitType.query.filter_by(seed_type_id=seed_type.id).all()
+# ─── 收获权重：稀有度 + 土地 + 照料（浇水 / 施肥品质）────────────────
+RARITY_TIER = {'N': 0, 'R': 1, 'SR': 2, 'SSR': 3}
+WEIGHT_FLOOR = 1e-9
+# 每次浇水对「照料分」的贡献（仅抬高 R+ 档位权重）
+CARE_PER_WATER = 0.10
+# 肥料：累加 item.effect_value；系数偏大——一茬通常只能施 1～2 次肥，单次要对稀有权重足够明显
+CARE_PER_FERTILIZER_EFFECT = 0.18
+# 照料分上限，避免无限叠道具刷爆稀有
+CARE_RAW_SCORE_CAP = 4.0
+# 照料分 × 稀有阶梯 → 乘在 R+ 权重上：tier 越高越吃照料
+CARE_TIER_COEF = 0.18
+
+
+def rarity_tier(rarity):
+    if not rarity:
+        return 0
+    return RARITY_TIER.get(str(rarity).strip().upper(), 0)
+
+
+def _care_raw_score(water_count, fertilizer_quality_sum):
+    w = max(0, int(water_count or 0))
+    f = max(0.0, float(fertilizer_quality_sum or 0.0))
+    raw = w * CARE_PER_WATER + f * CARE_PER_FERTILIZER_EFFECT
+    return min(raw, CARE_RAW_SCORE_CAP)
+
+
+def care_rare_multiplier(water_count, fertilizer_quality_sum, tier):
+    """
+    仅 tier>=1（R/SR/SSR）生效；N 不受照料影响。
+    浇水次数越多、累计肥料 effect 越高，稀有档相对权重越高。
+    """
+    if tier <= 0:
+        return 1.0
+    raw = _care_raw_score(water_count, fertilizer_quality_sum)
+    return 1.0 + raw * CARE_TIER_COEF * tier
+
+
+def determine_fruit(seed_type, land, rng=None):
+    """
+    加权随机产出果实。
+    - drop_rate：相对权重
+    - 土地 rare_boost：抬高 SR/SSR
+    - 本轮 crop_water_count / crop_fertilizer_quality：抬高 R+（肥料用 effect_value 累计，好肥更强）
+    """
+    possible_fruits = (
+        FruitType.query.filter_by(seed_type_id=seed_type.id).order_by(FruitType.id).all()
+    )
     if not possible_fruits:
         return None
-    
+    if len(possible_fruits) == 1:
+        return possible_fruits[0]
+
     land_type = land.land_type
-    rare_boost = land_type.rare_boost if land_type else 0
-    
-    # 计算加权随机
-    total_weight = 0
-    weighted_fruits = []
-    
+    rare_boost = float(land_type.rare_boost if land_type else 0) or 0.0
+    water = getattr(land, 'crop_water_count', None)
+    if water is None:
+        water = 0
+    fert = getattr(land, 'crop_fertilizer_quality', None)
+    if fert is None:
+        fert = 0.0
+
+    weighted = []
     for fruit in possible_fruits:
-        # 稀有度权重调整
-        weight = fruit.drop_rate
-        if fruit.rarity in ['SR', 'SSR']:
-            weight *= (1 + rare_boost)
-        weighted_fruits.append((fruit, weight))
-        total_weight += weight
-    
-    # 随机选择
-    roll = random.random() * total_weight
-    cumulative = 0
-    for fruit, weight in weighted_fruits:
+        tier = rarity_tier(fruit.rarity)
+        weight = max(float(fruit.drop_rate or 0), WEIGHT_FLOOR)
+        if fruit.rarity in ('SR', 'SSR'):
+            weight *= 1.0 + rare_boost
+        if tier > 0:
+            weight *= care_rare_multiplier(water, fert, tier)
+        weighted.append((fruit, weight))
+
+    total_weight = sum(w for _, w in weighted)
+    if total_weight <= 0:
+        return possible_fruits[0]
+
+    roll_fn = rng if rng is not None else random.random
+    roll = roll_fn() * total_weight
+    cumulative = 0.0
+    for fruit, weight in weighted:
         cumulative += weight
         if roll <= cumulative:
             return fruit
-    
-    return possible_fruits[0]  # 默认返回第一个
+    return possible_fruits[-1]
 
 
 # ─────────────────────────────────────────────
@@ -122,10 +175,24 @@ def index():
         if land.plant_status == 'growing' and land.matures_at and now >= land.matures_at:
             land.plant_status = 'mature'
     db.session.commit()
+
+    # 统一按 UTC 传给前端，避免本地时区解释 naive datetime 导致计时偏移
+    land_timing_map = {}
+    for land in lands:
+        start_ts = None
+        end_ts = None
+        if land.planted_at:
+            start_ts = land.planted_at.replace(tzinfo=timezone.utc).timestamp()
+        if land.matures_at:
+            end_ts = land.matures_at.replace(tzinfo=timezone.utc).timestamp()
+        land_timing_map[land.id] = {
+            'start_ts': start_ts,
+            'end_ts': end_ts,
+        }
     
     # 获取展示柜果实
     showcase_fruits = UserShowcaseFruit.query.filter_by(orchard_id=orchard.id)\
-        .order_by(UserShowcaseFruit.position).limit(6).all()
+        .order_by(UserShowcaseFruit.position).all()
     
     # 获取排行榜数据
     # 本周榜
@@ -143,6 +210,14 @@ def index():
     ).join(UserOrchard, User.id == UserOrchard.user_id)\
      .order_by(desc(UserOrchard.total_points))\
      .limit(10).all()
+
+    # ==========================================
+    # 👇 NEW: 团队总排行榜逻辑 👇
+    # ==========================================
+    from models import Team  # 确保能查到 Team 模型
+    all_teams = Team.query.all()
+    # 使用 models.py 中定义的 total_team_points 属性，从大到小排序，取前 10 名
+    team_leaderboard = sorted(all_teams, key=lambda t: t.total_team_points, reverse=True)[:10]
     
     # 获取当前用户排名
     user_weekly_rank = db.session.query(func.count(UserOrchard.id))\
@@ -171,22 +246,23 @@ def index():
             if item:
                 item_inventory[item.id] = {'item': item, 'quantity': inv.quantity}
     
-    # 获取用户可展示的稀有果实（未在展示柜中的）
+    # 获取用户可展示果实（未在展示柜中的，包含所有稀有度）
     showcased_ids = [sf.harvested_fruit_id for sf in showcase_fruits]
     available_rare_fruits = UserHarvestedFruit.query\
         .join(FruitType)\
         .filter(
             UserHarvestedFruit.user_id == current_user.id,
-            FruitType.is_showcase_worthy == True,
             ~UserHarvestedFruit.id.in_(showcased_ids) if showcased_ids else True
         ).all()
     
+    # 最终渲染页面，把所有数据传给前端
     return render_template('orchard/index.html',
         orchard=orchard,
         lands=lands,
         showcase_fruits=showcase_fruits,
         weekly_leaderboard=weekly_leaderboard,
         total_leaderboard=total_leaderboard,
+        team_leaderboard=team_leaderboard,  # 👈 新增：把刚才算好的团队榜单传进去！
         user_weekly_rank=user_weekly_rank,
         user_total_rank=user_total_rank,
         seeds=seeds,
@@ -195,7 +271,8 @@ def index():
         seed_inventory=seed_inventory,
         item_inventory=item_inventory,
         available_rare_fruits=available_rare_fruits,
-    now=utcnow_naive()
+        land_timing_map=land_timing_map,
+        now=utcnow_naive()
     )
 
 
@@ -336,7 +413,9 @@ def plant_seed():
     land.plant_status = 'growing'
     land.planted_at = now
     land.matures_at = now + mature_delta
-    
+    land.crop_water_count = 0
+    land.crop_fertilizer_quality = 0.0
+
     db.session.commit()
     
     return jsonify({
@@ -397,25 +476,25 @@ def harvest():
     orchard.weekly_points += fruit.points
     orchard.total_harvests += 1
     
-    # 如果是稀有果实，自动添加到展示柜
+    # 收获后自动添加到展示柜（包含所有稀有度）
     auto_showcase = False
-    if fruit.is_showcase_worthy:
-        showcase_count = UserShowcaseFruit.query.filter_by(orchard_id=orchard.id).count()
-        if showcase_count < 6:  # 展示柜最多6个
-            showcase_fruit = UserShowcaseFruit(
-                orchard_id=orchard.id,
-                harvested_fruit_id=harvested.id,
-                position=showcase_count
-            )
-            db.session.add(showcase_fruit)
-            auto_showcase = True
+    showcase_count = UserShowcaseFruit.query.filter_by(orchard_id=orchard.id).count()
+    showcase_fruit = UserShowcaseFruit(
+        orchard_id=orchard.id,
+        harvested_fruit_id=harvested.id,
+        position=showcase_count
+    )
+    db.session.add(showcase_fruit)
+    auto_showcase = True
     
     # 重置土地状态
     land.current_seed_id = None
     land.plant_status = 'idle'
     land.planted_at = None
     land.matures_at = None
-    
+    land.crop_water_count = 0
+    land.crop_fertilizer_quality = 0.0
+
     db.session.commit()
     
     return jsonify({
@@ -474,25 +553,41 @@ def use_item():
     if inventory.quantity <= 0:
         db.session.delete(inventory)
     
-    # 应用效果（加速）
+    # 应用效果（推进进度，不改变总生长时长）
     if item.item_type in ['fertilizer', 'water'] and land.matures_at:
         speed_hours = item.effect_value
-        land.matures_at -= timedelta(hours=speed_hours)
+        delta = timedelta(hours=speed_hours)
+        # 同时前移 planted_at 与 matures_at：
+        # - 总时长（matures_at - planted_at）保持不变
+        # - 已用时增加，剩余时间减少
+        if land.planted_at:
+            land.planted_at -= delta
+        land.matures_at -= delta
         
         # 检查是否已经成熟
         now = utcnow_naive()
         if land.matures_at <= now:
             land.plant_status = 'mature'
-    
+
+        # 照料累计：影响收获时稀有果权重（肥料品质 = effect_value，越大越强）
+        if item.item_type == 'water':
+            land.crop_water_count = (land.crop_water_count or 0) + 1
+        elif item.item_type == 'fertilizer':
+            land.crop_fertilizer_quality = float(land.crop_fertilizer_quality or 0) + float(
+                item.effect_value or 0
+            )
+
     db.session.commit()
-    
+
     return jsonify({
         'success': True,
         'message': f'Used {item.name}!',
         'land': {
             'id': land.id,
             'status': land.plant_status,
-            'matures_at': land.matures_at.isoformat() if land.matures_at else None
+            'matures_at': land.matures_at.isoformat() if land.matures_at else None,
+            'crop_water_count': land.crop_water_count or 0,
+            'crop_fertilizer_quality': float(land.crop_fertilizer_quality or 0),
         }
     })
 
@@ -508,10 +603,8 @@ def add_to_showcase():
     
     orchard = get_or_create_user_orchard(current_user.id)
     
-    # 检查展示柜是否已满
+    # 当前展示数量用于顺序追加 position
     showcase_count = UserShowcaseFruit.query.filter_by(orchard_id=orchard.id).count()
-    if showcase_count >= 6:
-        return jsonify({'success': False, 'message': 'Showcase is full'}), 400
     
     # 验证果实
     harvested = db.session.get(UserHarvestedFruit, harvested_fruit_id)
@@ -592,7 +685,13 @@ def get_land_status():
                 'name': land.current_seed.name,
                 'icon': land.current_seed.icon
             }
-        
+
+        if land.plant_status == 'growing':
+            land_info['crop_care'] = {
+                'water_count': land.crop_water_count or 0,
+                'fertilizer_quality': float(land.crop_fertilizer_quality or 0),
+            }
+
         if land.matures_at:
             land_info['matures_at'] = land.matures_at.isoformat()
             remaining = (land.matures_at - now).total_seconds()

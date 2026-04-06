@@ -195,11 +195,20 @@
             body.reset_mode = true;
         }
         try {
-            await fetch('/listening/progress', {
+            const response = await fetch('/listening/progress', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             });
+            
+            const data = await response.json();
+            
+            // 处理金币奖励提示
+            if (data.coin_reward && data.coin_reward > 0) {
+                // 如果有当前题目，传递题目索引用于显示位置判断
+                const currentQIdx = currentQuestion ? currentQuestion.idx : null;
+                showCoinRewardToast(data.message, data.coins, currentQIdx);
+            }
         } catch (err) {
             console.error('Save progress error:', err);
         }
@@ -237,10 +246,12 @@
             selectedAnswer = userAnswers.get(String(idx));
             isCorrectAlready = (selectedAnswer === question.answer);
         } else if (!ignorePermanent) {
+            // 只有正确答题才记录为已答，错题下次重新出现
             isCorrectAlready = permanentCorrect.has(idx);
         }
         
-        const shouldDisable = hasAnswered || (isCorrectAlready && !ignorePermanent);
+        // 错题不显示历史提示，像新题一样重新出现
+        const shouldDisable = isCorrectAlready;
         
         if (currentQuestion) hideQuestion();
 
@@ -257,7 +268,8 @@
                 let extraClass = '';
                 if (shouldDisable && i === question.answer) extraClass = 'correct-selected';
                 if (hasAnswered && !isCorrectAlready && i === selectedAnswer) extraClass = 'wrong-selected';
-                const disabled = shouldDisable;
+                // 错题不显示历史状态，像新题一样
+                const disabled = shouldDisable && isCorrectAlready;
                 return `<div class="option-item ${extraClass}" data-opt-index="${i}" ${disabled ? 'data-disabled="true"' : ''}>${opt}</div>`;
             }).join('');
         }
@@ -267,7 +279,8 @@
             if (isCorrectAlready) {
                 feedbackHtml = '<div class="feedback mt-2" style="color: #28a745;">✅ Correct! (Previous answer)</div>';
             } else {
-                feedbackHtml = '<div class="feedback mt-2" style="color: #dc3545;">❌ Incorrect</div>';
+                // 错题不显示任何历史提示，下次重新出现
+                feedbackHtml = '';
             }
         } else {
             feedbackHtml = '<div class="feedback mt-2" style="font-size: 0.85rem;"></div>';
@@ -355,20 +368,63 @@
         saveProgress(video.currentTime, userAnswers, false);
 
         if (isCorrect) {
+            // 显示正确答案提示，并检查是否有金币奖励
             feedbackDiv.innerHTML = '✅ Correct!';
             feedbackDiv.style.color = '#28a745';
             const optionsDivs = isFullscreen
                 ? fullscreenPopup.querySelectorAll('.option-item')
                 : questionArea.querySelectorAll('.option-item');
             optionsDivs.forEach(div => { div.style.pointerEvents = 'none'; });
-            setTimeout(() => {
+            
+            // 设置默认隐藏计时器（2秒），如果有金币奖励会在showCoinRewardToast中覆盖
+            currentQuestion.hideTimeout = setTimeout(() => {
                 if (currentQuestion && currentQuestion.idx === qIdx) hideQuestion();
             }, 2000);
+            
             if (questionTimeout) clearInterval(questionTimeout);
             questionTimeout = null;
         } else {
-            feedbackDiv.innerHTML = '❌ Try again.';
+            feedbackDiv.innerHTML = '❌ Try again. Click any option to retry.';
             feedbackDiv.style.color = '#dc3545';
+            
+            // 保持选项可点击，让用户可以重新选择
+            const optionsDivs = isFullscreen
+                ? fullscreenPopup.querySelectorAll('.option-item')
+                : questionArea.querySelectorAll('.option-item');
+            optionsDivs.forEach(div => { 
+                div.style.pointerEvents = 'auto'; 
+                div.style.opacity = '1';
+            });
+            
+            // 不清除计时器，让用户有时间重新选择
+        }
+    }
+
+    // 显示金币奖励提示（在interactive answers区域中）
+    function showCoinRewardToast(message, newCoinCount, qIdx) {
+        const feedbackDiv = isFullscreen
+            ? fullscreenPopup.querySelector('.feedback')
+            : questionArea.querySelector('.feedback');
+            
+        if (feedbackDiv && currentQuestion && currentQuestion.idx === qIdx) {
+            // 清除之前的隐藏计时器
+            if (currentQuestion.hideTimeout) {
+                clearTimeout(currentQuestion.hideTimeout);
+            }
+            
+            // 在正确答案提示下方添加金币奖励提示
+            feedbackDiv.innerHTML = `
+                <div class="mb-1">✅ Correct!</div>
+                <div class="text-warning fw-bold">
+                    <i class="bi bi-coin me-1"></i>${message}
+                </div>
+                <small class="text-muted">Current Coins: ${newCoinCount}</small>
+            `;
+            
+            // 设置新的15秒隐藏计时器
+            currentQuestion.hideTimeout = setTimeout(() => {
+                if (currentQuestion && currentQuestion.idx === qIdx) hideQuestion();
+            }, 6000);
         }
     }
 
@@ -483,7 +539,19 @@
             notesTextarea.value = notesContent;
 
             lastPosition = prog.last_position || 0;
-            userAnswers = new Map(Object.entries(prog.answers || {}).map(([k, v]) => [k, Number(v)]));
+            // 只加载正确答题到userAnswers，错题可以重新选择
+            userAnswers = new Map();
+            if (prog.answers) {
+                Object.entries(prog.answers).forEach(([k, v]) => {
+                    const qIdx = parseInt(k);
+                    const selectedOpt = Number(v);
+                    const question = questions[qIdx];
+                    if (question && selectedOpt === question.answer) {
+                        // 只记录正确答题
+                        userAnswers.set(k, selectedOpt);
+                    }
+                });
+            }
 
             if (mode === 'resume') {
                 if (video) video.currentTime = lastPosition;

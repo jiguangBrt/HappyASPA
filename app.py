@@ -18,6 +18,9 @@ def create_app():
         'DATABASE_URL', 'sqlite:///happyaspa.db'
     )
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['VOLC_TOS_BUCKET'] = os.environ.get('VOLC_TOS_BUCKET', 'english-practice-audio')
+    app.config['VOLC_TOS_ENDPOINT'] = os.environ.get('VOLC_TOS_ENDPOINT', 'tos-cn-beijing.volces.com')
+    app.config['VOLC_TOS_REGION'] = os.environ.get('VOLC_TOS_REGION', 'cn-beijing')
 
     # 新增：文件上传配置
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads/speaking')  # 音频存储路径
@@ -52,6 +55,9 @@ def create_app():
     from blueprints.listening  import listening_bp
     from blueprints.speaking   import speaking_bp
     from blueprints.orchard    import orchard_bp
+    
+    # 👇 1. 导入你刚刚写的 team 蓝图
+    from blueprints.team       import team_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -64,6 +70,9 @@ def create_app():
     # ── CLI Commands ─────────────────────────────────────────────────────────
     from add_default_data import add_default_data
     app.cli.add_command(add_default_data)
+    
+    # 👇 2. 注册 team 蓝图
+    app.register_blueprint(team_bp)
 
     # ── Database initialisation ───────────────────────────────────────────────
     # db.create_all() 已由 Flask-Migrate 的 flask db upgrade 负责管理，此处保留注释
