@@ -118,26 +118,222 @@
     white-space: nowrap;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
-  
-  .farmland-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+
+  .showcase-view-tabs .btn {
+    border-radius: 999px;
   }
   
+  /* ─── Knowledge Farmland module ─── */
+  .farmland-module-card {
+    border: none;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow:
+      0 4px 6px -1px rgba(15, 81, 50, 0.08),
+      0 12px 24px -4px rgba(15, 81, 50, 0.12);
+  }
+
+  .farmland-module-header {
+    background: linear-gradient(125deg, #0f5132 0%, #198754 42%, #157347 100%);
+    color: #fff;
+    padding: 1.1rem 1.35rem;
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .farmland-module-header h5 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  }
+
+  .farmland-module-sub {
+    font-size: 0.82rem;
+    opacity: 0.92;
+    margin-top: 0.2rem;
+  }
+
+  .farmland-module-header .btn-outline-light {
+    border-color: rgba(255, 255, 255, 0.55);
+    color: #fff;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 0.35rem 0.85rem;
+  }
+
+  .farmland-module-header .btn-outline-light:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: #fff;
+    color: #fff;
+  }
+
+  .farmland-module-body {
+    background:
+      radial-gradient(ellipse 90% 60% at 50% 0%, rgba(180, 220, 160, 0.35), transparent 55%),
+      linear-gradient(180deg, #e8f5e9 0%, #d4edda 35%, #c8e6c9 100%);
+    padding: 1.5rem 1.25rem 1.75rem;
+  }
+
+  .farmland-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 0;
+    align-items: stretch;
+  }
+
+  .land-plot-tile {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    align-self: stretch;
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 253, 248, 0.98) 100%);
+    border-radius: 16px;
+    padding: 0.65rem 0.7rem 0.85rem;
+    box-shadow:
+      0 1px 3px rgba(15, 81, 50, 0.06),
+      0 8px 20px -6px rgba(15, 81, 50, 0.12);
+    border: 1px solid rgba(25, 135, 84, 0.12);
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+  }
+
+  .land-plot-tile-body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 0;
+  }
+
+  /* 主苗床 + 底部状态区总高度固定，各行卡片平齐；进度条只在 footer */
+  .land-plot-stack {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  .land-plot-main-slot {
+    height: 168px;
+    width: 100%;
+    flex-shrink: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .land-plot-main-slot > .land-plot {
+    width: 100%;
+    height: 100%;
+    min-height: 168px;
+  }
+
+  .land-plot-main-slot .land-plot-visual {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    flex: none;
+  }
+
+  .land-plot-footer {
+    height: 54px;
+    width: 100%;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0 0;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .land-plot-footer--spacer {
+    pointer-events: none;
+  }
+
+  .land-plot-tile:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 4px 12px rgba(15, 81, 50, 0.1),
+      0 14px 28px -8px rgba(15, 81, 50, 0.18);
+  }
+
+  .land-plot-tile-head {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.35rem;
+    padding: 0 0.15rem;
+  }
+
+  .land-plot-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #1e4a32;
+    opacity: 0.85;
+  }
+
+  .land-status-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+  }
+
+  .land-status-idle {
+    background: rgba(108, 117, 125, 0.15);
+    color: #495057;
+  }
+
+  .land-status-growing {
+    background: rgba(13, 110, 253, 0.15);
+    color: #0a58ca;
+  }
+
+  .land-status-mature {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.25), rgba(255, 152, 0, 0.2));
+    color: #b45309;
+  }
+
   .land-plot {
     background: transparent;
     border: none;
-    height: 180px;
+    height: 168px;
     position: relative;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     align-items: center;
-    padding-bottom: 10px;
+    padding-bottom: 8px;
+    border-radius: 12px;
+    overflow: hidden;
   }
-  
+
+  .land-plot::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px rgba(25, 135, 84, 0.08);
+    pointer-events: none;
+    z-index: 2;
+  }
+
   .land-image {
     width: 100%;
     height: 100%;
@@ -146,6 +342,7 @@
     top: 0;
     left: 0;
     z-index: 1;
+    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.12));
   }
 
   .land-actions {
@@ -165,8 +362,116 @@
   }
 
   .land-plot:hover .land-action-center {
-    opacity: 0.7;
+    opacity: 1;
     pointer-events: auto;
+  }
+
+  .land-plot-tile .progress-container {
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(25, 135, 84, 0.15);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+
+  .land-plot-tile .progress-bar-custom {
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+    border-radius: 10px;
+  }
+
+  .land-plot-visual {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    outline: none;
+  }
+
+  /* 浇水/施肥：默认隐藏，鼠标悬停（或键盘聚焦）在苗床上时显示 */
+  .land-grow-hover-actions {
+    position: absolute;
+    left: 50%;
+    bottom: 4px;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.35rem;
+    z-index: 6;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 4px 16px rgba(15, 81, 50, 0.18);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .land-grow-hover-actions .grow-action-btn {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.76rem;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .land-plot-visual--care:hover .land-grow-hover-actions,
+    .land-plot-visual--care:focus-within .land-grow-hover-actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  /* 触屏：无精细悬停，始终显示操作钮 */
+  @media (hover: none), (pointer: coarse) {
+    .land-grow-hover-actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  .land-plot-visual--care:focus-visible {
+    outline: 2px solid rgba(25, 135, 84, 0.55);
+    outline-offset: 2px;
+  }
+
+  .land-plot-visual .land-image {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    z-index: 1;
+  }
+
+  .land-plot-footer .progress-container {
+    width: 100%;
+    margin-bottom: 0;
+  }
+
+  .land-plot-footer .timer-text {
+    color: #14532d;
+    text-shadow: none;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .harvest-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 0.45rem 1.15rem;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+    box-shadow: 0 8px 18px rgba(234, 88, 12, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  }
+
+  .harvest-btn:hover {
+    transform: translateY(-1px) scale(1.03);
+    filter: brightness(1.05);
+    color: #fff;
+    box-shadow: 0 10px 22px rgba(234, 88, 12, 0.42);
   }
 
   .plant-btn {
@@ -255,15 +560,228 @@
     margin: 0;
   }
   
-  .leaderboard-card {
-    border-radius: 12px;
-    box-shadow: var(--app-shadow);
+  /* ─── Harvest Leaderboard module ─── */
+  .leaderboard-module-card {
+    border: none;
+    border-radius: 18px;
     overflow: hidden;
+    box-shadow:
+      0 4px 6px -1px rgba(49, 46, 129, 0.08),
+      0 14px 28px -6px rgba(67, 56, 202, 0.14);
   }
-  
-  .rank-1 { color: #ffd700; font-weight: bold; }
-  .rank-2 { color: #c0c0c0; font-weight: bold; }
-  .rank-3 { color: #cd7f32; font-weight: bold; }
+
+  .leaderboard-module-header {
+    background: linear-gradient(125deg, #312e81 0%, #4f46e5 42%, #4338ca 100%);
+    color: #fff;
+    padding: 1.1rem 1.25rem 1rem;
+    border: none;
+  }
+
+  .leaderboard-module-header h5 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  }
+
+  .leaderboard-module-sub {
+    font-size: 0.82rem;
+    opacity: 0.9;
+    margin-top: 0.25rem;
+  }
+
+  .leaderboard-tabs {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .leaderboard-tabs .nav-link {
+    color: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 999px;
+    padding: 0.38rem 0.95rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.08);
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .leaderboard-tabs .nav-link:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  .leaderboard-tabs .nav-link.active {
+    color: #3730a3;
+    background: #fff;
+    border-color: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  }
+
+  .leaderboard-module-body {
+    background:
+      radial-gradient(ellipse 95% 55% at 50% 0%, rgba(199, 210, 254, 0.45), transparent 58%),
+      linear-gradient(180deg, #eef2ff 0%, #e0e7ff 40%, #ddd6fe 100%);
+    padding: 1rem 1.1rem 0.25rem;
+  }
+
+  .leaderboard-section-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #4338ca;
+    opacity: 0.88;
+    margin: 0.85rem 0 0.5rem;
+    padding: 0 0.15rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .leaderboard-section-label:first-child {
+    margin-top: 0;
+  }
+
+  .leaderboard-list {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0.5rem;
+  }
+
+  .leaderboard-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.65rem 0.85rem;
+    margin-bottom: 0.45rem;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(99, 102, 241, 0.14);
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(49, 46, 129, 0.06);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .leaderboard-row:last-child {
+    margin-bottom: 0;
+  }
+
+  .leaderboard-row:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(67, 56, 202, 0.1);
+  }
+
+  .leaderboard-row--self {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.14) 0%, rgba(165, 180, 252, 0.12) 100%);
+    border-color: rgba(79, 70, 229, 0.35);
+  }
+
+  .leaderboard-rank {
+    min-width: 2.35rem;
+    text-align: center;
+    font-weight: 800;
+    font-size: 0.95rem;
+    line-height: 1.2;
+    color: #475569;
+  }
+
+  .leaderboard-rank--1 { color: #ca8a04; }
+  .leaderboard-rank--2 { color: #64748b; }
+  .leaderboard-rank--3 { color: #b45309; }
+
+  .leaderboard-name {
+    font-weight: 600;
+    color: #1e1b4b;
+    font-size: 0.92rem;
+  }
+
+  .leaderboard-badge-weekly {
+    font-weight: 700;
+    font-size: 0.72rem;
+    padding: 0.35em 0.75em;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    color: #fff;
+    border: none;
+    box-shadow: 0 3px 10px rgba(79, 70, 229, 0.35);
+  }
+
+  .leaderboard-badge-total {
+    font-weight: 700;
+    font-size: 0.72rem;
+    padding: 0.35em 0.75em;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #475569, #64748b);
+    color: #fff;
+    border: none;
+    box-shadow: 0 3px 10px rgba(71, 85, 105, 0.25);
+  }
+
+  .leaderboard-badge-team {
+    font-weight: 700;
+    font-size: 0.72rem;
+    padding: 0.4em 0.8em;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: #fff;
+    border: none;
+    box-shadow: 0 3px 10px rgba(5, 150, 105, 0.3);
+  }
+
+  .leaderboard-empty {
+    text-align: center;
+    color: #64748b;
+    padding: 1.25rem 0.75rem;
+    font-size: 0.9rem;
+    background: rgba(255, 255, 255, 0.55);
+    border-radius: 14px;
+    border: 1px dashed rgba(99, 102, 241, 0.22);
+    margin-bottom: 0.5rem;
+  }
+
+  .leaderboard-module-footer {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, #f5f3ff 100%);
+    border-top: 1px solid rgba(99, 102, 241, 0.12);
+    padding: 1rem 1.2rem 1.15rem;
+  }
+
+  .leaderboard-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 0.75rem;
+    margin-bottom: 0.45rem;
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 12px;
+    border: 1px solid rgba(99, 102, 241, 0.1);
+  }
+
+  .leaderboard-stat-row:last-child {
+    margin-bottom: 0;
+  }
+
+  .leaderboard-stat-label {
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: #3730a3;
+  }
+
+  .leaderboard-stat-label--muted {
+    color: #5b21b6;
+    opacity: 0.85;
+  }
+
+  /* legacy rank classes (emoji rows still use rank-N) */
+  .rank-1 { color: #ca8a04; font-weight: bold; }
+  .rank-2 { color: #64748b; font-weight: bold; }
+  .rank-3 { color: #b45309; font-weight: bold; }
 </style>
 {% endblock %}
 
@@ -292,7 +810,13 @@
     <div class="card mb-4">
       <div class="card-header bg-white d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="bi bi-trophy text-warning me-2"></i>Trophy Room</h5>
-        <span class="badge bg-primary rounded-pill">{{ showcase_fruits|length }} Fruits</span>
+        <div class="d-flex align-items-center gap-2">
+          <div class="btn-group btn-group-sm showcase-view-tabs" role="group" aria-label="Showcase view filter">
+            <button type="button" class="btn btn-outline-primary active" data-showcase-view="all">All</button>
+            <button type="button" class="btn btn-outline-primary" data-showcase-view="week">This Week</button>
+          </div>
+          <span class="badge bg-primary rounded-pill"><span id="showcase-count">{{ showcase_fruits|length }}</span> Fruits</span>
+        </div>
       </div>
       <div class="card-body">
         <div class="showcase-container">
@@ -300,6 +824,8 @@
             {% if showcase_fruits %}
               {% for fruit in showcase_fruits %}
                 <div class="fruit-item fruit-{{ fruit.harvested_fruit.fruit_type.rarity|lower }}"
+                     data-showcase-fruit
+                     data-harvested-at="{{ fruit.harvested_fruit.harvested_at.isoformat() }}"
                      data-bs-toggle="tooltip" data-bs-html="true"
                      title="<b>{{ fruit.harvested_fruit.fruit_type.name }}</b><br>Rarity: {{ fruit.harvested_fruit.fruit_type.rarity }}<br>Points: {{ fruit.harvested_fruit.fruit_type.points }}<br>Harvested: {{ fruit.harvested_fruit.harvested_at.strftime('%Y-%m-%d') }}<br><i>{{ fruit.harvested_fruit.fruit_type.description }}</i>">
                   {% if fruit.harvested_fruit.fruit_type.image_url %}
@@ -318,6 +844,9 @@
                   </div>
                 </div>
               {% endfor %}
+              <div id="showcase-empty-filtered" class="text-muted text-center w-100 d-none">
+                <i class="bi bi-calendar-week me-1"></i> 本周还没有新获得的水果
+              </div>
             {% else %}
               <div class="text-muted text-center w-100">
                 <i class="bi bi-info-circle me-1"></i> Your showcase is empty. Plant seeds to harvest rare fruits!
@@ -329,143 +858,213 @@
     </div>
 
     <!-- Module 2: Knowledge Farmland -->
-    <div class="card mb-4">
-      <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="bi bi-flower1 text-success me-2"></i>Knowledge Farmland</h5>
-        <button class="btn btn-sm btn-outline-primary" onclick="location.reload()">
-          <i class="bi bi-arrow-clockwise"></i> Refresh
+    {% set farmland_count = orchard_land_count|default(lands|length) %}
+    {% set farmland_max = orchard_max_lands|default(8) %}
+    <div class="card farmland-module-card mb-4">
+      <div class="farmland-module-header">
+        <div>
+          <h5 class="d-flex align-items-center gap-2">
+            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-white bg-opacity-25" style="width:2.25rem;height:2.25rem;">
+              <i class="bi bi-grid-1x2-fill"></i>
+            </span>
+            Knowledge Farmland
+          </h5>
+          <div class="farmland-module-sub">
+            <i class="bi bi-geo-alt me-1"></i>{{ farmland_count }} active plot{% if farmland_count != 1 %}s{% endif %}
+            <span class="opacity-75">·</span> up to {{ farmland_max }} total
+            <span class="opacity-75">·</span> water, fertilize, and harvest for rewards
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-light" onclick="location.reload()" title="Refresh farmland">
+          <i class="bi bi-arrow-clockwise me-1"></i>Refresh
         </button>
       </div>
-      <div class="card-body">
+      <div class="farmland-module-body">
+        {% if lands %}
         <div class="farmland-grid">
           {% for land in lands %}
-            <div class="land-plot">
-              {% if land.plant_status == 'idle' %}
-                <img src="{{ url_for('static', filename='orchard/soild/soil_empty.png') }}" class="land-image" alt="Empty Land">
-                <div class="land-actions land-action-center">
-                  <button class="btn btn-sm plant-btn" onclick="openPlantModal({{ land.id }})">
-                    <i class="bi bi-flower1 me-1"></i>Plant
-                  </button>
-                </div>
-              {% elif land.plant_status == 'growing' %}
-                <img src="{{ url_for('static', filename='orchard/soild/soil_planted.png') }}" class="land-image" alt="Planted Land">
-                <div class="land-actions" style="bottom: -10px; flex-direction: column; align-items: center; width: 100%;">
-                  <div class="progress-container" style="width: 90%; margin-bottom: 5px;">
-                    <div class="progress-bar-custom"
-                         id="progress-{{ land.id }}"
-                         data-start="{{ land_timing_map[land.id]['start_ts'] }}"
-                         data-end="{{ land_timing_map[land.id]['end_ts'] }}"></div>
+            <div class="land-plot-tile">
+              <div class="land-plot-tile-head">
+                <span class="land-plot-label">Plot {{ loop.index }}</span>
+                {% if land.plant_status == 'idle' %}
+                  <span class="land-status-badge land-status-idle">Empty</span>
+                {% elif land.plant_status == 'growing' %}
+                  <span class="land-status-badge land-status-growing">Growing</span>
+                {% elif land.plant_status == 'mature' %}
+                  <span class="land-status-badge land-status-mature">Ready</span>
+                {% else %}
+                  <span class="land-status-badge land-status-idle">{{ land.plant_status }}</span>
+                {% endif %}
+              </div>
+              <div class="land-plot-tile-body">
+                <div class="land-plot-stack">
+                  <div class="land-plot-main-slot">
+                    {% if land.plant_status == 'idle' %}
+                    <div class="land-plot">
+                      <img src="{{ url_for('static', filename='orchard/soild/soil_empty.png') }}" class="land-image" alt="Empty Land">
+                      <div class="land-actions land-action-center">
+                        <button type="button" class="btn btn-sm plant-btn" onclick="openPlantModal({{ land.id }})">
+                          <i class="bi bi-flower1 me-1"></i>Plant
+                        </button>
+                      </div>
+                    </div>
+                    {% elif land.plant_status == 'growing' %}
+                    <div class="land-plot-visual land-plot-visual--care" tabindex="0" role="group" aria-label="Growing crop — hover for water and fertilize">
+                      <img src="{{ url_for('static', filename='orchard/soild/soil_planted.png') }}" class="land-image" alt="Growing crop">
+                      <div class="land-grow-hover-actions">
+                        <button type="button" class="btn btn-sm grow-action-btn water-btn" onclick="openAccelerateModal({{ land.id }}, 'water')">
+                          <i class="bi bi-droplet me-1"></i>Water
+                        </button>
+                        <button type="button" class="btn btn-sm grow-action-btn fertilize-btn" onclick="openAccelerateModal({{ land.id }}, 'fertilizer')">
+                          <i class="bi bi-lightning-charge me-1"></i>Fertilize
+                        </button>
+                      </div>
+                    </div>
+                    {% elif land.plant_status == 'mature' %}
+                    <div class="land-plot">
+                      <img src="{{ land.current_seed.plant_image_url | default(url_for('static', filename='orchard/soild/soild_ripened_1.png')) }}" class="land-image" alt="Mature Plant">
+                      <div class="land-actions land-action-center">
+                        <button type="button" class="btn btn-sm harvest-btn" onclick="harvest({{ land.id }})">
+                          <i class="bi bi-basket me-1"></i>Harvest
+                        </button>
+                      </div>
+                    </div>
+                    {% endif %}
                   </div>
-                  <div class="small mb-1 timer-text" id="timer-{{ land.id }}">Calculating...</div>
-                  <div>
-                    <button class="btn btn-sm grow-action-btn water-btn" onclick="openAccelerateModal({{ land.id }}, 'water')">Water</button>
-                    <button class="btn btn-sm grow-action-btn fertilize-btn" onclick="openAccelerateModal({{ land.id }}, 'fertilizer')">Fertilize</button>
+                  <div class="land-plot-footer{% if land.plant_status != 'growing' %} land-plot-footer--spacer{% endif %}">
+                    {% if land.plant_status == 'growing' %}
+                    <div class="progress-container">
+                      <div class="progress-bar-custom"
+                           id="progress-{{ land.id }}"
+                           data-start="{{ land_timing_map[land.id]['start_ts'] }}"
+                           data-end="{{ land_timing_map[land.id]['end_ts'] }}"></div>
+                    </div>
+                    <div class="small timer-text" id="timer-{{ land.id }}">Calculating...</div>
+                    {% endif %}
                   </div>
                 </div>
-              {% elif land.plant_status == 'mature' %}
-                <img src="{{ land.current_seed.plant_image_url | default(url_for('static', filename='orchard/soild/soild_ripened_1.png')) }}" class="land-image" alt="Mature Plant">
-                <div class="land-actions land-action-center">
-                  <button class="btn btn-sm btn-primary" onclick="harvest({{ land.id }})">Harvest</button>
-                </div>
-              {% endif %}
+              </div>
             </div>
           {% endfor %}
         </div>
+        {% else %}
+        <div class="text-center text-muted py-5 rounded-3 bg-white bg-opacity-50">
+          <i class="bi bi-inboxes fs-1 d-block mb-2 opacity-50"></i>
+          <p class="mb-0">No farmland plots yet. Open the shop to add land slots.</p>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
 
   <div class="col-lg-4">
     <!-- Module 3: Harvest Leaderboard -->
-  <div class="card leaderboard-card">
-    <div class="card-header bg-white pb-0 border-bottom-0">
-      <h5 class="mb-3"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Harvest Leaderboard</h5>
-      <!-- 👇 新增：切换页签 👇 -->
-      <ul class="nav nav-tabs" id="leaderboardTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-          <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#solo-tab" type="button">Solo Rank</button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link text-success fw-bold" data-bs-toggle="tab" data-bs-target="#team-tab" type="button">Team Rank</button>
-        </li>
-      </ul>
-    </div>
-    
-    <div class="card-body p-0 tab-content">
-      <!-- 🏆 页签 1：原本的个人榜单 -->
-      <div class="tab-pane fade show active" id="solo-tab">
-        <div class="px-3 pt-3"><h6 class="mb-2 text-muted">This Week</h6></div>
-        <ul class="list-group list-group-flush">
-          {% for entry in weekly_leaderboard %}
-            <li class="list-group-item d-flex justify-content-between align-items-center {% if entry.id == current_user.id %}bg-light{% endif %}">
-              <div class="d-flex align-items-center">
-                <span class="me-3 fw-bold rank-{{ loop.index }}">
-                  {% if loop.index == 1 %}👑{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+    <div class="card leaderboard-module-card">
+      <div class="leaderboard-module-header">
+        <div class="d-flex flex-column gap-3">
+          <div class="d-flex flex-column flex-sm-row flex-sm-wrap align-items-sm-start justify-content-sm-between gap-2">
+            <div>
+              <h5 class="d-flex align-items-center gap-2">
+                <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-white bg-opacity-20" style="width:2.25rem;height:2.25rem;">
+                  <i class="bi bi-trophy-fill"></i>
                 </span>
-                <span>{{ entry.username }}</span>
+                Harvest Leaderboard
+              </h5>
+              <div class="leaderboard-module-sub">
+                <i class="bi bi-graph-up-arrow me-1"></i>Solo ranks by harvest points · team totals
               </div>
-              <span class="badge bg-primary rounded-pill">{{ entry.weekly_points }} pts</span>
-            </li>
-          {% else %}
-            <li class="list-group-item text-center text-muted">No weekly data yet.</li>
-          {% endfor %}
-        </ul>
-        
-        <div class="px-3 pt-3"><h6 class="mb-2 text-muted">All Time</h6></div>
-        <ul class="list-group list-group-flush mb-2">
-          {% for entry in total_leaderboard %}
-            <li class="list-group-item d-flex justify-content-between align-items-center {% if entry.id == current_user.id %}bg-light{% endif %}">
-              <div class="d-flex align-items-center">
-                <span class="me-3 fw-bold rank-{{ loop.index }}">
-                  {% if loop.index == 1 %}👑{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
-                </span>
-                <span>{{ entry.username }}</span>
-              </div>
-              <span class="badge bg-secondary rounded-pill">{{ entry.total_points }} pts</span>
-            </li>
-          {% else %}
-            <li class="list-group-item text-center text-muted">No all-time data yet.</li>
-          {% endfor %}
-        </ul>
+            </div>
+            <ul class="nav leaderboard-tabs ms-sm-auto flex-shrink-0" id="leaderboardTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#solo-tab" type="button" role="tab" aria-controls="solo-tab" aria-selected="true">Solo</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#team-tab" type="button" role="tab" aria-controls="team-tab" aria-selected="false">Teams</button>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
 
-      <!-- 🤝 页签 2：全新的团队榜单 -->
-      <div class="tab-pane fade" id="team-tab">
-        <div class="px-3 pt-3"><h6 class="mb-2 text-muted">Top Teams (Total Harvest)</h6></div>
-        <ul class="list-group list-group-flush mb-3">
-          {% if team_leaderboard %}
-            {% for team in team_leaderboard %}
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                  <span class="me-3 fw-bold rank-{{ loop.index }}">
+      <div class="leaderboard-module-body tab-content">
+        <div class="tab-pane fade show active" id="solo-tab" role="tabpanel" aria-labelledby="solo-tab" tabindex="0">
+          <div class="leaderboard-section-label">
+            <i class="bi bi-calendar-week"></i> This week
+          </div>
+          <div class="leaderboard-list">
+            {% for entry in weekly_leaderboard %}
+            <div class="leaderboard-row{% if entry.id == current_user.id %} leaderboard-row--self{% endif %}">
+              <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1">
+                <span class="leaderboard-rank leaderboard-rank--{{ loop.index }} rank-{{ loop.index }} flex-shrink-0">
+                  {% if loop.index == 1 %}👑{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+                </span>
+                <span class="leaderboard-name text-truncate">{{ entry.username }}</span>
+              </div>
+              <span class="leaderboard-badge-weekly flex-shrink-0">{{ entry.weekly_points }} pts</span>
+            </div>
+            {% else %}
+            <div class="leaderboard-empty">No weekly data yet.</div>
+            {% endfor %}
+          </div>
+
+          <div class="leaderboard-section-label">
+            <i class="bi bi-infinity"></i> All time
+          </div>
+          <div class="leaderboard-list pb-2">
+            {% for entry in total_leaderboard %}
+            <div class="leaderboard-row{% if entry.id == current_user.id %} leaderboard-row--self{% endif %}">
+              <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1">
+                <span class="leaderboard-rank leaderboard-rank--{{ loop.index }} rank-{{ loop.index }} flex-shrink-0">
+                  {% if loop.index == 1 %}👑{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+                </span>
+                <span class="leaderboard-name text-truncate">{{ entry.username }}</span>
+              </div>
+              <span class="leaderboard-badge-total flex-shrink-0">{{ entry.total_points }} pts</span>
+            </div>
+            {% else %}
+            <div class="leaderboard-empty">No all-time data yet.</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="tab-pane fade" id="team-tab" role="tabpanel" aria-labelledby="team-tab" tabindex="0">
+          <div class="leaderboard-section-label">
+            <i class="bi bi-people-fill"></i> Top teams · total harvest
+          </div>
+          <div class="leaderboard-list pb-2">
+            {% if team_leaderboard %}
+              {% for team in team_leaderboard %}
+              <div class="leaderboard-row">
+                <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1">
+                  <span class="leaderboard-rank leaderboard-rank--{{ loop.index }} rank-{{ loop.index }} flex-shrink-0">
                     {% if loop.index == 1 %}👑{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
                   </span>
-                  <div>
-                    <span class="d-block fw-bold">{{ team.name }}</span>
-                    <small class="text-muted">{{ team.members|length }}/3 Members</small>
+                  <div class="min-w-0">
+                    <span class="leaderboard-name d-block text-truncate">{{ team.name }}</span>
+                    <small class="text-muted">{{ team.members|length }}/3 members</small>
                   </div>
                 </div>
-                <span class="badge bg-success rounded-pill px-3 py-2"><i class="bi bi-lightning-charge-fill me-1"></i>{{ team.total_team_points }} pts</span>
-              </li>
-            {% endfor %}
-          {% else %}
-            <li class="list-group-item text-center text-muted py-4">No teams formed yet.</li>
-          {% endif %}
-        </ul>
+                <span class="leaderboard-badge-team flex-shrink-0 text-nowrap"><i class="bi bi-lightning-charge-fill me-1"></i>{{ team.total_team_points }} pts</span>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="leaderboard-empty py-4">No teams formed yet.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="leaderboard-module-footer">
+        <div class="leaderboard-stat-row">
+          <span class="leaderboard-stat-label"><i class="bi bi-person-badge me-1 text-primary"></i>Your weekly rank · #{{ user_weekly_rank }}</span>
+          <span class="leaderboard-badge-weekly">{{ orchard.weekly_points }} pts</span>
+        </div>
+        <div class="leaderboard-stat-row">
+          <span class="leaderboard-stat-label leaderboard-stat-label--muted"><i class="bi bi-award me-1"></i>Your all-time rank · #{{ user_total_rank }}</span>
+          <span class="leaderboard-badge-total">{{ orchard.total_points }} pts</span>
+        </div>
       </div>
     </div>
-    
-    <div class="card-footer bg-light">
-      <div class="d-flex justify-content-between align-items-center mb-1">
-        <span class="fw-bold text-primary">Your Weekly Rank: #{{ user_weekly_rank }}</span>
-        <span class="badge bg-primary">{{ orchard.weekly_points }} pts</span>
-      </div>
-      <div class="d-flex justify-content-between align-items-center">
-        <span class="fw-bold text-secondary">Your Total Rank: #{{ user_total_rank }}</span>
-        <span class="badge bg-secondary">{{ orchard.total_points }} pts</span>
-      </div>
-    </div>
-  </div>
   </div>
 </div>
 
@@ -484,6 +1083,9 @@
           </li>
           <li class="nav-item" role="presentation">
             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#items-tab" type="button">Items</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#land-tab" type="button">Land</button>
           </li>
         </ul>
         <div class="tab-content">
@@ -532,6 +1134,37 @@
                 </div>
               </div>
               {% endfor %}
+            </div>
+          </div>
+          <div class="tab-pane fade" id="land-tab">
+            <div class="row g-3 justify-content-center">
+              <div class="col-md-6 col-lg-5">
+                <div class="card h-100 border-success">
+                  <div class="card-body text-center">
+                    <div class="fs-1 mb-2">🟫</div>
+                    <h6>Extra Farmland</h6>
+                    <p class="small text-muted mb-2">
+                      Add one more plot to your Knowledge Farmland. New plots use the same soil type as your starter fields.
+                    </p>
+                    <p class="mb-2">
+                      <span class="text-muted">Your plots:</span>
+                      <strong>{{ orchard_land_count }}</strong> / {{ orchard_max_lands }}
+                    </p>
+                    {% if orchard_can_buy_land_slot and orchard_land_slot_price is not none %}
+                    <p class="mb-3 fw-semibold text-success">Next plot: <i class="bi bi-coin"></i> {{ orchard_land_slot_price }} coins</p>
+                    <button type="button"
+                            id="shop-buy-land-slot"
+                            class="btn btn-success w-100"
+                            data-price="{{ orchard_land_slot_price }}"
+                            onclick="buyLandSlot()">
+                      <i class="bi bi-plus-square me-1"></i>Buy farmland slot
+                    </button>
+                    {% else %}
+                    <p class="mb-0 text-muted">You have reached the maximum number of plots.</p>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -631,6 +1264,59 @@
 
 {% block scripts %}
 <script>
+  function getCurrentWeekStart() {
+    const now = new Date();
+    const day = now.getDay();
+    const offset = day === 0 ? -6 : 1 - day; // Monday as start of week
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() + offset);
+    weekStart.setHours(0, 0, 0, 0);
+    return weekStart;
+  }
+
+  function setShowcaseView(view) {
+    const fruitEls = Array.from(document.querySelectorAll('[data-showcase-fruit]'));
+    const countEl = document.getElementById('showcase-count');
+    const emptyFilteredEl = document.getElementById('showcase-empty-filtered');
+    const weekStart = getCurrentWeekStart();
+    let visibleCount = 0;
+
+    fruitEls.forEach((el) => {
+      let visible = true;
+      if (view === 'week') {
+        const harvestedAtStr = el.getAttribute('data-harvested-at');
+        const harvestedAt = harvestedAtStr ? new Date(harvestedAtStr) : null;
+        visible = !!harvestedAt && !Number.isNaN(harvestedAt.getTime()) && harvestedAt >= weekStart;
+      }
+      el.classList.toggle('d-none', !visible);
+      if (visible) visibleCount += 1;
+    });
+
+    if (countEl) {
+      countEl.textContent = visibleCount;
+    }
+
+    if (emptyFilteredEl) {
+      emptyFilteredEl.classList.toggle('d-none', !(view === 'week' && visibleCount === 0 && fruitEls.length > 0));
+    }
+
+    document.querySelectorAll('[data-showcase-view]').forEach((btn) => {
+      btn.classList.toggle('active', btn.getAttribute('data-showcase-view') === view);
+    });
+  }
+
+  function initShowcaseViewToggle() {
+    const buttons = document.querySelectorAll('[data-showcase-view]');
+    if (!buttons.length) return;
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const view = btn.getAttribute('data-showcase-view') || 'all';
+        setShowcaseView(view);
+      });
+    });
+    setShowcaseView('all');
+  }
+
   // Initialize tooltips
   var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -709,6 +1395,7 @@
   setInterval(updateTimers, 1000);
   updateTimers();
   initShopSubtotals();
+  initShowcaseViewToggle();
 
   // API Calls
   function changeShopQty(type, itemId, delta) {
@@ -873,6 +1560,36 @@
       upsertPlantSeedEntry(itemId, quantity, meta.name, meta.growthHours || '0');
     } else {
       upsertAccelerateItemEntry(itemId, quantity, meta.name, meta.description, meta.itemType);
+    }
+  }
+
+  async function buyLandSlot() {
+    const btn = document.getElementById('shop-buy-land-slot');
+    const price = btn ? parseInt(btn.getAttribute('data-price'), 10) : NaN;
+    if (!price || Number.isNaN(price)) {
+      alert('Land slot is not available for purchase.');
+      return;
+    }
+    if (!confirm(`Buy one extra farmland plot for ${price} coins?`)) return;
+    try {
+      const res = await fetch('{{ url_for("orchard.buy_land_slot") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (data.success) {
+        const coinEl = document.getElementById('coin-balance');
+        if (coinEl && typeof data.coins !== 'undefined') {
+          coinEl.textContent = data.coins;
+        }
+        alert(data.message || 'Purchased!');
+        location.reload();
+      } else {
+        alert(data.message || 'Purchase failed');
+      }
+    } catch (e) {
+      alert('An error occurred');
     }
   }
 
