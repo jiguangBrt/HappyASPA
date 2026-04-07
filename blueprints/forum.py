@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, jsonify, request
 from flask_login import login_required, current_user
 from sqlalchemy import func  # <--- 新增：用于统计点赞数
 from datetime import datetime
@@ -184,8 +184,14 @@ def post_detail(post_id):
 @forum_bp.route('/new', methods=['GET', 'POST'])
 @login_required
 def new_post():
-    # 接收前端传来的 board 参数，用于告诉发帖页面“默认选中哪个区”
+    # 接收前端传来的 board 参数，用于告诉发帖页面"默认选中哪个区"
     current_board = request.args.get('board', 'discussion')
+    
+    # 接收从listening页面传递的预填充参数
+    title_param = request.args.get('title', '')
+    content_param = request.args.get('content', '')
+    category_param = request.args.get('category', '')
+    source_param = request.args.get('source', '')
     
     if request.method == 'POST':
         title    = request.form.get('title',    '').strip()
@@ -265,7 +271,12 @@ def new_post():
             
         return redirect(url_for('forum.post_detail', post_id=post.id))
 
-    return render_template('forum/new_post.html', current_board=current_board)
+    return render_template('forum/new_post.html', 
+                         current_board=current_board,
+                         title_param=title_param,
+                         content_param=content_param,
+                         category_param=category_param,
+                         source_param=source_param)
 
 
 @forum_bp.route('/post/<int:post_id>/comment', methods=['POST'])
