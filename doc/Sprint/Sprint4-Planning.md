@@ -14,9 +14,9 @@ Following the successful implementation of the core gamification system and lear
 ## Sprint Goal: 
 This week, we will focus on two main pillars:
 
-1.**Infrastructure & Quality Assurance**: Implementing Continuous Integration (E2E CI), automated deployment, and comprehensive testing, alongside stabilizing server configurations.
+1.**Infrastructure & Quality Assurance (QA)**: Fortify system stability by implementing End-to-End Continuous Integration (E2E CI), establishing automated deployment (CD) pipelines, and executing comprehensive cross-module testing.
 
-2.**UI/UX Refinement & Forum Enhancements**: Polishing the interfaces for the Vocabulary, Speaking, Listening, and Profile modules to ensure a consistent and professional user experience, while introducing invitation codes and "DIICSU" customization to the forum.
+2.**UI/UX Refinement & Community Building**: Elevate the visual and functional experience across the Vocabulary, Speaking, Listening, and Profile modules to ensure a consistent, professional interface. Additionally, we will deploy an invitation code system and specific "DIICSU" branding to foster an exclusive and secure forum environment.
 
 ## Selected User Story & Task Plan
 | Module | User Story | Task Description | Person in charge |
