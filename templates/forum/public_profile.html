@@ -72,9 +72,7 @@
             </div>
           </div>
           
-          <button class="btn btn-outline-primary w-100 btn-sm" data-bs-toggle="modal" data-bs-target="#inviteTeamModal">
-            <i class="bi bi-person-plus"></i> Invite to Team
-          </button>
+
         </div>
       </div>
     </div>
@@ -187,27 +185,6 @@
 </div>
 {% endblock %}
 
-<!-- 👇 新增的 JS 脚本区块 👇 -->
-{% block scripts %}
-<script>
-async function inviteUser(teamId, targetUserId) {
-  try {
-    const res = await fetch('/team/invite', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ team_id: teamId, target_user_id: targetUserId })
-    });
-    const data = await res.json();
-    if(data.success) {
-      alert('🎉 ' + data.message);
-      location.reload(); // 刷新页面，他的主页就会出现你的队名！
-    } else {
-      alert('Error: ' + data.message);
-    }
-  } catch (err) {
-    alert('Network error!');
-  }
-}
-</script>
-{% endblock %}
+
+
 
