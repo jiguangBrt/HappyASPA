@@ -78,3 +78,53 @@ def join_team():
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': 'Server error.'}), 500
+    
+    # ==========================================
+# 🛑 退队与解散逻辑 (Leave & Dismiss)
+# ==========================================
+
+@team_bp.route('/leave', methods=['POST'])
+@login_required
+def leave_team():
+    # 1. 检查是否在队伍里
+    if not current_user.teams:
+        return jsonify({'success': False, 'message': 'You are not in any team.'}), 400
+    
+    my_team = current_user.teams[0]
+    
+    # 2. 队长拦截：队长不能用普通的“退队”，必须“解散”
+    if my_team.leader_id == current_user.id:
+        return jsonify({'success': False, 'message': 'As the leader, you must dismiss the team instead of leaving.'}), 400
+
+    try:
+        # 3. 核心逻辑：把当前用户从队伍成员名单里踢掉
+        my_team.members.remove(current_user)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'You have left the team successfully.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Server error.'}), 500
+
+
+@team_bp.route('/dismiss', methods=['POST'])
+@login_required
+def dismiss_team():
+    # 1. 检查是否在队伍里
+    if not current_user.teams:
+        return jsonify({'success': False, 'message': 'You are not in any team.'}), 400
+    
+    my_team = current_user.teams[0]
+    
+    # 2. 权限拦截：只有队长能解散
+    if my_team.leader_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Only the leader can dismiss the team.'}), 403
+
+    try:
+        # 3. 核心逻辑：直接删除该队伍！
+        # (SQLAlchemy 的 relationship 会自动清理 team_members 中间表里的关联)
+        db.session.delete(my_team)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Team has been dismissed.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Server error.'}), 500
