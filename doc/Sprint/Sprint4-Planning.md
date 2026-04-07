@@ -9,23 +9,23 @@
 **Working Hours**: Sun–Fri, 10:00 AM – 2:00 AM (Saturdays off)
 
 ## Background: Infrastructure Stabilization & UX Polish
+Following the successful implementation of the core gamification system and learning modules in the previous sprint, the team is now shifting focus toward system stability, deployment automation, and overall User Interface (UI) refinement. Additionally, specific community features are being added to the forum to meet target audience requirements.
 
 ## Sprint Goal: 
-We focused on expanding module functionality by integrating personal achievement systems, polishing UI/UX across vocabulary and dashboard components, and bridging the forum with a personal center to build a more cohesive academic learning experience.
+This week, we will focus on two main pillars:
+
+1.**Infrastructure & Quality Assurance**: Implementing Continuous Integration (E2E CI), automated deployment, and comprehensive testing, alongside stabilizing server configurations.
+
+2.**UI/UX Refinement & Forum Enhancements**: Polishing the interfaces for the Vocabulary, Speaking, Listening, and Profile modules to ensure a consistent and professional user experience, while introducing invitation codes and "DIICSU" customization to the forum.
 
 ## Selected User Story & Task Plan
 | Module | User Story | Task Description | Person in charge |
 |:---|:---|:---|:---|
-| Listening | As a user, I can filter videos by accent, so that I can practice specific types of English pronunciation. | Accent Classification | Jing Lu |
-| Listening | As a user, I want access to diverse video content, so that I can learn from different contexts. | Expand Video Sources | Jing Lu |
-| Listening | As a user, I want a simulation-based practice module, so that I can improve my listening skills in realistic scenarios. | Simulation Practice Module | Qiyin Huang |
-| Speaking | As a language learner, I want to receive real-time feedback from AI, so that I can correct my pronunciation immediately. | AI feedback | Hang Ge |
-| Speaking | As a student, I want to follow and mimic professional audios, so that I can improve my intonation. | Add speaking-follow function | Xingzhuo Bao |
-| Speaking | As a freshman, I have little knowledge about my major. So I don't expect to see the topics which are too complex. | Edit the content of acedemic scenario | Xingzhuo Bao |
-| Forum | As a forum user,I hope that the forum homepage can be clearly divided into two separate sections: "Instructional (High-Quality)" and "Communication (Daily)". This would enable me to quickly find the corresponding posts based on my current needs. As the forum administrator/system, I hope that only users who have passed the high-score English certification can post in the "Instructional" section. | The specialized section function of the forum | Jiachi Zhu |
-| Forum | As a user, I hope to be able to see my gold coin count in my personal center and obtain gold coins by signing in every day. As a forum user, I hope to enter my standardized English exam scores in my personal profile. As a high-scoring user, I hope to have a distinctive visual identifier in my personal profile. | The establishment of the basic template for the personal center | Jiachi Zhu |
-| Vocabulary | As a learner, I want the option to choose between spelling or skipping after every 5 words, so that I can control my study pace and focus on my specific learning needs. | Vocabulary spelling | Yukun Wang |
-| Vocabulary | As a learner, I want to click on the phonetic symbols to hear the word's pronunciation, so that I can improve my listening and speaking skills while learning new vocabulary. | Word Pronunciation | Yukun Wang |
-| Dashboard | As a learner, I want to manually add external study progress alongside my website activity, so that I can track my entire learning journey in one centralized dashboard. | Dashboard Custom Growth | Sihan Wang |
-| Dashboard | As a student, I want to see a "Calendar Usage Guide" section below my calendar, so that I can learn how to manage my schedule effectively and develop a stronger awareness of deadlines (DDL). | Calendar Hint | Sihan Wang |
-| Overall UI | As a website user, I want a standardized color palette with slightly darker light shades applied across all sections, so that I experience a unified, visually comfortable aesthetic throughout the site. | UI improvement | Sihan Wang |
+| Listening | As a learner, I want a distraction-free and highly responsive layout in the Listening section so that I can seamlessly navigate audio exercises and focus on my practice. | Listening UI Refinement | Qiyin Huang |
+| Speaking & Profile| As a learner, I need a modern, intuitive interface for the Speaking module and my personal profile to effectively track and manage my learning milestones. | Speaking & Profile UI Optimization | Xingzhuo Bao |
+| Forum | As a community admin, I want to implement "DIICSU" branding and an invitation-only gateway so that we can curate a secure, highly engaged user base. | Forum DIICSU customization & Invitation Code | Jiachi Zhu |
+| Vocabulary | As a learner, I want an engaging and visually appealing vocabulary interface so that I stay motivated during repetitive study sessions. | Vocabulary UI Refinement | Yukun Wang |
+| QA / Testing | As a developer, I need an automated deployment pipeline so that new features and hotfixes can be shipped to production reliably and efficiently. | Comprehensive System Testing | Jing Lu |
+| DevOps / CD | As a developer, I need an automated deployment pipeline so that new features and hotfixes can be shipped to production reliably and efficiently. | Automated Deployment Setup | Yihan Wang |
+| Infrastructure | As a developer, I need a robust and optimally configured server environment so that the platform maintains high availability and zero-downtime access for all users. | Server Configuration & Maintenance | Hang Ge |
+| DevOps / CI | As a developer, I need End-to-End Continuous Integration (CI) workflows so that code stability and quality are automatically verified prior to merging. | E2E CI Implementation | Sihan Wang |
