@@ -1,8 +1,18 @@
+import random
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from models import db, Team, User, team_members
 
 team_bp = Blueprint('team', __name__, url_prefix='/team')
+
+# 🎯 生成6位不重复的大写邀请码 (剔除易混淆的 0, O, 1, I)
+def generate_invite_code():
+    chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    while True:
+        code = ''.join(random.choices(chars, k=6))
+        # 确保数据库里没有撞车的码
+        if not Team.query.filter_by(invite_code=code).first():
+            return code
 
 @team_bp.route('/create', methods=['POST'])
 @login_required
@@ -17,7 +27,9 @@ def create_team():
     if Team.query.filter_by(name=team_name).first():
         return jsonify({'success': False, 'message': 'Team name already exists.'}), 400
 
-    new_team = Team(name=team_name, description=description, leader_id=current_user.id)
+    # 👇 创建队伍时，自动生成专属邀请码 👇
+    new_code = generate_invite_code()
+    new_team = Team(name=team_name, description=description, leader_id=current_user.id, invite_code=new_code)
     new_team.members.append(current_user)
     
     try:
@@ -31,35 +43,38 @@ def create_team():
         db.session.execute(stmt)
 
         db.session.commit()
-        return jsonify({'success': True, 'message': 'Team created successfully!'})
+        return jsonify({'success': True, 'message': 'Team created successfully!', 'invite_code': new_code})
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': 'Server error.'}), 500
 
-@team_bp.route('/invite', methods=['POST'])
+# 🎯 废弃强拉人，改为凭借邀请码主动 Join
+@team_bp.route('/join', methods=['POST'])
 @login_required
-def invite_to_team():
+def join_team():
     data = request.get_json()
-    team_id = data.get('team_id')
-    target_user_id = data.get('target_user_id')
+    code = data.get('invite_code', '').strip().upper() # 自动转大写防呆
 
-    team = Team.query.get(team_id)
-    target_user = User.query.get(target_user_id)
+    if not code:
+        return jsonify({'success': False, 'message': 'Please enter an invite code.'}), 400
 
-    if not team or not target_user:
-        return jsonify({'success': False, 'message': 'Team or User not found.'}), 404
+    # 通过邀请码查找队伍
+    target_team = Team.query.filter_by(invite_code=code).first()
+    
+    if not target_team:
+        return jsonify({'success': False, 'message': 'Invalid invite code.'}), 404
 
-    if team.leader_id != current_user.id:
-        return jsonify({'success': False, 'message': 'Only the team leader can invite members.'}), 403
+    if current_user in target_team.members:
+        return jsonify({'success': False, 'message': 'You are already in this team.'}), 400
 
-    if target_user in team.members:
-        return jsonify({'success': False, 'message': 'User is already in this team.'}), 400
+    if current_user.teams:
+         return jsonify({'success': False, 'message': 'You are already in another team. Please leave first.'}), 400
 
     try:
-        # 👇 只有这一行才是唯一正确的方式！中间表会自动处理一切 👇
-        team.members.append(target_user)
+        # 核销成功，加入队伍！
+        target_team.members.append(current_user)
         db.session.commit()
-        return jsonify({'success': True, 'message': f'Successfully added {target_user.username} to {team.name}!'})
+        return jsonify({'success': True, 'message': f'Welcome to {target_team.name}!'})
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': 'Server error.'}), 500
