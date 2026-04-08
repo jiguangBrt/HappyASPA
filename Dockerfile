@@ -5,4 +5,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install gunicorn
 COPY . /app/
 EXPOSE 5000
-CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:5000", "app:create_app()"]
+# 启动 Gunicorn 时，指定使用挂载进来的私钥和公钥
+CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:5000", "--certfile=/app/ssl/dii.csuu.asia.pem", "--keyfile=/app/ssl/dii.csuu.asia.key", "app:create_app()"]
