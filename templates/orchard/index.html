@@ -25,6 +25,17 @@
     animation: orchardHeaderGlow 8s ease-in-out infinite;
   }
 
+  .orchard-header::before {
+    content: "";
+    position: absolute;
+    inset: -30% -10% auto auto;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(99, 193, 182, 0.28) 0%, rgba(99, 193, 182, 0) 72%);
+    pointer-events: none;
+  }
+
   .orchard-header-content {
     position: relative;
     z-index: 1;
@@ -43,6 +54,18 @@
     filter: none;
     opacity: 0.98;
     animation: orchardBannerPulse 4s ease-in-out infinite;
+  }
+
+  .orchard-header .btn {
+    border-radius: 999px;
+    font-weight: 700;
+    transition: transform 0.2s ease, box-shadow 0.22s ease, filter 0.2s ease;
+  }
+
+  .orchard-header .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(20, 75, 122, 0.2);
+    filter: brightness(1.03);
   }
   
   .showcase-container {
@@ -166,6 +189,7 @@
       0 4px 6px -1px rgba(15, 81, 50, 0.08),
       0 12px 24px -4px rgba(15, 81, 50, 0.12);
     transition: transform 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
   }
 
   .farmland-module-card:hover {
@@ -173,6 +197,16 @@
     box-shadow:
       0 10px 20px -6px rgba(15, 81, 50, 0.18),
       0 18px 30px -8px rgba(15, 81, 50, 0.2);
+  }
+
+  .farmland-module-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    pointer-events: none;
+    z-index: 1;
   }
 
   .farmland-module-header {
@@ -611,6 +645,7 @@
       0 4px 6px -1px rgba(49, 46, 129, 0.08),
       0 14px 28px -6px rgba(67, 56, 202, 0.14);
     transition: transform 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
   }
 
   .leaderboard-module-card:hover {
@@ -618,6 +653,16 @@
     box-shadow:
       0 10px 20px -6px rgba(67, 56, 202, 0.18),
       0 18px 30px -8px rgba(67, 56, 202, 0.2);
+  }
+
+  .leaderboard-module-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    pointer-events: none;
+    z-index: 1;
   }
 
   .leaderboard-module-header {
@@ -725,6 +770,10 @@
   .leaderboard-row:hover {
     transform: translateY(-1px);
     box-shadow: 0 6px 16px rgba(67, 56, 202, 0.1);
+  }
+
+  .card {
+    backdrop-filter: blur(4px);
   }
 
   @keyframes orchardHeaderGlow {
