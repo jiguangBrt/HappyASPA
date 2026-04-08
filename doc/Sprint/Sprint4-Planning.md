@@ -22,10 +22,10 @@ This week, we will focus on two main pillars:
 | Module | User Story | Task Description | Person in charge |
 |:---|:---|:---|:---|
 | Listening | As a learner, I want a distraction-free and highly responsive layout in the Listening section so that I can seamlessly navigate audio exercises and focus on my practice. | Listening UI Refinement | Qiyin Huang |
-| Speaking & Profile| As a learner, I need a modern, intuitive interface for the Speaking module and my personal profile to effectively track and manage my learning milestones. | Speaking & Profile UI Optimization | Xingzhuo Bao |
+| Orchard & Profile| As a learner, I need a modern, intuitive, engaging interface for the Orchard module and my personal profile to effectively track and manage my learning milestones. | Orchard & Profile UI Optimization | Xingzhuo Bao |
 | Forum | As a community admin, I want to implement "DIICSU" branding and an invitation-only gateway so that we can curate a secure, highly engaged user base. | Forum DIICSU customization & Invitation Code | Jiachi Zhu |
 | Vocabulary | As a learner, I want an engaging and visually appealing vocabulary interface so that I stay motivated during repetitive study sessions. | Vocabulary UI Refinement | Yukun Wang |
 | QA / Testing | As a developer, I need an automated deployment pipeline so that new features and hotfixes can be shipped to production reliably and efficiently. | Comprehensive System Testing | Jing Lu |
 | DevOps / CD | As a developer, I need an automated deployment pipeline so that new features and hotfixes can be shipped to production reliably and efficiently. | Automated Deployment Setup | Yihan Wang |
-| Infrastructure | As a developer, I need a robust and optimally configured server environment so that the platform maintains high availability and zero-downtime access for all users. | Server Configuration & Maintenance | Hang Ge |
+| Speaking & Infrastructure | As a developer, I need a robust and optimally configured server environment so that the platform maintains high availability and zero-downtime access for all users. And As a learner, I need a appealing and interesting speaking interface  | Server Configuration & Speaking UI Optimization  | Hang Ge |
 | DevOps / CI | As a developer, I need End-to-End Continuous Integration (CI) workflows so that code stability and quality are automatically verified prior to merging. | E2E CI Implementation | Sihan Wang |
