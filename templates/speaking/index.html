@@ -2,82 +2,236 @@
 {% block title %}Speaking Practice{% endblock %}
 
 {% block content %}
-<div class="d-flex align-items-center justify-content-between mb-4">
-  <div>
-    <h3 class="fw-bold mb-0"><i class="bi bi-mic text-primary me-2"></i>Speaking</h3>
-    <p class="text-muted mb-0 mt-1">Improve your academic speaking with guided exercises and real-world scenarios.</p>
-  </div>
-</div>
-
 <style>
+  :root {
+    --diicsu-blue-dark: #1F619F;
+    --diicsu-teal: #63C1B6;
+    --diicsu-blue-light: #E8F0F8;
+  }
+
+  .text-diicsu { color: var(--diicsu-blue-dark) !important; }
+  .bg-diicsu { background-color: var(--diicsu-blue-dark) !important; }
+  .bg-diicsu-light { background-color: var(--diicsu-blue-light) !important; }
+
+  .btn-diicsu {
+    background-color: var(--diicsu-blue-dark);
+    color: #fff;
+    border: none;
+    transition: all 0.25s ease;
+  }
+
+  .btn-diicsu:hover {
+    background-color: #154675;
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(31, 97, 159, 0.25);
+  }
+
+  .btn-outline-diicsu {
+    color: var(--diicsu-blue-dark);
+    border-color: rgba(31, 97, 159, 0.4);
+    background-color: transparent;
+  }
+
+  .btn-outline-diicsu:hover {
+    background-color: var(--diicsu-blue-light);
+    color: var(--diicsu-blue-dark);
+    border-color: var(--diicsu-blue-dark);
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100vw;
+    height: 100vh;
+    background-image: url("{{ url_for('static', filename='pictures/diicsu-shield.png') }}");
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 500px auto;
+    opacity: 0.03;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .speaking-hero {
+    overflow: hidden;
+    min-height: 190px;
+    border: 1px solid rgba(31, 97, 159, 0.1);
+  }
+
+  .hero-shield {
+    height: 220px;
+    width: auto;
+    max-width: none;
+    object-fit: contain;
+    top: 50%;
+    right: 18%;
+    transform: translateY(-50%);
+    opacity: 0.12;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
+
+  .hero-mascot {
+    height: 176px;
+    position: absolute;
+    right: 18px;
+    bottom: -10px;
+    opacity: 0.95;
+  }
+
+  .section-shell {
+    background: linear-gradient(135deg, rgba(232, 240, 248, 0.88), rgba(255, 255, 255, 0.98));
+    border: 1px solid rgba(31, 97, 159, 0.1);
+    border-radius: 1rem;
+    padding: 1rem 1.1rem;
+  }
+
   .custom-underline-tabs {
-    border-bottom: 2px solid #dee2e6;
+    gap: 0.65rem;
+    border-bottom: none;
+    flex-wrap: wrap;
   }
 
   .custom-underline-tabs .nav-link {
-    color: #6c757d;
-    border: none;
-    border-bottom: 3px solid transparent;
-    margin-bottom: -2px;
+    color: var(--app-text-secondary);
+    border: 1px solid rgba(31, 97, 159, 0.12);
+    border-radius: 999px;
+    margin-bottom: 0;
+    background: #fff;
     transition: all 0.2s ease-in-out;
+    box-shadow: 0 4px 12px rgba(16, 24, 40, 0.05);
   }
 
   .custom-underline-tabs .nav-link:hover {
-    color: #0d6efd;
-    border-color: transparent;
+    color: var(--diicsu-blue-dark);
+    border-color: rgba(31, 97, 159, 0.26);
+    transform: translateY(-1px);
   }
 
   .custom-underline-tabs .nav-link.active {
-    color: #0d6efd !important;
-    background-color: transparent !important;
-    border: none;
-    border-bottom: 3px solid #0d6efd !important;
+    color: var(--diicsu-blue-dark) !important;
+    background-color: var(--diicsu-blue-light) !important;
+    border: 1px solid rgba(31, 97, 159, 0.24) !important;
+    box-shadow: 0 8px 18px rgba(31, 97, 159, 0.12);
   }
 
   .transition-hover {
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .scenario-card,
+  .practice-card {
+    border-radius: 1rem;
+    overflow: hidden;
+    border: 1px solid rgba(31, 97, 159, 0.08);
+  }
+
+  .scenario-card .card-body,
+  .practice-card .card-body {
+    background: linear-gradient(180deg, rgba(232, 240, 248, 0.22) 0%, #ffffff 38%);
+  }
+
+  .section-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .filter-btn.is-active:not(.btn-outline-subject) {
+    background-color: var(--diicsu-blue-dark);
+    color: #fff;
+    border-color: var(--diicsu-blue-dark);
+  }
+
+  @media (max-width: 767.98px) {
+    .speaking-hero {
+      min-height: auto;
+    }
+
+    .hero-shield {
+      right: -5%;
+      height: 180px;
+      opacity: 0.08;
+    }
   }
 </style>
 
-<ul class="nav custom-underline-tabs mb-4" id="speakingTabs" role="tablist">
-  <li class="nav-item" role="presentation">
-    <button class="nav-link active fw-bold fs-5 px-4 py-3" id="academic-tab" data-bs-toggle="tab"
-      data-bs-target="#academic" type="button" role="tab" aria-controls="academic" aria-selected="true">
-      <i class="bi bi-mortarboard-fill me-2"></i>Academic Scenarios
-    </button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link fw-bold fs-5 px-4 py-3" id="standard-tab" data-bs-toggle="tab" data-bs-target="#standard"
-      type="button" role="tab" aria-controls="standard" aria-selected="false">
-      <i class="bi bi-chat-quote me-2"></i>English Corner
-    </button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link fw-bold fs-5 px-4 py-3" id="practice-tab" data-bs-toggle="tab" data-bs-target="#practice"
-      type="button" role="tab" aria-controls="practice" aria-selected="false">
-      <i class="bi bi-earbuds me-2"></i>Shadowing
-    </button>
-  </li>
-</ul>
+<div class="speaking-page">
+  <div class="row mb-4 bg-diicsu-light rounded shadow-sm d-flex align-items-center position-relative speaking-hero">
+    <img src="{{ url_for('static', filename='pictures/diicsu-shield.png') }}"
+         alt="DIICSU Shield Watermark"
+         class="position-absolute hero-shield">
+
+    <div class="col-lg-8 px-4 py-4 z-1">
+      <div class="mb-2">
+        <img src="{{ url_for('static', filename='pictures/diicsu-logo-banner.png') }}"
+             alt="DIICSU Logo Banner"
+             style="height: 38px;">
+      </div>
+      <h3 class="fw-bold mb-2 text-diicsu"><i class="bi bi-mic-fill me-2"></i>DIICSU Speaking Studio</h3>
+      <p class="text-muted mb-3">Improve your academic speaking with guided exercises, real-world scenarios, and immersive shadowing in a refreshed DIICSU style.</p>
+    </div>
+
+    <div class="col-lg-4 text-end position-absolute bottom-0 end-0 d-none d-md-block" style="height: 100%;">
+      <img src="{{ url_for('static', filename='pictures/diicsu-mascot.png') }}"
+           alt="DIICSU Mascot"
+           class="hero-mascot">
+    </div>
+  </div>
+
+  <ul class="nav custom-underline-tabs mb-4" id="speakingTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active fw-bold fs-5 px-4 py-3" id="academic-tab" data-bs-toggle="tab"
+        data-bs-target="#academic" type="button" role="tab" aria-controls="academic" aria-selected="true">
+        <i class="bi bi-mortarboard-fill me-2"></i>Academic Scenarios
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link fw-bold fs-5 px-4 py-3" id="standard-tab" data-bs-toggle="tab" data-bs-target="#standard"
+        type="button" role="tab" aria-controls="standard" aria-selected="false">
+        <i class="bi bi-chat-quote me-2"></i>English Corner
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link fw-bold fs-5 px-4 py-3" id="practice-tab" data-bs-toggle="tab" data-bs-target="#practice"
+        type="button" role="tab" aria-controls="practice" aria-selected="false">
+        <i class="bi bi-earbuds me-2"></i>Shadowing
+      </button>
+    </li>
+  </ul>
 
 <div class="tab-content" id="speakingTabsContent">
 
   <div class="tab-pane fade show active" id="academic" role="tabpanel" aria-labelledby="academic-tab">
 
-    <div class="d-flex justify-content-center gap-2 mt-2 mb-4 flex-wrap" id="filter-buttons">
-      <button class="btn btn-primary btn-sm rounded-pill px-3 filter-btn" data-filter="all">All Scenarios</button>
-      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="General Topic">General
-        Topic</button>
-      <button class="btn btn-outline-subject subject-theme-cs btn-sm rounded-pill px-3 filter-btn"
-        data-filter="Computer Science">Computer Science</button>
-      <button class="btn btn-outline-subject subject-theme-civil btn-sm rounded-pill px-3 filter-btn"
-        data-filter="Civil Engineering">Civil Engineering</button>
-      <button class="btn btn-outline-subject subject-theme-math btn-sm rounded-pill px-3 filter-btn"
-        data-filter="Applied Mathematics">Applied Mathematics</button>
-      <button class="btn btn-outline-subject subject-theme-mech btn-sm rounded-pill px-3 filter-btn"
-        data-filter="Mechanical Engineering">Mechanical Engineering</button>
-      <button class="btn btn-outline-subject subject-theme-traffic btn-sm rounded-pill px-3 filter-btn"
-        data-filter="Traffic Control">Traffic Control</button>
+    <div class="section-shell mb-4">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+        <div>
+          <h5 class="fw-bold text-diicsu mb-1"><i class="bi bi-compass me-2"></i>Scenario Explorer</h5>
+          <p class="text-muted small mb-0">Filter by subject and jump into DIICSU-styled speaking simulations.</p>
+        </div>
+        <span class="badge bg-white text-diicsu border border-primary-subtle rounded-pill px-3 py-2">
+          <i class="bi bi-grid-3x3-gap-fill me-1"></i>{{ scenarios|length if scenarios else 0 }} scenarios
+        </span>
+      </div>
+
+      <div class="d-flex justify-content-center gap-2 mt-2 flex-wrap" id="filter-buttons">
+        <button class="btn btn-diicsu btn-sm rounded-pill px-3 filter-btn" data-filter="all">All Scenarios</button>
+        <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 filter-btn" data-filter="General Topic">General
+          Topic</button>
+        <button class="btn btn-outline-subject subject-theme-cs btn-sm rounded-pill px-3 filter-btn"
+          data-filter="Computer Science">Computer Science</button>
+        <button class="btn btn-outline-subject subject-theme-civil btn-sm rounded-pill px-3 filter-btn"
+          data-filter="Civil Engineering">Civil Engineering</button>
+        <button class="btn btn-outline-subject subject-theme-math btn-sm rounded-pill px-3 filter-btn"
+          data-filter="Applied Mathematics">Applied Mathematics</button>
+        <button class="btn btn-outline-subject subject-theme-mech btn-sm rounded-pill px-3 filter-btn"
+          data-filter="Mechanical Engineering">Mechanical Engineering</button>
+        <button class="btn btn-outline-subject subject-theme-traffic btn-sm rounded-pill px-3 filter-btn"
+          data-filter="Traffic Control">Traffic Control</button>
+      </div>
     </div>
 
     <div class="row g-4" id="scenarios-grid">
@@ -122,7 +276,7 @@
 
             <h5 class="fw-bold mb-2">{{ scenario.title }}</h5>
             <p class="text-muted small mb-3"
-              style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+              style="display: -webkit-box; line-clamp: 2; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
               {{ scenario.background }}
             </p>
 
@@ -151,14 +305,16 @@
 
   <div class="tab-pane fade" id="standard" role="tabpanel" aria-labelledby="standard-tab">
 
-    <div class="d-flex justify-content-between align-items-end mb-4">
-      <div>
-        <h5 class="fw-bold mb-1">Freestyle Topics</h5>
-        <p class="text-muted small mb-0">Pick a topic, record your thoughts, and get AI feedback.</p>
+    <div class="section-shell mb-4">
+      <div class="d-flex justify-content-between align-items-end flex-wrap gap-3">
+        <div>
+          <h5 class="fw-bold mb-1 text-diicsu"><i class="bi bi-chat-quote-fill me-2"></i>Freestyle Topics</h5>
+          <p class="text-muted small mb-0">Pick a topic, record your thoughts, and get AI feedback.</p>
+        </div>
+        <a href="{{ url_for('speaking.new_exercise') }}" class="btn btn-diicsu rounded-pill px-4 shadow-sm">
+          <i class="bi bi-plus-lg me-1"></i> New Topic
+        </a>
       </div>
-      <a href="{{ url_for('speaking.new_exercise') }}" class="btn btn-danger rounded-pill px-4 shadow-sm">
-        <i class="bi bi-plus-lg me-1"></i> New Topic
-      </a>
     </div>
 
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
@@ -166,7 +322,7 @@
       {% for ex in exercises %}
       <div class="col">
         <!-- 保留了悬停升起效果和圆角 -->
-        <div class="card h-100 border-0 shadow-sm rounded-4 text-start transition-hover"
+        <div class="card h-100 border-0 shadow-sm rounded-4 text-start transition-hover practice-card"
           onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'"
           style="transition: transform 0.3s ease;">
 
@@ -192,7 +348,7 @@
 
             <!-- 保留了文本截断逻辑，防止长描述撑破卡片 -->
             <p class="card-text text-muted small mb-3"
-              style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+              style="display: -webkit-box; line-clamp: 3; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
               {{ ex.prompt or ex.description }}
             </p>
 
@@ -220,7 +376,7 @@
           <!-- 保留了底部操作按钮 -->
           <div class="card-footer bg-white border-top-0 pt-0 pb-4 px-4">
             <a href="{{ url_for('speaking.exercise_detail', exercise_id=ex.id) }}"
-              class="btn btn-outline-primary w-100 fw-medium rounded-pill">
+              class="btn btn-outline-diicsu w-100 fw-medium rounded-pill">
               Enter Topic <i class="bi bi-arrow-right ms-1"></i>
             </a>
           </div>
@@ -239,16 +395,23 @@
 
   <div class="tab-pane fade" id="practice" role="tabpanel" aria-labelledby="practice-tab">
 
-      <div class="d-flex justify-content-between align-items-center mt-2 mb-4">
-        <h5 class="fw-bold text-dark mb-0">Immersive Shadowing</h5>
-        <span class="text-muted small">Choose a scenario, then select your target accent inside to practice.</span>
+      <div class="section-shell mt-2 mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+          <div>
+            <h5 class="fw-bold text-diicsu mb-1"><i class="bi bi-earbuds-fill me-2"></i>Immersive Shadowing</h5>
+            <p class="text-muted small mb-0">Choose a scenario, then select your target accent inside to practice.</p>
+          </div>
+          <span class="badge bg-white text-diicsu border border-primary-subtle rounded-pill px-3 py-2">
+            <i class="bi bi-soundwave me-1"></i>{{ shadowing_practices|length if shadowing_practices else 0 }} sets
+          </span>
+        </div>
       </div>
 
       <div class="row g-4">
         {% if shadowing_practices %}
         {% for practice in shadowing_practices %}
         <div class="col-md-6">
-          <div class="card border-0 shadow-sm h-100 transition-hover"
+          <div class="card border-0 shadow-sm h-100 transition-hover practice-card"
             onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
             <div class="card-body p-4">
               <div class="d-flex justify-content-between align-items-start mb-3">
@@ -275,7 +438,7 @@
             </div>
             <div class="card-footer bg-white border-top-0 pt-0 pb-4 px-4">
               <a href="{{ url_for('speaking.practice_detail', practice_id=practice.id) }}"
-                class="btn btn-outline-dark w-100 fw-medium rounded-pill">
+                class="btn btn-outline-diicsu w-100 fw-medium rounded-pill">
                 <i class="bi bi-play-circle me-1"></i> Select Accent & Start
               </a>
             </div>
@@ -292,7 +455,8 @@
     </div>
 
   </div>
-  {% endblock %}
+</div>
+{% endblock %}
 
   {% block scripts %}
   <script>
@@ -316,18 +480,18 @@
         filterBtns.forEach(btn => {
           btn.addEventListener('click', function () {
             filterBtns.forEach(b => {
-              b.classList.remove('btn-primary', 'is-active');
+              b.classList.remove('btn-primary', 'btn-diicsu', 'is-active');
               if (!b.classList.contains('btn-outline-subject')) {
                 b.classList.add('btn-outline-secondary');
               }
             });
-              if (this.getAttribute('data-filter') === 'all') {
-                  this.classList.remove('btn-outline-secondary');
-                  this.classList.add('btn-primary');
-              } else {
-                  this.classList.remove('btn-outline-secondary');
-                  this.classList.add('is-active');
-              }
+            if (this.getAttribute('data-filter') === 'all') {
+              this.classList.remove('btn-outline-secondary');
+              this.classList.add('btn-diicsu');
+            } else {
+              this.classList.remove('btn-outline-secondary');
+              this.classList.add('is-active');
+            }
             const filterValue = this.getAttribute('data-filter');
             grid.style.opacity = '0';
 

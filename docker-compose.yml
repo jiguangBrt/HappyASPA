@@ -6,6 +6,8 @@ services:
     ports:
       # 将标准的 HTTPS 443 端口映射给容器
       - "443:5000"
+    env_file:             # <--- 就是加这行
+      - .env   
     environment:
       - DATABASE_URL=sqlite:////app/instance/happyaspa.db
     volumes:
