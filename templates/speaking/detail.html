@@ -157,8 +157,8 @@
                             </div>
 
                             <div class="bg-light p-3 rounded-4 mb-3">
-                                <audio controls class="w-100 shadow-sm" style="height: 40px;">
-                                    <source src="{{ url_for('speaking.get_audio', filename=sub.audio_filename) }}" type="audio/webm">
+                                <audio controls class="w-100 shadow-sm" style="height: 40px;" src="{{ url_for('speaking.get_audio', filename=sub.audio_filename) }}">
+                                    Your browser does not support the audio element.
                                 </audio>
                             </div>
 
@@ -204,11 +204,15 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
 <script>
-    let mediaRecorder;       
-    let audioChunks = [];    
-    let isRecording = false; 
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
     let isUploading = false;
-    let audioStream;         
+    let audioStream;
+    let recordingMimeType = 'audio/webm';
+    let recordingExtension = 'webm';
+
+    const LOCALHOST_NAMES = new Set(['localhost', '127.0.0.1', '::1']);
 
     const recordBtn = document.getElementById('record-btn');
     const recordIcon = document.getElementById('record-icon');
@@ -216,6 +220,54 @@
     const historyList = document.getElementById('history-list');
     const attemptCounter = document.getElementById('attempt-counter');
     const noRecordingsMsg = document.getElementById('no-recordings-msg');
+
+    function isSecureRecordingContext() {
+        return window.isSecureContext || LOCALHOST_NAMES.has(window.location.hostname);
+    }
+
+    function getExtensionForMimeType(mimeType, fallback = 'webm') {
+        const normalizedType = (mimeType || '').toLowerCase();
+        if (normalizedType.includes('mp4') || normalizedType.includes('aac')) return 'm4a';
+        if (normalizedType.includes('ogg')) return 'ogg';
+        if (normalizedType.includes('mpeg') || normalizedType.includes('mp3')) return 'mp3';
+        if (normalizedType.includes('wav')) return 'wav';
+        return fallback;
+    }
+
+    function getPreferredAudioConfig() {
+        if (typeof MediaRecorder === 'undefined') {
+            return { mimeType: '', extension: 'webm' };
+        }
+
+        const candidates = [
+            { mimeType: 'audio/webm;codecs=opus', extension: 'webm' },
+            { mimeType: 'audio/webm', extension: 'webm' },
+            { mimeType: 'audio/mp4', extension: 'm4a' },
+            { mimeType: 'audio/ogg;codecs=opus', extension: 'ogg' },
+        ];
+
+        if (typeof MediaRecorder.isTypeSupported !== 'function') {
+            return candidates[0];
+        }
+
+        return candidates.find(candidate => MediaRecorder.isTypeSupported(candidate.mimeType)) || { mimeType: '', extension: 'webm' };
+    }
+
+    function buildMicrophoneErrorMessage(error) {
+        if (!isSecureRecordingContext()) {
+            return 'Microphone recording requires HTTPS (or localhost during development). Once the site is opened with https://, the browser will allow the microphone prompt.';
+        }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+            return 'This browser does not support in-page audio recording. Please use a recent Chrome, Edge, or Safari browser over HTTPS.';
+        }
+        if (error?.name === 'NotAllowedError') {
+            return 'Microphone access was blocked. Please allow microphone permission in your browser settings and try again.';
+        }
+        if (error?.name === 'NotFoundError') {
+            return 'No microphone was detected. Please connect one and try again.';
+        }
+        return `Cannot access microphone${error?.message ? `: ${error.message}` : '.'}`;
+    }
 
     window.addEventListener('beforeunload', function (event) {
         if (isUploading) {
@@ -257,8 +309,8 @@
                     </button>
                 </div>
                 <div class="bg-light p-3 rounded-4 mb-3">
-                    <audio controls class="w-100 shadow-sm" style="height: 40px;">
-                        <source src="/speaking/audio/${audioFilename}" type="audio/webm">
+                    <audio controls class="w-100 shadow-sm" style="height: 40px;" src="/speaking/audio/${audioFilename}">
+                        Your browser does not support the audio element.
                     </audio>
                 </div>
                 <div class="d-flex justify-content-end align-items-center" id="action-area-${submissionId}">
@@ -281,18 +333,35 @@
     }
 
     async function startRecording() {
-        // 🌟 新增：录音前的公开隐私提示
         const isConfirmed = confirm("⚠️⚠️⚠️ Please note: Your recording will be public and can be heard by all users in the community.\n\nClick 'OK' to start recording, or 'Cancel' to abort.");
-        
-        // 如果用户点击了取消，直接退出函数，不进行后续的麦克风请求和录音
         if (!isConfirmed) {
-            return; 
+            return;
+        }
+
+        if (!isSecureRecordingContext()) {
+            alert(buildMicrophoneErrorMessage());
+            return;
+        }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+            alert(buildMicrophoneErrorMessage());
+            return;
         }
 
         try {
-            // 只有用户同意后，才会请求麦克风权限
-            audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(audioStream);
+            const audioConfig = getPreferredAudioConfig();
+            audioStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                }
+            });
+            mediaRecorder = audioConfig.mimeType
+                ? new MediaRecorder(audioStream, { mimeType: audioConfig.mimeType })
+                : new MediaRecorder(audioStream);
+            recordingMimeType = mediaRecorder.mimeType || audioConfig.mimeType || 'audio/webm';
+            recordingExtension = getExtensionForMimeType(recordingMimeType, audioConfig.extension || 'webm');
             audioChunks = [];
 
             mediaRecorder.ondataavailable = event => {
@@ -300,12 +369,11 @@
             };
 
             mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); 
+                const audioBlob = new Blob(audioChunks, { type: recordingMimeType });
                 const formData = new FormData();
-                formData.append('audio_file', audioBlob, 'speaking.webm');
+                formData.append('audio_file', audioBlob, `speaking.${recordingExtension}`);
                 formData.append('exercise_id', '{{ exercise.id }}');
 
-                // 改变按钮为上传状态
                 isUploading = true;
                 recordText.textContent = "Uploading...";
                 recordBtn.classList.replace('btn-dark', 'btn-secondary');
@@ -321,7 +389,7 @@
 
                     if (result.status === 'success') {
                         if (noRecordingsMsg) noRecordingsMsg.classList.add('d-none');
-                        attemptCounter.textContent = parseInt(attemptCounter.textContent) + 1;
+                        attemptCounter.textContent = parseInt(attemptCounter.textContent, 10) + 1;
                         historyList.insertAdjacentHTML(
                             'afterbegin',
                             buildEnglishCornerCard(result.submission_id, result.filename, result.submitted_at)
@@ -344,26 +412,31 @@
                     recordBtn.classList.add('btn-danger');
                     recordIcon.classList.replace('bi-stop-fill', 'bi-mic-fill');
                     recordText.textContent = "Start Recording";
+                    recordingMimeType = 'audio/webm';
+                    recordingExtension = 'webm';
                 }
             };
 
             mediaRecorder.start();
             isRecording = true;
 
-            recordBtn.classList.replace('btn-danger', 'btn-dark'); 
+            recordBtn.classList.replace('btn-danger', 'btn-dark');
             recordBtn.classList.add('animate__animated', 'animate__pulse', 'animate__infinite');
             recordIcon.classList.replace('bi-mic-fill', 'bi-stop-fill');
             recordText.textContent = "Finish Speaking";
 
         } catch (err) {
-            alert("Cannot access microphone. Please check your browser permissions.");
+            console.error('Cannot access microphone:', err);
+            alert(buildMicrophoneErrorMessage(err));
         }
     }
 
     function stopRecording() {
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
             mediaRecorder.stop();
-            audioStream.getTracks().forEach(track => track.stop()); 
+            if (audioStream) {
+                audioStream.getTracks().forEach(track => track.stop());
+            }
             isRecording = false;
         }
     }
