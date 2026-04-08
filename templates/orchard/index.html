@@ -4,13 +4,45 @@
 
 {% block head %}
 <style>
+  :root {
+    --diicsu-blue-dark: #1f619f;
+    --diicsu-teal: #63c1b6;
+    --diicsu-blue-light: #e8f0f8;
+  }
+
   .orchard-header {
-    background: linear-gradient(135deg, #1e4a78 0%, #12356b 100%);
-    color: white;
-    border-radius: 12px;
+    position: relative;
+    background:
+      radial-gradient(120% 120% at 90% 20%, rgba(99, 193, 182, 0.2), rgba(99, 193, 182, 0) 55%),
+      linear-gradient(135deg, #c8def3 0%, #b7d4ef 55%, #a8caea 100%);
+    color: #144b7a;
+    border: 1px solid rgba(31, 97, 159, 0.2);
+    border-radius: 16px;
     padding: 2rem;
     margin-bottom: 2rem;
     box-shadow: var(--app-shadow);
+    overflow: hidden;
+    animation: orchardHeaderGlow 8s ease-in-out infinite;
+  }
+
+  .orchard-header-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .orchard-header h1 i {
+    display: inline-block;
+    animation: orchardIconFloat 2.8s ease-in-out infinite;
+    transform-origin: center;
+  }
+
+  .orchard-brand-banner {
+    height: 34px;
+    width: auto;
+    margin-bottom: 0.45rem;
+    filter: none;
+    opacity: 0.98;
+    animation: orchardBannerPulse 4s ease-in-out infinite;
   }
   
   .showcase-container {
@@ -95,12 +127,14 @@
     font-size: 2.5rem;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     cursor: pointer;
-    transition: transform 0.2s;
+    transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
     position: relative;
+    animation: fruitAppear 0.45s ease both;
   }
   
   .fruit-item:hover {
-    transform: scale(1.1);
+    transform: translateY(-2px) scale(1.08);
+    filter: saturate(1.06);
   }
   
   .fruit-ssr { border: 3px solid #ffd700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
@@ -131,6 +165,14 @@
     box-shadow:
       0 4px 6px -1px rgba(15, 81, 50, 0.08),
       0 12px 24px -4px rgba(15, 81, 50, 0.12);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .farmland-module-card:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 10px 20px -6px rgba(15, 81, 50, 0.18),
+      0 18px 30px -8px rgba(15, 81, 50, 0.2);
   }
 
   .farmland-module-header {
@@ -568,6 +610,14 @@
     box-shadow:
       0 4px 6px -1px rgba(49, 46, 129, 0.08),
       0 14px 28px -6px rgba(67, 56, 202, 0.14);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .leaderboard-module-card:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 10px 20px -6px rgba(67, 56, 202, 0.18),
+      0 18px 30px -8px rgba(67, 56, 202, 0.2);
   }
 
   .leaderboard-module-header {
@@ -675,6 +725,36 @@
   .leaderboard-row:hover {
     transform: translateY(-1px);
     box-shadow: 0 6px 16px rgba(67, 56, 202, 0.1);
+  }
+
+  @keyframes orchardHeaderGlow {
+    0%, 100% {
+      box-shadow: 0 10px 26px rgba(20, 75, 122, 0.14);
+    }
+    50% {
+      box-shadow: 0 14px 34px rgba(20, 75, 122, 0.24);
+    }
+  }
+
+  @keyframes orchardIconFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+
+  @keyframes orchardBannerPulse {
+    0%, 100% { transform: translateY(0); opacity: 0.98; }
+    50% { transform: translateY(-1px); opacity: 1; }
+  }
+
+  @keyframes fruitAppear {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
 
   .leaderboard-row--self {
@@ -787,11 +867,12 @@
 
 {% block content %}
 <div class="orchard-header d-flex justify-content-between align-items-center">
-  <div>
+  <div class="orchard-header-content">
+    <img src="{{ url_for('static', filename='pictures/diicsu-logo-banner.png') }}" alt="DIICSU" class="orchard-brand-banner">
     <h1 class="mb-1"><i class="bi bi-tree-fill me-2"></i>My Academic Orchard</h1>
     <p class="mb-0 opacity-75">Plant seeds of knowledge, harvest fruits of success.</p>
   </div>
-  <div class="text-end">
+  <div class="text-end orchard-header-content">
     <div class="fs-4 fw-bold mb-2">
       <i class="bi bi-coin text-warning me-1"></i> <span id="coin-balance">{{ current_user.coins | default(0) }}</span> Coins
     </div>
