@@ -2,32 +2,61 @@
 {% block title %}{{ post.title }}{% endblock %}
 
 {% block content %}
+
+{# 👇 注入 DIICSU 安全样式 👇 #}
+<style>
+  :root {
+    --diicsu-blue-dark: #1F619F;
+    --diicsu-teal: #63C1B6;
+    --diicsu-blue-light: #E8F0F8;
+  }
+  .text-diicsu { color: var(--diicsu-blue-dark) !important; }
+  .bg-diicsu { background-color: var(--diicsu-blue-dark) !important; }
+  .btn-diicsu {
+    background-color: var(--diicsu-blue-dark);
+    color: white;
+    border: none;
+    transition: all 0.3s;
+  }
+  .btn-diicsu:hover {
+    background-color: #154675;
+    color: white;
+  }
+  .border-diicsu { border-color: var(--diicsu-blue-dark) !important; }
+  .bg-watermark {
+    background-image: url("{{ url_for('static', filename='images/diicsu-shield.png') }}");
+    background-repeat: no-repeat;
+    background-position: right top;
+    background-size: 200px;
+    background-blend-mode: overlay;
+    background-color: rgba(255,255,255,0.98); /* 水印极度淡化 */
+  }
+</style>
+
 <nav aria-label="breadcrumb" class="mb-3">
   <ol class="breadcrumb">
-    {# 👇 核心修复：如果有接力棒传过来，就原路返回个人主页筛选模式；否则回全论坛 #}
     <li class="breadcrumb-item">
       {% if request.args.get('ref_user') %}
-        <a href="{{ url_for('forum.index', user_id=request.args.get('ref_user')) }}">Profile Forum</a>
+        <a href="{{ url_for('forum.index', user_id=request.args.get('ref_user')) }}" class="text-diicsu fw-bold text-decoration-none">Profile Forum</a>
       {% else %}
-        <a href="{{ url_for('forum.index', board=post.board) }}">Forum</a>
+        <a href="{{ url_for('forum.index', board=post.board) }}" class="text-diicsu fw-bold text-decoration-none">Forum</a>
       {% endif %}
     </li>
     <li class="breadcrumb-item active text-truncate" style="max-width:300px">{{ post.title }}</li>
   </ol>
 </nav>
 
-<div class="card border-0 shadow-sm mb-4">
-  <div class="card-body p-4">
+<div class="card border-0 shadow-sm mb-4 bg-watermark">
+  <div class="card-body p-4 position-relative z-1">
     <div class="d-flex align-items-center gap-3 mb-3">
-      {# 👇 帖主头像加上跳转逻辑 👇 #}
-      <div class="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center transition-hover shadow-sm"
-           style="width:46px;height:46px; cursor: pointer;"
-           onclick="window.location.href='{{ url_for('forum.public_profile', user_id=post.author.id) }}';">
-        <span class="fw-bold text-danger fs-5">{{ post.author.username[0]|upper }}</span>
-      </div>
+{# 👇 直接在你的 index.html 里把原来的头像 div 替换成这段 👇 #}
+       <div class="rounded-circle bg-diicsu d-flex align-items-center justify-content-center flex-shrink-0 transition-hover shadow-sm" 
+            style="width:42px;height:42px; cursor: pointer; position: relative; z-index: 2;" 
+            onclick="event.preventDefault(); window.location.href='{{ url_for('forum.public_profile', user_id=post.author.id) }}';">
+          <span class="fw-bold text-white fs-5">{{ post.author.username[0]|upper }}</span>
+       </div>
       <div>
-        {# 👇 帖主名字加上跳转逻辑 👇 #}
-        <div class="fw-semibold transition-hover" 
+        <div class="fw-semibold transition-hover text-diicsu" 
              style="cursor: pointer;"
              onclick="window.location.href='{{ url_for('forum.public_profile', user_id=post.author.id) }}';">
           {{ post.author.username }}
@@ -52,8 +81,8 @@
       
     </div>
 
-    <h4 class="fw-bold text-break">{{ post.title }}</h4>
-    <p class="mb-0 text-break" style="white-space: pre-wrap;">{{ post.content }}</p>
+    <h4 class="fw-bold text-break text-dark">{{ post.title }}</h4>
+    <p class="mb-0 text-break" style="white-space: pre-wrap; color: #2c3e50;">{{ post.content }}</p>
     {% if post.image_url %}
     <div class="mt-4 text-center">
       <img src="{{ post.image_url }}" alt="Attachment" 
@@ -65,7 +94,7 @@
     {% if post.audio_url %}
     <div class="mt-4 bg-light p-3 rounded-3 border border-secondary border-opacity-25 shadow-sm">
       <div class="d-flex align-items-center mb-2">
-        <i class="bi bi-mic-fill text-info me-2 fs-5"></i>
+        <i class="bi bi-mic-fill text-diicsu me-2 fs-5"></i>
         <span class="fw-bold text-secondary small">Voice Note</span>
       </div>
       <audio controls class="w-100" style="height: 40px;">
@@ -76,7 +105,7 @@
     {% endif %}
     
   </div>
-<div class="card-footer bg-transparent text-muted small d-flex justify-content-between align-items-center">
+<div class="card-footer bg-transparent text-muted small d-flex justify-content-between align-items-center border-top">
     <div>
       <i class="bi bi-eye me-1"></i>{{ post.views }} views
       &nbsp;&bull;&nbsp;
@@ -111,7 +140,7 @@
   </div>
 </div>
 
-<h5 class="fw-bold mb-3"><i class="bi bi-chat-left-text me-2 text-danger"></i>
+<h5 class="fw-bold mb-3 text-diicsu"><i class="bi bi-chat-left-text me-2"></i>
   Comments ({{ post.comments|length }})
 </h5>
 
@@ -120,7 +149,6 @@
   {% for comment in post.comments %}
 <div class="list-group-item border-0 border-bottom py-3" id="comment-{{ comment.id }}">
     <div class="d-flex gap-3">
-      {# 👇 评论者头像加上跳转逻辑 👇 #}
       <div class="rounded-circle bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0 transition-hover"
            style="width:36px;height:36px; cursor: pointer;"
            onclick="window.location.href='{{ url_for('forum.public_profile', user_id=comment.author.id) }}';">
@@ -131,8 +159,7 @@
         <div class="d-flex justify-content-between align-items-center mb-2">
           
           <div class="d-flex align-items-center gap-2">
-            {# 👇 评论者名字加上跳转逻辑 👇 #}
-            <span class="fw-semibold small transition-hover" 
+            <span class="fw-semibold small transition-hover text-dark" 
                   style="cursor: pointer;"
                   onclick="window.location.href='{{ url_for('forum.public_profile', user_id=comment.author.id) }}';">
               {{ comment.author.username }}
@@ -166,10 +193,10 @@
         </div>
 
         {% if comment.parent %}
-        <div class="bg-light p-2 rounded small mb-2 text-muted border-start border-3 border-danger"
+        <div class="bg-light p-2 rounded small mb-2 text-muted border-start border-3 border-diicsu"
              style="cursor: pointer;" 
              onclick="scrollToComment('{{ comment.parent.id }}')">
-          Replying to <span class="text-decoration-none fw-semibold text-danger">@{{ comment.parent.author.username }}</span>:
+          Replying to <span class="text-decoration-none fw-semibold text-diicsu">@{{ comment.parent.author.username }}</span>:
           <span class="text-truncate d-inline-block align-bottom" style="max-width: 250px;">{{ comment.parent.content }}</span>
         </div>
         {% endif %}
@@ -183,9 +210,9 @@
 {% endif %}
 
 <div class="card border-0 shadow-sm mb-5" id="comment-form-container">
-  <div class="card-body p-4">
+  <div class="card-body p-4 bg-diicsu-light bg-opacity-25 rounded">
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h6 class="fw-bold mb-0" id="form-title"><i class="bi bi-reply me-1"></i>Leave a Comment</h6>
+      <h6 class="fw-bold mb-0 text-diicsu" id="form-title"><i class="bi bi-reply me-1"></i>Leave a Comment</h6>
       <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="cancel-reply-btn">Cancel Reply</button>
     </div>
     
@@ -193,12 +220,12 @@
       <input type="hidden" name="parent_id" id="parent_id_input" value="">
       
       <div class="input-group mb-3">
-        <span class="input-group-text bg-light text-secondary d-none" id="pseudo-at-prefix"></span>
-        <textarea class="form-control" name="content" id="comment_content" rows="3"
+        <span class="input-group-text bg-white text-diicsu fw-bold d-none border-end-0" id="pseudo-at-prefix"></span>
+        <textarea class="form-control border-start-0" name="content" id="comment_content" rows="3"
                   placeholder="Share your thoughts…" required></textarea>
       </div>
       
-      <button type="submit" class="btn btn-danger">
+      <button type="submit" class="btn btn-diicsu">
         <i class="bi bi-send me-1"></i>Post Comment
       </button>
     </form>
@@ -206,50 +233,23 @@
 </div>
 
 <script>
-// 平滑滚动并高亮原评论的函数
 function scrollToComment(commentId) {
     const targetComment = document.getElementById('comment-' + commentId);
-    
     if (targetComment) {
         targetComment.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        
-        // 1. 设置动画过渡时间
         targetComment.style.transition = "background-color 1s ease";
-        
-        // 2. 瞬间变成浅黄色高亮
-        targetComment.style.backgroundColor = "#fff3cd"; 
-        
-        // 3. 延迟后，强制褪色为纯白色 (而不是 transparent)
-        setTimeout(() => {
-            targetComment.style.backgroundColor = "#ffffff"; 
-        }, 1500);
-        
-        // 4. 👇 核心修复：清理浏览器地址栏的 hash，彻底干掉原生的灰色 :target 状态！
-        if(window.location.hash) {
-            history.replaceState(null, null, ' ');
-        }
+        targetComment.style.backgroundColor = "#E8F0F8"; /* 替换为 DIICSU 浅蓝 */
+        setTimeout(() => { targetComment.style.backgroundColor = "#ffffff"; }, 1500);
+        if(window.location.hash) history.replaceState(null, null, ' ');
     }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    
-    // ==========================================
-    // 👇 新增：自动检测 URL 锚点并高亮穿梭 👇
-    // ==========================================
-    // 检查 URL 是否包含类似 #comment-123 的锚点
     if (window.location.hash && window.location.hash.startsWith('#comment-')) {
-        // 提取 ID (例如: "comment-123" -> "123")
         const commentIdFromHash = window.location.hash.split('-')[1];
-        
-        // 稍微延迟一下执行，确保页面完全渲染，避免滚动位置偏差
-        setTimeout(() => {
-            scrollToComment(commentIdFromHash);
-        }, 100); // 300毫秒是一个理想的“加载感”延迟
+        setTimeout(() => { scrollToComment(commentIdFromHash); }, 100);
     }
-    // ==========================================
 
-
-    // 👇 下面是你原有的楼中楼回复逻辑，保持不变 👇
     const replyButtons = document.querySelectorAll('.reply-btn');
     const parentIdInput = document.getElementById('parent_id_input');
     const contentTextarea = document.getElementById('comment_content');
@@ -263,13 +263,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const username = this.dataset.username;
 
             parentIdInput.value = commentId;
-            formTitle.innerHTML = `<i class="bi bi-reply-all me-1 text-danger"></i>Replying to <span class="text-danger">@${username}</span>`;
+            formTitle.innerHTML = `<i class="bi bi-reply-all me-1 text-diicsu"></i>Replying to <span class="text-diicsu">@${username}</span>`;
             cancelReplyBtn.classList.remove('d-none');
             
             pseudoPrefix.textContent = '@' + username;
             pseudoPrefix.classList.remove('d-none');
-            contentTextarea.value = ''; 
             
+            // 样式调整：确保textarea左边框消失，让前缀和输入框融为一体
+            contentTextarea.classList.add('border-start-0');
+            pseudoPrefix.classList.add('border-end-0');
+            
+            contentTextarea.value = ''; 
             contentTextarea.focus();
             document.getElementById('comment-form-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
         });
@@ -283,6 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         pseudoPrefix.classList.add('d-none');
         pseudoPrefix.textContent = '';
+        contentTextarea.classList.remove('border-start-0');
     });
 });
 </script>
