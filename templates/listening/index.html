@@ -379,10 +379,9 @@
             startExercise(exerciseId, 'resume');
           });
 
-          // Reset 鎸夐挳锛氱伆鑹茶竟妗?+ 鎮诞濉厖
           const restartBtn = document.createElement('button');
           restartBtn.className = 'btn btn-sm btn-reset';
-          restartBtn.textContent = '鈫?Reset';
+          restartBtn.textContent = 'Reset';
           restartBtn.addEventListener('click', function (e) {
             e.stopPropagation();
             startExercise(exerciseId, 'reset');
@@ -391,7 +390,6 @@
           btnContainer.appendChild(resumeBtn);
           btnContainer.appendChild(restartBtn);
         } else {
-          // Start Practise 鎸夐挳锛氫繚鐣欒眴娌欑传鑳屾櫙锛屾偓娴姞娣?
           const startBtn = document.createElement('button');
           startBtn.className = 'btn btn-sm w-100 btn-start';
           startBtn.textContent = 'Start Practise';
