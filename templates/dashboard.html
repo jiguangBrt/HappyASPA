@@ -5,6 +5,13 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Spectral:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600&display=swap');
 
+  :root {
+    --diicsu-blue-dark: #1F619F;
+    --diicsu-blue-deep: #154675;
+    --diicsu-teal: #63C1B6;
+    --diicsu-blue-light: #E8F0F8;
+  }
+
   .badge-guide-expert {
     background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%);
     color: #fff;
@@ -20,6 +27,85 @@
     border: 1px solid rgba(255, 255, 255, 0.4);
   }
 
+  .dashboard-hero {
+    position: relative;
+    overflow: hidden;
+    background:
+      linear-gradient(130deg, rgba(21, 70, 117, 0.98) 0%, rgba(31, 97, 159, 0.95) 48%, rgba(41, 117, 157, 0.92) 100%);
+    border: 1px solid rgba(232, 240, 248, 0.35);
+    padding: 1.75rem;
+  }
+
+  .dashboard-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("/static/pictures/diicsu-shield.png");
+    background-repeat: no-repeat;
+    background-size: clamp(260px, 34vw, 430px) auto;
+    background-position: right -30px center;
+    opacity: 0.14;
+    pointer-events: none;
+  }
+
+  .dashboard-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 28% 12%, rgba(99, 193, 182, 0.24), transparent 48%);
+    pointer-events: none;
+  }
+
+  .dashboard-hero-main {
+    max-width: 720px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .dashboard-hero-title {
+    font-family: 'Spectral', serif;
+    letter-spacing: .01em;
+    margin-bottom: 0.35rem;
+  }
+
+  .dashboard-hero-subtitle {
+    max-width: 560px;
+    color: rgba(255, 255, 255, 0.84);
+  }
+
+  .dashboard-hero-mascot {
+    position: absolute;
+    right: 126px;
+    top: 12px;
+    height: clamp(130px, 15vw, 185px);
+    width: auto;
+    max-width: 42%;
+    pointer-events: none;
+    user-select: none;
+    z-index: 1;
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.24));
+  }
+
+  .dashboard-hero-checkin {
+    position: relative;
+    z-index: 2;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(5px);
+    min-width: 165px;
+    margin-top: 58px;
+  }
+
+  .btn-diicsu-soft {
+    background-color: rgba(255, 255, 255, 0.16);
+    color: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+  }
+
+  .btn-diicsu-soft:hover {
+    background-color: rgba(232, 240, 248, 0.28);
+    color: #FFFFFF;
+  }
+
   .card-hover {
     transition: transform .15s ease, box-shadow .15s ease;
     cursor: pointer;
@@ -27,18 +113,73 @@
 
   .card-hover:hover {
     transform: translateY(-3px);
-    box-shadow: 0 10px 28px rgba(5, 10, 20, 0.32) !important;
+    box-shadow: 0 14px 30px rgba(20, 58, 96, 0.2) !important;
   }
 
   .overall-guidance-right {
+    width: 100%;
     max-width: 520px;
   }
 
   .overall-guidance-panel {
-    background-image: url("/static/pictures/dashboard-background.png");
-    background-size: cover;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #F4F8FC 0%, #E8F0F8 44%, #E3F3F0 100%);
+    border: 1px solid rgba(31, 97, 159, 0.26);
+  }
+
+  .overall-guidance-panel::before {
+    content: "";
+    position: absolute;
+    left: -60px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 340px;
+    height: 340px;
+    background-image: url("/static/pictures/diicsu-shield.png");
+    background-repeat: no-repeat;
     background-position: center;
-    border: 1px solid #1E3558;
+    background-size: contain;
+    opacity: 0.09;
+    pointer-events: none;
+  }
+
+  .overall-guidance-panel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 35%, rgba(99, 193, 182, 0.2), transparent 56%);
+    pointer-events: none;
+  }
+
+  .overall-guidance-intro {
+    position: relative;
+    z-index: 1;
+    max-width: 560px;
+  }
+
+  .overall-guidance-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    background: rgba(31, 97, 159, 0.13);
+    border: 1px solid rgba(31, 97, 159, 0.2);
+    color: var(--diicsu-blue-deep);
+    font-size: .78rem;
+    padding: .24rem .7rem;
+    margin-bottom: 0.65rem;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .overall-guidance-tag {
+    background-color: #FFFFFF;
+    border: 1px solid rgba(31, 97, 159, 0.2);
+    border-radius: 999px;
+    color: var(--diicsu-blue-deep);
+    font-size: .76rem;
+    font-weight: 600;
+    padding: .22rem .68rem;
   }
 
   .overall-guidance-list {
@@ -48,6 +189,8 @@
     max-height: 360px;
     overflow-y: auto;
     padding-right: 6px;
+    position: relative;
+    z-index: 1;
   }
 
   .overall-guidance-list::-webkit-scrollbar {
@@ -55,7 +198,7 @@
   }
 
   .overall-guidance-list::-webkit-scrollbar-thumb {
-    background: rgba(18, 53, 107, 0.45);
+    background: rgba(31, 97, 159, 0.35);
     border-radius: 999px;
   }
 
@@ -63,8 +206,67 @@
     flex: 0 0 auto;
   }
 
+  .overall-guidance-mini-card .card {
+    border: 1px solid rgba(31, 97, 159, 0.12);
+  }
+
   .guidance-icon-teams.bg-primary {
     background: rgba(13, 110, 253, 0.12) !important;
+  }
+
+  @media (max-width: 991.98px) {
+    .dashboard-hero {
+      padding: 1.5rem;
+    }
+
+    .dashboard-hero-mascot {
+      position: static;
+      display: block;
+      height: 150px;
+      max-width: none;
+      margin-left: auto;
+      margin-top: 0.25rem;
+    }
+
+    .dashboard-hero-main,
+    .overall-guidance-right {
+      max-width: none;
+    }
+
+    .dashboard-hero-checkin {
+      width: 100%;
+      max-width: 320px;
+      margin-top: 0;
+    }
+
+    .overall-guidance-panel::before {
+      left: auto;
+      right: -66px;
+      top: 22%;
+      width: 250px;
+      height: 250px;
+      transform: none;
+      opacity: 0.08;
+    }
+
+    .overall-guidance-list {
+      max-height: none;
+      padding-right: 0;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .dashboard-hero {
+      padding: 1.2rem;
+    }
+
+    .dashboard-hero-title {
+      font-size: 1.55rem;
+    }
+
+    .dashboard-hero-mascot {
+      height: 128px;
+    }
   }
 
   .journey-shell {
@@ -343,13 +545,23 @@
 
 
 
-<div
-  class="p-4 mb-4 bg-primary text-white rounded-3 shadow-sm d-flex flex-wrap justify-content-between align-items-center gap-3">
-  <div class="d-flex align-items-center gap-3">
-    <i class="bi bi-mortarboard-fill" style="font-size: 2.5rem;"></i>
-    <div>
-      <h2 class="fw-bold mb-0 d-flex align-items-center gap-2 flex-wrap">
-        Hello, {{ current_user.username }}! 👋
+<div class="dashboard-hero mb-4 rounded-4 shadow-sm text-white">
+  <img
+    src="{{ url_for('static', filename='pictures/diicsu-mascot-hero.png') }}"
+    onerror="this.src='{{ url_for('static', filename='pictures/diicsu-mascot.png') }}';"
+    alt="DIICSU mascot"
+    class="dashboard-hero-mascot"
+    loading="lazy"
+    decoding="async">
+
+  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 gap-lg-4 position-relative">
+    <div class="dashboard-hero-main">
+      <div class="small text-white-50 mb-2 d-inline-flex align-items-center gap-2">
+        <i class="bi bi-stars"></i>
+        <span>DIICSU forum-inspired dashboard</span>
+      </div>
+      <h2 class="dashboard-hero-title fw-bold d-flex align-items-center gap-2 flex-wrap">
+        Hello, {{ current_user.username }}!
 
         {% if current_user.is_guide_qualified %}
         <span class="badge-guide-expert" title="Guide Forum Qualified">
@@ -357,30 +569,51 @@
         </span>
         {% endif %}
       </h2>
-      <p class="mb-0 opacity-75">Keep up the great work on your academic English journey.</p>
-    </div>
-  </div>
+      <p class="dashboard-hero-subtitle mb-3 mb-lg-2">Keep up the great work on your academic English journey with clear weekly actions.</p>
 
-  <div class="bg-white bg-opacity-10 p-3 rounded-4 text-center border border-light border-opacity-25"
-    style="min-width: 140px;">
-    <div class="mb-2 d-flex align-items-center justify-content-center gap-1">
-      <i class="bi bi-coin text-warning fs-5"></i>
-      <span class="fw-bold fs-4" id="userCoinsDisplay">{{ current_user.coins or 0 }}</span>
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('forum.index') }}" class="btn btn-sm btn-diicsu-soft rounded-pill px-3">
+          <i class="bi bi-chat-dots-fill me-1"></i> Go to Forum
+        </a>
+        <a href="#overallGuidance" class="btn btn-sm btn-outline-light rounded-pill px-3">
+          <i class="bi bi-compass me-1"></i> View Guidance
+        </a>
+      </div>
     </div>
-    <button id="checkinBtn" class="btn btn-sm btn-light fw-bold text-primary w-100 rounded-pill shadow-sm">
-      <i class="bi bi-calendar-check-fill me-1"></i> Daily attendance
-    </button>
+
+    <div class="dashboard-hero-checkin p-3 rounded-4 text-center border border-light border-opacity-25">
+      <div class="mb-2 d-flex align-items-center justify-content-center gap-1">
+        <i class="bi bi-coin text-warning fs-5"></i>
+        <span class="fw-bold fs-4" id="userCoinsDisplay">{{ current_user.coins or 0 }}</span>
+      </div>
+      <button id="checkinBtn" class="btn btn-sm btn-light fw-bold text-primary w-100 rounded-pill shadow-sm">
+        <i class="bi bi-calendar-check-fill me-1"></i> Daily attendance
+      </button>
+    </div>
   </div>
 </div>
 
-<!-- Overall Guidance -->
-<h5 class="fw-bold mb-3"><i class="bi bi-compass-fill text-primary me-2"></i>Overall Guidance</h5>
+<h5 id="overallGuidance" class="fw-bold mb-3"><i class="bi bi-compass-fill text-primary me-2"></i>Overall Guidance</h5>
 <div class="overall-guidance-shell mb-4">
-  <div class="overall-guidance-panel border rounded-4 shadow-sm">
+  <div class="overall-guidance-panel rounded-4 shadow-sm">
     <div class="p-3 p-lg-4">
-      <div class="d-flex flex-column flex-lg-row gap-4 align-items-stretch">
-        <div class="flex-grow-1 d-none d-lg-block">
-          <!-- Left area intentionally left blank (you can place your background content/materials here later). -->
+      <div class="d-flex flex-column flex-lg-row gap-4 align-items-start">
+        <div class="overall-guidance-intro">
+          <img src="{{ url_for('static', filename='pictures/diicsu-logo-banner.png') }}"
+            alt="DIICSU logo"
+            style="height: 36px;"
+            class="mb-2">
+          <div class="overall-guidance-kicker">
+            <i class="bi bi-palette-fill"></i>
+            Forum-aligned visual language
+          </div>
+          <h3 class="h5 fw-bold mb-2">DIICSU Starter Compass</h3>
+          <p class="text-muted mb-3">Start from the same tone as the forum: focused blue base, soft academy atmosphere, and practical weekly checkpoints.</p>
+          <div class="d-flex flex-wrap gap-2">
+            <span class="overall-guidance-tag">Action-first layout</span>
+            <span class="overall-guidance-tag">Readable contrast</span>
+            <span class="overall-guidance-tag">Mobile-safe spacing</span>
+          </div>
         </div>
 
         <div class="overall-guidance-right ms-lg-auto">
