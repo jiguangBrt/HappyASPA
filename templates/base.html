@@ -14,13 +14,13 @@
         rel="stylesheet">
 
   {% block head %}{% endblock %}
-  <style>
+<style>
   html { scrollbar-gutter: stable; }
   :root {
-    --app-primary: #12356B;
-    --app-primary-dark: #0F2D5A;
-    --app-primary-soft: #1B447E;
-    --app-bg-deep: #0E1F3B;
+    --app-primary: #1F619F;
+    --app-primary-dark: #154675;
+    --app-primary-soft: #2A78B8;
+    --app-bg-deep: #123E67;
     --app-bg-muted: #F2F5FA;
     --app-bg-panel: #FFFFFF;
     --app-bg-light: #E6EBF3;
@@ -30,7 +30,7 @@
     --app-border: #D6DEE9;
     --app-shadow: 0 6px 18px rgba(16, 24, 40, 0.08);
     --app-shadow-lift: 0 12px 28px rgba(16, 24, 40, 0.12);
-    --app-focus: 0 0 0 0.2rem rgba(27, 68, 126, 0.35);
+    --app-focus: 0 0 0 0.2rem rgba(31, 97, 159, 0.35);
     --app-overlay: rgba(10, 20, 40, 0.65);
 
     --tag-cs: #2B2F36;
@@ -39,6 +39,7 @@
     --tag-math: #4B2C7A;
     --tag-mech: #7A3E28;
     --tag-traffic: #7A222F;
+    --app-nav-font: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   }
 
   body {
@@ -46,8 +47,8 @@
     color: var(--app-text);
   }
 
-  a { color: #1B4A8E; }
-  a:hover { color: #2A5BA6; }
+  a { color: #1F619F; }
+  a:hover { color: #2A78B8; }
 
   .text-muted { color: var(--app-text-muted) !important; }
   .text-secondary { color: var(--app-text-secondary) !important; }
@@ -80,10 +81,10 @@
 
   .btn-outline-primary {
     color: var(--app-primary) !important;
-    border-color: #2A4B79 !important;
+    border-color: #1F619F !important;
   }
   .btn-outline-primary:hover {
-    background-color: rgba(18, 53, 107, 0.12) !important;
+    background-color: rgba(31, 97, 159, 0.12) !important;
     color: var(--app-primary) !important;
   }
 
@@ -96,7 +97,7 @@
     color: var(--app-text) !important;
   }
 
-  .text-primary { color: #1B4A8E !important; }
+  .text-primary { color: #1F619F !important; }
 
   .card {
     background-color: #FFFFFF;
@@ -110,13 +111,61 @@
   .dropdown-menu {
     border-color: var(--app-border);
   }
+  .navbar {
+    padding: 0.66rem 0;
+    background: var(--app-primary) !important;
+  }
+  .navbar .container {
+    align-items: center;
+  }
+  .navbar-brand {
+    font-family: var(--app-nav-font);
+    font-size: 1.72rem;
+    letter-spacing: 0.01em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.32rem;
+  }
+  .navbar .nav-link {
+    font-family: var(--app-nav-font);
+    font-size: 1.02rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.88) !important;
+    border-radius: 10px;
+    padding: 0.42rem 0.7rem !important;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  .navbar .nav-link:hover {
+    color: #FFFFFF !important;
+    background: rgba(255, 255, 255, 0.11);
+  }
+  .navbar .nav-link.active {
+    color: #FFFFFF !important;
+    background: rgba(255, 255, 255, 0.17);
+  }
+  .navbar .dropdown-toggle::after {
+    margin-left: 0.4rem;
+  }
+  .navbar .dropdown-item {
+    font-family: var(--app-nav-font);
+    font-size: 0.98rem;
+  }
   .dropdown-menu {
     background: #FFFFFF;
+  }
+  @media (max-width: 991.98px) {
+    .navbar-brand {
+      font-size: 1.55rem;
+    }
+    .navbar .nav-link {
+      font-size: 1rem;
+      padding: 0.52rem 0.75rem !important;
+    }
   }
   .dropdown-item { color: var(--app-text); }
   .dropdown-item:hover,
   .dropdown-item:focus {
-    background: rgba(18, 53, 107, 0.08);
+    background: rgba(31, 97, 159, 0.08);
     color: var(--app-text);
   }
 
@@ -146,7 +195,7 @@
   textarea.form-control::placeholder { color: var(--app-text-muted); }
   .form-control:focus,
   .form-select:focus,
-  textarea.form-control:focus { box-shadow: var(--app-focus); border-color: #2A4B79; }
+  textarea.form-control:focus { box-shadow: var(--app-focus); border-color: #1F619F; }
 
   .table { color: var(--app-text); }
   .table-light {
@@ -177,9 +226,9 @@
   .text-success { color: #198754 !important; }
 
   .tag {
-    background: rgba(18, 53, 107, 0.08);
+    background: rgba(31, 97, 159, 0.08);
     color: var(--app-text);
-    border: 1px solid rgba(18, 53, 107, 0.16);
+    border: 1px solid rgba(31, 97, 159, 0.16);
     border-radius: 999px;
     padding: 4px 10px;
     font-size: 12px;
