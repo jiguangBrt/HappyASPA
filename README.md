@@ -1,6 +1,6 @@
 # 🌟 HappyASPA
 
-> **Live Demo:** [http://47.242.86.75](http://47.242.86.75)  
+> **Live Demo:** [https://dii.csuu.asia/](https://dii.csuu.asia/)  
 > Scan the QR code below to access the application on your mobile device!
 > 
 > <img src="./static/qrcode.png" width="150" height="150" alt="Website QR Code">
