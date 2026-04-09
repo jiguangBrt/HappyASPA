@@ -132,11 +132,11 @@
     <div class="col-12 col-md-4">
       <select name="difficulty" class="form-select">
         <option value="">All Difficulty</option>
-        <option value="1" {% if current_difficulty==1 %}selected{% endif %}>★ 1</option>
-        <option value="2" {% if current_difficulty==2 %}selected{% endif %}>★★ 2</option>
-        <option value="3" {% if current_difficulty==3 %}selected{% endif %}>★★★ 3</option>
-        <option value="4" {% if current_difficulty==4 %}selected{% endif %}>★★★★ 4</option>
-        <option value="5" {% if current_difficulty==5 %}selected{% endif %}>★★★★★ 5</option>
+        <option value="1" {% if current_difficulty==1 %}selected{% endif %}>⭐ 1</option>
+        <option value="2" {% if current_difficulty==2 %}selected{% endif %}>⭐⭐ 2</option>
+        <option value="3" {% if current_difficulty==3 %}selected{% endif %}>⭐⭐⭐ 3</option>
+        <option value="4" {% if current_difficulty==4 %}selected{% endif %}>⭐⭐⭐⭐ 4</option>
+        <option value="5" {% if current_difficulty==5 %}selected{% endif %}>⭐⭐⭐⭐⭐ 5</option>
       </select>
     </div>
     <div class="col-12 col-md-4">
@@ -221,7 +221,7 @@
         {% endif %}
 
         <div class="card-footer bg-transparent border-top-0 pt-0 pb-3 px-3 mt-2">
-          <!-- Overview 鎸夐挳锛氱伆鑹茶竟妗?+ 鎮诞濉厖 -->
+          <!-- Overview button: gray outline style with gray fill on hover -->
           <button class="btn btn-sm w-100 btn-overview"
             data-bs-toggle="collapse" data-bs-target="#transcript-{{ ex.id }}">
             <i class="bi bi-file-text me-1"></i>Overview
@@ -368,9 +368,8 @@
 
         if (hasProgress) {
           const displaySeconds = prog.lastTime > 0 ? prog.lastTime : 1;
-          const resumeText = `鈴?Continue from last progress ${formatTime(displaySeconds)}`;
+          const resumeText = `Continue from last progress ${formatTime(displaySeconds)}`;
 
-          // Continue 鎸夐挳锛氫繚鐣欓浘闇捐摑鑳屾櫙锛屾偓娴姞娣?
           const resumeBtn = document.createElement('button');
           resumeBtn.className = 'btn btn-sm flex-grow-1 btn-continue';
           resumeBtn.textContent = resumeText;
@@ -531,8 +530,8 @@
     gap: 8px;
   }
 
-  /* ---------- 鎸夐挳鏍峰紡锛氫繚鐣欏師鑹诧紝鎮诞濉厖 ---------- */
-  /* Overview 鎸夐挳锛氱伆鑹茶竟妗?鐏拌壊鏂囧瓧锛屾偓娴～鍏呯伆鑹?鐧藉瓧 */
+  /* ---------- Button styles: preserve tone and strengthen hover feedback ---------- */
+  /* Overview button: gray outline and text, turns solid gray on hover */
   .btn-overview {
     border: 1px solid #8A92A6;
     color: #6B7280;
@@ -545,7 +544,7 @@
     color: #fff;
   }
 
-  /* Start 鎸夐挳锛氳眴娌欑传鑳屾櫙+鐧藉瓧锛屾偓娴姞娣?*/
+  /* Start button: muted plum background with a darker hover state */
   .btn-start {
     background-color: #6b5f78;
     color: #fff;
@@ -558,7 +557,7 @@
     color: #fff;
   }
 
-  /* Continue 鎸夐挳锛氶浘闇捐摑鑳屾櫙+鐧藉瓧锛屾偓娴姞娣?*/
+  /* Continue button: steel-blue background with a darker hover state */
   .btn-continue {
     background-color: #3a5a78;
     color: #fff;
@@ -571,7 +570,7 @@
     color: #fff;
   }
 
-  /* Reset 鎸夐挳锛氱伆鑹茶竟妗?鐏拌壊鏂囧瓧锛屾偓娴～鍏呯伆鑹?鐧藉瓧 */
+  /* Reset button: gray outline and text, turns solid gray on hover */
   .btn-reset {
     border: 1px solid #8A92A6;
     color: #6B7280;
