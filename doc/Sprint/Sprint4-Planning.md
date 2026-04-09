@@ -1,0 +1,31 @@
+# Sprint cycle: 2026/4/6 - 2026/4/12
+
+**Team PO**: Ge Hang
+
+**Team SM**: Xingzhuo Bao
+
+**Developers**: Qiyin Huang, Jing Lu, Xingzhuo Bao, Hang Ge, Jiachi Zhu, Sihan Wang, Yihan Wang, Yukun Wang
+
+**Working Hours**: Sun–Fri, 10:00 AM – 2:00 AM (Saturdays off)
+
+## Background: Infrastructure Stabilization & UX Polish
+Following the successful implementation of the core gamification system and learning modules in the previous sprint, the team is now shifting focus toward system stability, deployment automation, and overall User Interface (UI) refinement. Additionally, specific community features are being added to the forum to meet target audience requirements.
+
+## Sprint Goal: 
+This week, we will focus on two main pillars:
+
+1.**Infrastructure & Quality Assurance (QA)**: Fortify system stability by implementing End-to-End Continuous Integration (E2E CI), establishing automated deployment (CD) pipelines, and executing comprehensive cross-module testing.
+
+2.**UI/UX Refinement & Community Building**: Elevate the visual and functional experience across the Vocabulary, Speaking, Listening, and Profile modules to ensure a consistent, professional interface. Additionally, we will deploy an invitation code system and specific "DIICSU" branding to foster an exclusive and secure forum environment.
+
+## Selected User Story & Task Plan
+| Module | User Story | Task Description | Person in charge |
+|:---|:---|:---|:---|
+| Listening | As a learner, I want a distraction-free and highly responsive layout in the Listening section so that I can seamlessly navigate audio exercises and focus on my practice. | Listening UI Refinement | Qiyin Huang |
+| Orchard & Profile| As a learner, I need a modern, intuitive, engaging interface for the Orchard module and my personal profile to effectively track and manage my learning milestones. | Orchard & Profile UI Optimization | Xingzhuo Bao |
+| Forum | As a community admin, I want to implement "DIICSU" branding and an invitation-only gateway so that we can curate a secure, highly engaged user base. | Forum DIICSU customization & Invitation Code | Jiachi Zhu |
+| Vocabulary | As a learner, I want an engaging and visually appealing vocabulary interface so that I stay motivated during repetitive study sessions. | Vocabulary UI Refinement | Yukun Wang |
+| QA / Testing | As a developer, I need an automated deployment pipeline so that new features and hotfixes can be shipped to production reliably and efficiently. | Comprehensive System Testing | Jing Lu |
+| DevOps / CD | As a developer, I need an automated deployment pipeline so that new features and hotfixes can be shipped to production reliably and efficiently. | Automated Deployment Setup | Yihan Wang |
+| Speaking & Infrastructure | As a developer, I need a robust and optimally configured server environment so that the platform maintains high availability and zero-downtime access for all users. And As a learner, I need a appealing and interesting speaking interface  | Server Configuration & Speaking UI Optimization  | Hang Ge |
+| DevOps / CI | As a developer, I need End-to-End Continuous Integration (CI) workflows so that code stability and quality are automatically verified prior to merging. | E2E CI Implementation | Sihan Wang |

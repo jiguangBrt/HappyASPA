@@ -8,9 +8,16 @@
 
 **Working Hours**: Sun–Sat, 10:00 AM – 2:00 AM
 
-## Sprint Goal:
+## Background: Scope Change from Sprint 2
 
+At the end of Sprint 2, the client reviewed the current product and requested a more engaging and entertaining user experience. Based on this feedback, the team made two decisions:
+
+1. **Introduce a Gamified Farm system**: Users earn gold coins by completing learning activities (Listening, Speaking, Vocabulary) and spend them on a virtual academic farm. This was not part of the original backlog but was added in direct response to the client's request.
+2. **Drop the AI bot feature**: The standalone AI assistant planned in Sprint 2 was deprioritized in favour of the gamification direction, which better addressed the client's stated need for motivation and fun.
+
+## Sprint Goal:
 This week we'll focus on expanding the functionality of each section, connecting the parts to the coin system, and developing interesting games to make the site more fun.
+Connect all learning modules to a unified gold coin reward system and launch the gamified farm ecosystem to increase user engagement, in direct response to client feedback received at the Sprint 2 review.
 
 ## Selected User Story & Task Plan
 

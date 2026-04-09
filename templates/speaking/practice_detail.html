@@ -180,10 +180,14 @@
     // ==========================================
     // 2. 录音及服务器交互逻辑
     // ==========================================
-    let mediaRecorder;       
-    let audioChunks = [];    
-    let isRecording = false; 
-    let audioStream;         
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+    let audioStream;
+    let recordingMimeType = 'audio/webm';
+    let recordingExtension = 'webm';
+
+    const LOCALHOST_NAMES = new Set(['localhost', '127.0.0.1', '::1']);
 
     // 获取 DOM 元素
     const recordBtn = document.getElementById('record-btn');
@@ -192,6 +196,54 @@
     const historySection = document.getElementById('history-section');
     const historyList = document.getElementById('history-list');
     const attemptCounter = document.getElementById('attempt-counter');
+
+    function isSecureRecordingContext() {
+        return window.isSecureContext || LOCALHOST_NAMES.has(window.location.hostname);
+    }
+
+    function getExtensionForMimeType(mimeType, fallback = 'webm') {
+        const normalizedType = (mimeType || '').toLowerCase();
+        if (normalizedType.includes('mp4') || normalizedType.includes('aac')) return 'm4a';
+        if (normalizedType.includes('ogg')) return 'ogg';
+        if (normalizedType.includes('mpeg') || normalizedType.includes('mp3')) return 'mp3';
+        if (normalizedType.includes('wav')) return 'wav';
+        return fallback;
+    }
+
+    function getPreferredAudioConfig() {
+        if (typeof MediaRecorder === 'undefined') {
+            return { mimeType: '', extension: 'webm' };
+        }
+
+        const candidates = [
+            { mimeType: 'audio/webm;codecs=opus', extension: 'webm' },
+            { mimeType: 'audio/webm', extension: 'webm' },
+            { mimeType: 'audio/mp4', extension: 'm4a' },
+            { mimeType: 'audio/ogg;codecs=opus', extension: 'ogg' },
+        ];
+
+        if (typeof MediaRecorder.isTypeSupported !== 'function') {
+            return candidates[0];
+        }
+
+        return candidates.find(candidate => MediaRecorder.isTypeSupported(candidate.mimeType)) || { mimeType: '', extension: 'webm' };
+    }
+
+    function buildMicrophoneErrorMessage(error) {
+        if (!isSecureRecordingContext()) {
+            return 'Microphone recording requires HTTPS (or localhost during development). Once the site is opened with https://, the browser will allow the microphone prompt.';
+        }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+            return 'This browser does not support in-page audio recording. Please use a recent Chrome, Edge, or Safari browser over HTTPS.';
+        }
+        if (error?.name === 'NotAllowedError') {
+            return 'Microphone access was blocked. Please allow microphone permission in your browser settings and try again.';
+        }
+        if (error?.name === 'NotFoundError') {
+            return 'No microphone was detected. Please connect one and try again.';
+        }
+        return `Cannot access microphone${error?.message ? `: ${error.message}` : '.'}`;
+    }
 
     window.addEventListener('pageshow', function (event) {
         const navigationEntries = performance.getEntriesByType('navigation');
@@ -252,11 +304,32 @@
     }
 
     async function startRecording() {
-        player.pause(); // 录音时暂停原声播放
+        player.pause();
+
+        if (!isSecureRecordingContext()) {
+            alert(buildMicrophoneErrorMessage());
+            return;
+        }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+            alert(buildMicrophoneErrorMessage());
+            return;
+        }
 
         try {
-            audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(audioStream);
+            const audioConfig = getPreferredAudioConfig();
+            audioStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                }
+            });
+            mediaRecorder = audioConfig.mimeType
+                ? new MediaRecorder(audioStream, { mimeType: audioConfig.mimeType })
+                : new MediaRecorder(audioStream);
+            recordingMimeType = mediaRecorder.mimeType || audioConfig.mimeType || 'audio/webm';
+            recordingExtension = getExtensionForMimeType(recordingMimeType, audioConfig.extension || 'webm');
             audioChunks = [];
 
             mediaRecorder.ondataavailable = event => {
@@ -265,30 +338,25 @@
                 }
             };
 
-            // 🌟 核心：停止录音时，发送给服务器保存
             mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); 
-                
-                // 准备上传表单
-                const formData = new FormData();
-                formData.append('audio', audioBlob, 'recording.webm');
+                const audioBlob = new Blob(audioChunks, { type: recordingMimeType });
 
-                // 更新 UI 为“保存中”状态
+                const formData = new FormData();
+                formData.append('audio', audioBlob, `recording.${recordingExtension}`);
+
                 recordText.textContent = "Uploading...";
                 recordBtn.classList.replace('btn-dark', 'btn-secondary');
                 recordBtn.classList.remove('animate__animated', 'animate__pulse', 'animate__infinite');
 
                 try {
-                    // 发送 POST 请求到后端的 upload_shadowing_record 路由
                     const response = await fetch("{{ url_for('speaking.upload_shadowing_record', practice_id=practice.id) }}", {
                         method: 'POST',
                         body: formData
                     });
-                    
+
                     const result = await response.json();
 
                     if (result.success) {
-                        // 上传成功，显示历史区域，并更新计数器
                         historySection.classList.remove('d-none');
                         const newCount = historyList.querySelectorAll('.shadowing-history-card').length + 1;
                         attemptCounter.textContent = newCount;
@@ -315,33 +383,35 @@
                     console.error("上传错误:", error);
                     alert("网络错误，录音保存失败！");
                 } finally {
-                    // 恢复按钮的原始状态
                     recordBtn.classList.remove('btn-secondary');
                     recordBtn.classList.add('btn-danger');
                     recordIcon.classList.replace('bi-stop-fill', 'bi-mic-fill');
                     recordText.textContent = "Record Your Voice";
+                    recordingMimeType = 'audio/webm';
+                    recordingExtension = 'webm';
                 }
             };
 
             mediaRecorder.start();
             isRecording = true;
 
-            // 更新 UI: 变成停止按钮并添加跳动动画
-            recordBtn.classList.replace('btn-danger', 'btn-dark'); 
+            recordBtn.classList.replace('btn-danger', 'btn-dark');
             recordBtn.classList.add('animate__animated', 'animate__pulse', 'animate__infinite');
             recordIcon.classList.replace('bi-mic-fill', 'bi-stop-fill');
             recordText.textContent = "Stop Recording";
 
         } catch (err) {
             console.error("无法访问麦克风:", err);
-            alert("无法访问麦克风，请确保您已在浏览器中授予权限！");
+            alert(buildMicrophoneErrorMessage(err));
         }
     }
 
     function stopRecording() {
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
             mediaRecorder.stop();
-            audioStream.getTracks().forEach(track => track.stop()); // 关闭麦克风，消除红点
+            if (audioStream) {
+                audioStream.getTracks().forEach(track => track.stop());
+            }
             isRecording = false;
         }
     }

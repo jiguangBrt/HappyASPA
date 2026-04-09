@@ -1,9 +1,12 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, jsonify, request
 from flask_login import login_required, current_user
-from sqlalchemy import func  # <--- 新增：用于统计点赞数
+from sqlalchemy import func, case  # <--- 新增：用于统计点赞数
 from datetime import datetime
 from time_utils import utcnow_naive, ensure_naive_utc
-from models import db, ForumPost, ForumComment, ForumLike, ForumFavorite, CommentLike, CommentFavorite,User
+from models import (
+    db, ForumPost, ForumComment, ForumLike, ForumFavorite, CommentLike, CommentFavorite, User,
+    UserShowcaseFruit, UserHarvestedFruit, FruitType
+)
 
 import os
 import uuid
@@ -184,8 +187,14 @@ def post_detail(post_id):
 @forum_bp.route('/new', methods=['GET', 'POST'])
 @login_required
 def new_post():
-    # 接收前端传来的 board 参数，用于告诉发帖页面“默认选中哪个区”
+    # 接收前端传来的 board 参数，用于告诉发帖页面"默认选中哪个区"
     current_board = request.args.get('board', 'discussion')
+    
+    # 接收从listening页面传递的预填充参数
+    title_param = request.args.get('title', '')
+    content_param = request.args.get('content', '')
+    category_param = request.args.get('category', '')
+    source_param = request.args.get('source', '')
     
     if request.method == 'POST':
         title    = request.form.get('title',    '').strip()
@@ -265,7 +274,12 @@ def new_post():
             
         return redirect(url_for('forum.post_detail', post_id=post.id))
 
-    return render_template('forum/new_post.html', current_board=current_board)
+    return render_template('forum/new_post.html', 
+                         current_board=current_board,
+                         title_param=title_param,
+                         content_param=content_param,
+                         category_param=category_param,
+                         source_param=source_param)
 
 
 @forum_bp.route('/post/<int:post_id>/comment', methods=['POST'])
@@ -439,7 +453,31 @@ def public_profile(user_id):
                             .join(ForumPost, ForumLike.post_id == ForumPost.id)\
                             .filter(ForumPost.user_id == target_user.id).scalar() or 0
                                   
-    return render_template('forum/public_profile.html', 
+    showcase_fruits = []
+    if target_user.orchard:
+        rarity_sort = case(
+            (FruitType.rarity == 'SSR', 4),
+            (FruitType.rarity == 'SR', 3),
+            (FruitType.rarity == 'R', 2),
+            (FruitType.rarity == 'N', 1),
+            else_=0
+        )
+        showcase_fruits = (
+            UserShowcaseFruit.query
+            .join(UserHarvestedFruit, UserShowcaseFruit.harvested_fruit_id == UserHarvestedFruit.id)
+            .join(FruitType, UserHarvestedFruit.fruit_type_id == FruitType.id)
+            .filter(UserShowcaseFruit.orchard_id == target_user.orchard.id)
+            .order_by(
+                FruitType.seed_type_id.asc(),
+                rarity_sort.desc(),
+                UserHarvestedFruit.harvested_at.desc(),
+                UserShowcaseFruit.position.asc()
+            )
+            .all()
+        )
+
+    return render_template('forum/public_profile.html',
                            target_user=target_user, 
                            recent_posts=recent_posts,
-                           total_likes=total_likes)
+                           total_likes=total_likes,
+                           showcase_fruits=showcase_fruits)

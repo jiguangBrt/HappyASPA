@@ -8,7 +8,7 @@ import pytest
 from werkzeug.serving import make_server
 
 from app import create_app
-from models import db, User
+from models import db, User, ListeningExercise, VocabularyWord
 
 
 def _get_free_port():
@@ -38,6 +38,32 @@ def e2e_server():
         user = User(username="e2euser", email="e2e@example.com")
         user.set_password("password123")
         db.session.add(user)
+        listening = ListeningExercise(
+            title="E2E Listening Exercise",
+            description="Seeded exercise for E2E tests.",
+            audio_url="/static/video/esl_the_structure_of_a_short_story.mp4",
+            subtitle_url="/static/subtitles/esl_the_structure_of_a_short_story.vtt",
+            difficulty=1,
+            category="Education",
+            accent="American",
+            duration_seconds=30,
+            transcript="E2E transcript",
+            questions=[],
+            key_vocab=[{"word": "structure", "definition": "arrangement"}],
+            source_platform="Local",
+            source_author="E2E",
+            license_type="Test",
+            is_modified=True,
+        )
+        db.session.add(listening)
+        vocab_words = [
+            VocabularyWord(word="thesis", definition="main idea", category="academic", difficulty=1),
+            VocabularyWord(word="coherent", definition="logical and consistent", category="academic", difficulty=1),
+            VocabularyWord(word="methodology", definition="system of methods", category="academic", difficulty=2),
+            VocabularyWord(word="hypothesis", definition="proposed explanation", category="academic", difficulty=2),
+            VocabularyWord(word="analysis", definition="detailed examination", category="academic", difficulty=1),
+        ]
+        db.session.add_all(vocab_words)
         db.session.commit()
 
     port = _get_free_port()

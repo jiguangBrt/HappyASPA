@@ -14,13 +14,21 @@
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-danger text-white fw-bold">
         <i class="bi bi-pencil me-2"></i>Create a New Post
+        {% if source_param == 'listening' %}
+          {% if request.args.get('from_history') == 'true' %}
+            <span class="badge bg-warning ms-2">From Listening History</span>
+          {% else %}
+            <span class="badge bg-info ms-2">From Listening Notes</span>
+          {% endif %}
+        {% endif %}
       </div>
       <div class="card-body p-4">
        <form method="POST" enctype="multipart/form-data">
           <div class="mb-3">
             <label class="form-label fw-semibold">Title</label>
-            <input type="text" class="form-control" name="title"
-                   placeholder="A clear, descriptive title" required>
+            <input type="text" class="form-control" name="title" id="postTitle"
+                   placeholder="A clear, descriptive title" required
+                   value="{{ title_param }}">
           </div>
 
           <div class="mb-3">
@@ -43,11 +51,11 @@
           </div>
           <div class="mb-3">
             <label class="form-label fw-semibold">Category <span class="text-muted fw-normal">(optional)</span></label>
-            <select class="form-select" name="category">
+            <select class="form-select" name="category" id="postCategory">
               <option value="" selected>— Select category —</option>
               <option value="Vocabulary">Vocabulary</option>
               <option value="Grammar">Grammar</option>
-              <option value="Listening">Listening</option>
+              <option value="Listening" {% if category_param == 'Listening' %}selected{% endif %}>Listening</option>
               <option value="Speaking">Speaking</option>
               <option value="Writing">Writing</option>
               <option value="Reading">Reading</option>
@@ -57,8 +65,8 @@
           
           <div class="mb-4">
             <label class="form-label fw-semibold">Content</label>
-            <textarea class="form-control" name="content" rows="6"
-                      placeholder="Share your question or thoughts…" required></textarea>
+            <textarea class="form-control" name="content" id="postContent" rows="6"
+                      placeholder="Share your question or thoughts…" required>{{ content_param }}</textarea>
           </div>
           
 <div class="row mb-4">
@@ -88,6 +96,30 @@
 </div>
 
 <script>
+// 页面加载时解码URL参数（处理URL编码的情况）
+window.addEventListener('DOMContentLoaded', function() {
+    // 解码URL参数（如果参数是通过URL传递的编码内容）
+    const titleElem = document.getElementById('postTitle');
+    const contentElem = document.getElementById('postContent');
+    
+    // 如果参数值是URL编码的，需要解码
+    if (titleElem.value && titleElem.value.includes('%')) {
+        try {
+            titleElem.value = decodeURIComponent(titleElem.value);
+        } catch (e) {
+            console.log('Title decoding failed:', e);
+        }
+    }
+    
+    if (contentElem.value && contentElem.value.includes('%')) {
+        try {
+            contentElem.value = decodeURIComponent(contentElem.value);
+        } catch (e) {
+            console.log('Content decoding failed:', e);
+        }
+    }
+});
+
 document.querySelector('form').addEventListener('submit', function(e) {
     const imgInput = document.querySelector('input[name="image"]');
     const audioInput = document.querySelector('input[name="audio"]');

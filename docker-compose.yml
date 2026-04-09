@@ -1,15 +1,17 @@
-# version: '3.8'  <-- 建议删掉这行，Docker Compose V2 已经废弃了 version 字段，留着会报 warning
-
 services:
   web:
     build: .
     container_name: happyaspa_web
     restart: always
     ports:
-      - "8080:5000"
+      # 将标准的 HTTPS 443 端口映射给容器
+      - "443:5000"
+    env_file:             # <--- 就是加这行
+      - .env   
     environment:
-      # 强制指定数据库路径到挂载的 instance 目录中（注意这里是4个斜杠 sqlite://// ）
       - DATABASE_URL=sqlite:////app/instance/happyaspa.db
     volumes:
       - ./uploads:/app/uploads
       - ./instance:/app/instance
+      # 把服务器全局目录下的证书，挂载到容器里的 /app/ssl 文件夹下
+      - /root/ssl/dii:/app/ssl

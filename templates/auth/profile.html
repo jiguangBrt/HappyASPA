@@ -62,11 +62,45 @@
             </div>
           </div>
           
-          {# 👇 只有没队伍的人，才显示建队按钮 👇 #}
-          {% if current_user.orchard and not current_user.orchard.team %}
-            <button class="btn btn-primary w-100 btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#createTeamModal">
-              <i class="bi bi-plus-circle"></i> Create a Team
+{# 👇 自由人：加入队伍 or 创建队伍 👇 #}
+          {% if not current_user.teams %}
+            <div class="input-group mb-2 shadow-sm">
+              <input type="text" id="inviteCodeInput" class="form-control form-control-sm text-center fw-bold" placeholder="Enter Invite Code" style="letter-spacing: 1px;">
+              <button class="btn btn-success btn-sm px-3" onclick="joinWithCode()">
+                <i class="bi bi-box-arrow-in-right"></i> Join
+              </button>
+            </div>
+            
+            <button class="btn btn-outline-primary w-100 btn-sm mb-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#createTeamModal">
+              <i class="bi bi-plus-circle"></i> Or Create a Team
             </button>
+            
+{% else %}
+            {# 👇 有队伍的情况：队长展示邀请码和解散，队员展示退队 👇 #}
+            {% set my_team = current_user.teams[0] %}
+            
+            {% if my_team.leader_id == current_user.id %}
+              <!-- 队长视图：邀请码 + 解散按钮 -->
+              <div class="bg-light border border-primary border-opacity-25 rounded p-2 mb-3 text-center shadow-sm">
+                 <small class="text-muted d-block mb-1" style="font-size: 0.75rem;"><i class="bi bi-key-fill text-warning"></i> Team Invite Code</small>
+                 <div class="d-flex justify-content-center align-items-center mb-2">
+                   <span class="fs-5 fw-bold text-primary" id="myInviteCode" style="letter-spacing: 3px;">{{ my_team.invite_code }}</span>
+                   <button class="btn btn-link btn-sm p-0 ms-2 text-decoration-none" onclick="copyInviteCode()" title="Copy Code">
+                      <i class="bi bi-copy"></i>
+                   </button>
+                 </div>
+                 <!-- 队长专属：解散队伍按钮 -->
+                 <button class="btn btn-outline-danger btn-sm w-100 mt-1" onclick="dismissTeam()">
+                   <i class="bi bi-trash3-fill"></i> Dismiss Team
+                 </button>
+              </div>
+            {% else %}
+              <!-- 队员视图：退队按钮 -->
+              <button class="btn btn-outline-danger btn-sm w-100 mb-3 shadow-sm" onclick="leaveTeam()">
+                <i class="bi bi-box-arrow-right"></i> Leave Team
+              </button>
+            {% endif %}
+
           {% endif %}
 
           <button class="btn btn-outline-primary w-100 btn-sm" disabled>
@@ -317,6 +351,86 @@
       alert('Network error!');
     }
   }
+
+// 凭借邀请码加入团队
+async function joinWithCode() {
+  const code = document.getElementById('inviteCodeInput').value;
+  if (!code) return alert('Please enter an invite code first!');
+
+  const btn = document.querySelector('button[onclick="joinWithCode()"]');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+  try {
+    const res = await fetch('/team/join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ invite_code: code })
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      alert('🎉 ' + data.message);
+      location.reload(); 
+    } else {
+      alert('Error: ' + data.message);
+    }
+  } catch (err) {
+    alert('Network error!');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+}
+
+// 队长一键复制邀请码
+function copyInviteCode() {
+  const codeText = document.getElementById('myInviteCode').innerText;
+  navigator.clipboard.writeText(codeText).then(() => {
+    alert('Invite code copied to clipboard!');
+  }).catch(err => {
+    console.error('Could not copy text: ', err);
+  });
+}
+
+// 队员自愿退队
+async function leaveTeam() {
+  // 原生二次确认弹窗
+  if (!confirm("Are you sure you want to leave this team?")) return;
+  
+  try {
+    const res = await fetch('/team/leave', { method: 'POST' });
+    const data = await res.json();
+    if(data.success) {
+      alert('👋 ' + data.message);
+      location.reload(); // 刷新后，绿色徽章消失，变回自由人
+    } else {
+      alert('Error: ' + data.message);
+    }
+  } catch (err) {
+    alert('Network error!');
+  }
+}
+
+// 队长解散队伍
+async function dismissTeam() {
+  // 高危操作，更严厉的警告
+  if (!confirm("⚠️ Are you sure you want to DISMISS this entire team? This cannot be undone!")) return;
+  
+  try {
+    const res = await fetch('/team/dismiss', { method: 'POST' });
+    const data = await res.json();
+    if(data.success) {
+      alert('💥 ' + data.message);
+      location.reload(); // 刷新后，队伍解散，所有人都变回自由人
+    } else {
+      alert('Error: ' + data.message);
+    }
+  } catch (err) {
+    alert('Network error!');
+  }
+}
 
 </script>
 {% endblock %}

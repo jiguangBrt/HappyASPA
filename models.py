@@ -95,6 +95,7 @@ class Team(db.Model):
     leader_id   = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False) 
     avatar_url  = db.Column(db.String(256), nullable=True)
     created_at  = db.Column(db.DateTime, default=utcnow_naive)
+    invite_code = db.Column(db.String(10), unique=True, index=True)
 
     members = db.relationship('User', secondary=team_members, lazy='subquery',
                               backref=db.backref('teams', lazy=True))

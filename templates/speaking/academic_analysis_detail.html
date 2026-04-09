@@ -50,8 +50,7 @@
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body p-4 text-center">
                     <h6 class="text-muted fw-bold mb-3">Your Recording</h6>
-                    <audio controls class="w-100 shadow-sm rounded-pill" style="height: 40px; max-width: 500px;">
-                        <source src="{{ url_for('speaking.get_audio', filename=submission.audio_filename) }}" type="audio/webm">
+                    <audio controls class="w-100 shadow-sm rounded-pill" style="height: 40px; max-width: 500px;" src="{{ url_for('speaking.get_audio', filename=submission.audio_filename) }}">
                         Your browser does not support the audio element.
                     </audio>
                 </div>
