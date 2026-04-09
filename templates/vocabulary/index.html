@@ -1,118 +1,294 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Vocabulary Practice{% endblock %}
 
 {% block content %}
-<div class="d-flex align-items-center justify-content-between mb-4">
-  <div>
-    <h3 class="fw-bold mb-0"><i class="bi bi-book text-primary me-2"></i>Vocabulary Practice</h3>
-    <p class="text-muted mb-0 mt-1">Choose a word book and start learning.</p>
-  </div>
-  <span class="badge bg-primary fs-6" id="totalWordsBadge">0 words</span>
-</div>
+<style>
+  :root {
+    --diicsu-blue-dark: #1F619F;
+    --diicsu-teal: #63C1B6;
+    --diicsu-blue-light: #E8F0F8;
+  }
 
-<!-- 分类选项卡区域（始终显示） -->
-<div id="categorySection">
-  <h5 class="fw-bold mb-3"><i class="bi bi-grid-3x3-gap-fill me-2"></i>Word Books</h5>
-  <div class="row g-3" id="categoryGrid"></div>
-  <div class="row mt-4">
-    <div class="col-12">
-      <div class="card border-0 shadow-sm bg-gradient-primary text-white p-4 text-center" id="enterPuzzleBtn" style="cursor: pointer; background: linear-gradient(45deg, #0d6efd, #0dcaf0);">
-        <h4 class="mb-0"><i class="bi bi-controller me-2"></i>Word Search Challenge</h4>
-        <p class="mb-0 opacity-75">Find 5 hidden words in the 15x15 grid!</p>
-      </div>
+  .text-diicsu { color: var(--diicsu-blue-dark) !important; }
+  .bg-diicsu-light { background-color: var(--diicsu-blue-light) !important; }
+
+  body::before {
+    content: "";
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100vw;
+    height: 100vh;
+    background-image: url("{{ url_for('static', filename='pictures/diicsu-shield.png') }}");
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 500px auto;
+    opacity: 0.03;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .vocabulary-hero {
+    overflow: hidden;
+    min-height: 190px;
+    border: 1px solid rgba(31, 97, 159, 0.1);
+  }
+
+  .hero-shield {
+    height: 220px;
+    width: auto;
+    max-width: none;
+    object-fit: contain;
+    top: 50%;
+    right: 18%;
+    transform: translateY(-50%);
+    opacity: 0.12;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
+
+  .hero-mascot {
+    height: 176px;
+    position: absolute;
+    right: 18px;
+    bottom: -10px;
+    opacity: 0.95;
+  }
+
+  .module-shell {
+    background: linear-gradient(135deg, rgba(232, 240, 248, 0.88), rgba(255, 255, 255, 0.98));
+    border: 1px solid rgba(31, 97, 159, 0.1);
+    border-radius: 1rem;
+    padding: 1rem 1.1rem;
+  }
+
+  .custom-underline-tabs {
+    gap: 0.65rem;
+    border-bottom: none;
+    flex-wrap: wrap;
+  }
+
+  .custom-underline-tabs .nav-link {
+    color: var(--app-text-secondary);
+    border: 1px solid rgba(31, 97, 159, 0.12);
+    border-radius: 999px;
+    margin-bottom: 0;
+    background: #fff;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 4px 12px rgba(16, 24, 40, 0.05);
+  }
+
+  .custom-underline-tabs .nav-link:hover {
+    color: var(--diicsu-blue-dark);
+    border-color: rgba(31, 97, 159, 0.26);
+    transform: translateY(-1px);
+  }
+
+  .custom-underline-tabs .nav-link.active {
+    color: var(--diicsu-blue-dark) !important;
+    background-color: var(--diicsu-blue-light) !important;
+    border: 1px solid rgba(31, 97, 159, 0.24) !important;
+    box-shadow: 0 8px 18px rgba(31, 97, 159, 0.12);
+  }
+
+  .category-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .category-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
+  }
+
+  .category-tag {
+    display: inline-block;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+
+  #meaningContainer {
+    animation: fadeIn 0.3s;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  #buttonContainer {
+    min-height: 70px;
+  }
+
+  #wordDisplay {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100px;
+  }
+
+  .word-game-entry {
+    cursor: pointer;
+    background: linear-gradient(135deg, #1F619F, #63C1B6);
+    color: #fff;
+    border-radius: 1rem;
+  }
+
+  @media (max-width: 991.98px) {
+    .hero-shield {
+      right: -5%;
+      height: 180px;
+      opacity: 0.08;
+    }
+
+    .hero-mascot {
+      display: none;
+    }
+  }
+</style>
+
+<div class="row mb-4 bg-diicsu-light rounded shadow-sm d-flex align-items-center position-relative vocabulary-hero">
+  <img src="{{ url_for('static', filename='pictures/diicsu-shield.png') }}"
+       alt="DIICSU Shield Watermark"
+       class="position-absolute hero-shield">
+
+  <div class="col-lg-8 px-4 py-4 z-1">
+    <div class="mb-2">
+      <img src="{{ url_for('static', filename='pictures/diicsu-logo-banner.png') }}"
+           alt="DIICSU Logo Banner"
+           style="height: 38px;">
     </div>
+    <h3 class="fw-bold mb-2 text-diicsu"><i class="bi bi-book-fill me-2"></i>Vocabulary Practice</h3>
+    <p class="text-muted mb-0">Build vocabulary through memory practice and game-based challenges.</p>
+  </div>
+
+  <div class="col-lg-4 text-end position-absolute bottom-0 end-0 d-none d-md-block" style="height: 100%;">
+    <img src="{{ url_for('static', filename='pictures/diicsu-mascot.png') }}"
+         alt="DIICSU Mascot"
+         class="hero-mascot">
   </div>
 </div>
 
-<!-- 单词学习区域（初始隐藏） -->
-<div id="learningSection" style="display: none;">
-  <div class="d-flex align-items-center mb-3">
-    <button class="btn btn-outline-secondary btn-sm me-2" id="backToCategoriesBtn">
-      <i class="bi bi-arrow-left"></i> Back
+<ul class="nav custom-underline-tabs mb-4" id="vocabularyTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active fw-bold fs-5 px-4 py-3" id="book-memory-tab" data-bs-toggle="tab"
+      data-bs-target="#book-memory" type="button" role="tab" aria-controls="book-memory" aria-selected="true">
+      <i class="bi bi-journal-bookmark-fill me-2"></i>Word Book Memory
     </button>
-    <h5 class="fw-bold mb-0">
-      <span id="currentCategoryName" class="subject-tag" data-subject-tag></span>
-    </h5>
-  </div>
-
-  <!-- 单词卡片 -->
-  <div class="card border-0 shadow-sm text-center p-4 mb-4">
-    <div class="card-body">
-      <div id="wordDisplay" class="display-1 fw-bold text-primary mb-3">--</div>
-
-      <!-- 释义区域（初始隐藏） -->
-      <div id="meaningContainer" style="display: none;" class="mb-3">
-        <div class="text-muted small">Chinese Meaning</div>
-        <div id="meaningText" class="h3"></div>
-      </div>
-
-      <!-- 进度状态 -->
-      <div id="progressInfo" class="text-muted small mb-3"></div>
-
-      <!-- 按钮容器 -->
-      <div class="d-flex justify-content-center gap-3" id="buttonContainer">
-        <!-- 初始认识/不认识按钮 -->
-        <button class="btn btn-success btn-lg" id="knownBtn">
-          <i class="bi bi-check-circle-fill me-2"></i>Known
-        </button>
-        <button class="btn btn-danger btn-lg" id="unknownBtn">
-          <i class="bi bi-x-circle-fill me-2"></i>Unknown
-        </button>
-
-        <!-- 下一个按钮（初始隐藏） -->
-        <button class="btn btn-primary btn-lg" id="nextBtn" style="display: none;">
-          <i class="bi bi-arrow-right-circle-fill me-2"></i>Next
-        </button>
-
-        <!-- 记错了按钮（初始隐藏） -->
-        <button class="btn btn-warning btn-lg" id="mistakeBtn" style="display: none;">
-          <i class="bi bi-arrow-counterclockwise me-2"></i>Mistake
-        </button>
-      </div>
-
-      <!-- 加载提示 -->
-      <div id="loader" class="spinner-border text-primary mt-3" style="display: none;" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-
-      <!-- 错误信息 -->
-      <div id="errorMsg" class="text-danger mt-3"></div>
-    </div>
-  </div>
-</div>
-
-
-<div id="puzzleSection" style="display: none;">
-  <div class="d-flex align-items-center mb-3">
-    <button class="btn btn-outline-secondary btn-sm me-2" onclick="location.reload()">
-      <i class="bi bi-arrow-left"></i> Back
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link fw-bold fs-5 px-4 py-3" id="word-games-tab" data-bs-toggle="tab"
+      data-bs-target="#word-games" type="button" role="tab" aria-controls="word-games" aria-selected="false">
+      <i class="bi bi-controller me-2"></i>Word Games
     </button>
-    <h5 class="fw-bold mb-0">Word Search Puzzle</h5>
+  </li>
+</ul>
+
+<div class="tab-content" id="vocabularyTabsContent">
+  <div class="tab-pane fade show active" id="book-memory" role="tabpanel" aria-labelledby="book-memory-tab">
+    <div class="module-shell mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h5 class="fw-bold mb-0 text-diicsu"><i class="bi bi-grid-3x3-gap-fill me-2"></i>Word Books</h5>
+        <span class="badge bg-white text-diicsu border border-primary-subtle rounded-pill px-3 py-2" id="totalWordsBadge">0 words</span>
+      </div>
+
+      <div id="categorySection">
+        <div class="row g-3" id="categoryGrid"></div>
+      </div>
+
+      <div id="learningSection" style="display: none;" class="mt-3">
+        <div class="d-flex align-items-center mb-3">
+          <button class="btn btn-outline-secondary btn-sm me-2" id="backToCategoriesBtn">
+            <i class="bi bi-arrow-left"></i> Back
+          </button>
+          <h5 class="fw-bold mb-0">
+            <span id="currentCategoryName" class="subject-tag" data-subject-tag></span>
+          </h5>
+        </div>
+
+        <div class="card border-0 shadow-sm text-center p-4 mb-2">
+          <div class="card-body">
+            <div id="wordDisplay" class="display-1 fw-bold text-primary mb-3">--</div>
+
+            <div id="meaningContainer" style="display: none;" class="mb-3">
+              <div class="text-muted small">Chinese Meaning</div>
+              <div id="meaningText" class="h3"></div>
+            </div>
+
+            <div id="progressInfo" class="text-muted small mb-3"></div>
+
+            <div class="d-flex justify-content-center gap-3" id="buttonContainer">
+              <button class="btn btn-success btn-lg" id="knownBtn">
+                <i class="bi bi-check-circle-fill me-2"></i>Known
+              </button>
+              <button class="btn btn-danger btn-lg" id="unknownBtn">
+                <i class="bi bi-x-circle-fill me-2"></i>Unknown
+              </button>
+
+              <button class="btn btn-primary btn-lg" id="nextBtn" style="display: none;">
+                <i class="bi bi-arrow-right-circle-fill me-2"></i>Next
+              </button>
+
+              <button class="btn btn-warning btn-lg" id="mistakeBtn" style="display: none;">
+                <i class="bi bi-arrow-counterclockwise me-2"></i>Mistake
+              </button>
+            </div>
+
+            <div id="loader" class="spinner-border text-primary mt-3" style="display: none;" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+
+            <div id="errorMsg" class="text-danger mt-3"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="row">
-    <div class="col-lg-8 d-flex justify-content-center align-items-start">
-      <div id="puzzleGrid" class="puzzle-container shadow-sm"></div>
+  <div class="tab-pane fade" id="word-games" role="tabpanel" aria-labelledby="word-games-tab">
+    <div class="module-shell mb-4" id="wordGameEntry">
+      <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-3">
+        <div>
+          <h5 class="fw-bold mb-1 text-diicsu"><i class="bi bi-controller me-2"></i>Word Search Challenge</h5>
+          <p class="text-muted small mb-0">Find 5 hidden words in a 15x15 puzzle grid.</p>
+        </div>
+      </div>
+      <div class="card border-0 shadow-sm p-4 text-center word-game-entry" id="enterPuzzleBtn">
+        <h4 class="mb-1"><i class="bi bi-grid me-2"></i>Start Word Search</h4>
+        <p class="mb-0 opacity-75">Tap to open today's puzzle board.</p>
+      </div>
     </div>
-    <div class="col-lg-4">
-      <div class="card border-0 shadow-sm p-3">
-        <h6 class="fw-bold border-bottom pb-2 mb-3">Words to Find (5)</h6>
-        <ul id="puzzleWordList" class="list-group list-group-flush">
-          </ul>
-        <div class="mt-4 small text-muted">
-          <p class="fw-bold mb-1"><i class="bi bi-info-circle me-1"></i>How to play:</p>
-          <ul class="ps-3 mb-0">
-            <li>Click the <strong>first</strong> letter.</li>
-            <li>Click the <strong>last</strong> letter.</li>
-          </ul>
+
+    <div id="puzzleSection" style="display: none;" class="module-shell">
+      <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+        <h5 class="fw-bold mb-0 text-diicsu">Word Search Puzzle</h5>
+        <button class="btn btn-outline-secondary btn-sm" id="backToGamesBtn">
+          <i class="bi bi-arrow-left"></i> Back to Games
+        </button>
+      </div>
+
+      <div class="row">
+        <div class="col-lg-8 d-flex justify-content-center align-items-start mb-3 mb-lg-0">
+          <div id="puzzleGrid" class="puzzle-container shadow-sm"></div>
+        </div>
+        <div class="col-lg-4">
+          <div class="card border-0 shadow-sm p-3">
+            <h6 class="fw-bold border-bottom pb-2 mb-3">Words to Find (5)</h6>
+            <ul id="puzzleWordList" class="list-group list-group-flush"></ul>
+            <div class="mt-4 small text-muted">
+              <p class="fw-bold mb-1"><i class="bi bi-info-circle me-1"></i>How to play:</p>
+              <ul class="ps-3 mb-0">
+                <li>Click the <strong>first</strong> letter.</li>
+                <li>Click the <strong>last</strong> letter.</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </div>
-
-<!-- 鼓励弹窗（Bootstrap 模态框） -->
 <div class="modal fade" id="encouragementModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -124,13 +300,13 @@
         <h3 class="fw-bold mb-2">Excellent!</h3>
         <p class="text-muted mb-4">You've learned 5 words. Keep up the great work!</p>
         <div class="d-flex justify-content-center gap-3">
-  <!-- 拼写 -->
+  <!-- 鎷煎啓 -->
           <button class="btn btn-primary px-4" id="startSpellingBtn">Start Spelling</button>
 
-  <!-- 跳过继续 -->
+  <!-- 璺宠繃缁х画 -->
           <button class="btn btn-secondary px-4" id="skipContinueBtn">Skip & Continue</button>
 
-  <!-- 跳过休息 -->
+  <!-- 璺宠繃浼戞伅 -->
           <button class="btn btn-outline-secondary px-4" id="takeBreakBtn">Take a break</button>
         </div>
       </div>
@@ -142,7 +318,7 @@
 <div class="modal fade" id="errorModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content text-center p-4">
-      <h4 class="text-danger mb-3">❌ Wrong</h4>
+      <h4 class="text-danger mb-3">鉂?Wrong</h4>
       <p id="errorText"></p>
       <button class="btn btn-danger mt-3" data-bs-dismiss="modal">OK</button>
     </div>
@@ -152,7 +328,7 @@
 <div class="modal fade" id="finishModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content text-center p-4">
-      <h4 class="text-success mb-3">🎉 Completed!</h4>
+      <h4 class="text-success mb-3">馃帀 Completed!</h4>
       <p>You finished this round of spelling!</p>
       <button class="btn btn-success mt-3" id="finishConfirmBtn">Continue</button>
     </div>
@@ -163,7 +339,7 @@
 {% block scripts %}
 {{ super() }}
 <script>
-  // 英文分类名称映射（基于分类ID）
+  // 鑻辨枃鍒嗙被鍚嶇О鏄犲皠锛堝熀浜庡垎绫籌D锛?
   const categoryDisplayNames = {
     'cs': 'Computer Science',
     'civil': 'Civil Engineering',
@@ -173,24 +349,24 @@
     'academic': 'Academic English'
   };
 
-  // 状态变量
+  // 鐘舵€佸彉閲?
   let currentCategory = null;
-  let currentBatch = [];     // ⭐ 当前5个词
-  let spellingMode = false;  // ⭐ 是否拼写模式
-  let spellingIndex = 0;     // ⭐ 拼写进度
+  let currentBatch = [];     // 猸?褰撳墠5涓瘝
+  let spellingMode = false;  // 猸?鏄惁鎷煎啓妯″紡
+  let spellingIndex = 0;     // 猸?鎷煎啓杩涘害
   let currentWordId = null;
   let currentMeaning = '';
-  let tempChoice = null; // true=认识, false=不认识
-  let wordsReviewedCount = 0; // 当前词书学习会话中已背诵的单词数
+  let tempChoice = null; // true=璁よ瘑, false=涓嶈璇?
+  let wordsReviewedCount = 0; // 褰撳墠璇嶄功瀛︿範浼氳瘽涓凡鑳岃鐨勫崟璇嶆暟
   let knownBtn = document.getElementById('knownBtn');
   let unknownBtn = document.getElementById('unknownBtn');
   let nextBtn = document.getElementById('nextBtn');
   let mistakeBtn = document.getElementById('mistakeBtn');
-  let puzzleTargetWords = [];   // 后端传来的 5 个词
-  let puzzleSelectedCells = []; // 存储用户点击的 [起点, 终点]
-  let puzzleFoundCount = 0;    // 已找到的单词数量
+  let puzzleTargetWords = [];   // 鍚庣浼犳潵鐨?5 涓瘝
+  let puzzleSelectedCells = []; // 瀛樺偍鐢ㄦ埛鐐瑰嚮鐨?[璧风偣, 缁堢偣]
+  let puzzleFoundCount = 0;    // 宸叉壘鍒扮殑鍗曡瘝鏁伴噺
 
-  // DOM 元素
+  // DOM 鍏冪礌
   const categoryGrid = document.getElementById('categoryGrid');
   const learningSection = document.getElementById('learningSection');
   const categorySection = document.getElementById('categorySection');
@@ -203,8 +379,11 @@
   const meaningContainer = document.getElementById('meaningContainer');
   const meaningText = document.getElementById('meaningText');
   const totalWordsBadge = document.getElementById('totalWordsBadge');
+  const puzzleSection = document.getElementById('puzzleSection');
+  const wordGameEntry = document.getElementById('wordGameEntry');
+  const backToGamesBtn = document.getElementById('backToGamesBtn');
 
-  // 弹窗元素
+  // 寮圭獥鍏冪礌
   const encouragementModal = new bootstrap.Modal(document.getElementById('encouragementModal'));
   const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
   const finishModal = new bootstrap.Modal(document.getElementById('finishModal'));
@@ -212,37 +391,47 @@
   const skipContinueBtn = document.getElementById('skipContinueBtn');
   const breakBtn = document.getElementById('takeBreakBtn');
 
-  // 初始化：加载分类列表
+  // 鍒濆鍖栵細鍔犺浇鍒嗙被鍒楄〃
   async function loadCategories() {
     showLoader(true);
     clearError();
 
     try {
       const response = await fetch('/vocabulary/api/categories');
-      if (!response.ok) throw new Error('加载分类失败');
+      if (!response.ok) throw new Error('鍔犺浇鍒嗙被澶辫触');
       const categories = await response.json();
       renderCategories(categories);
 
-      // 更新总单词数（所有分类单词数之和）
+      // 鏇存柊鎬诲崟璇嶆暟锛堟墍鏈夊垎绫诲崟璇嶆暟涔嬪拰锛?
       const total = categories.reduce((sum, cat) => sum + cat.count, 0);
       totalWordsBadge.textContent = `${total} words`;
     } catch (error) {
       showError(error.message);
-      categoryGrid.innerHTML = '<div class="col-12 text-center py-4">加载失败，请刷新页面重试</div>';
+      categoryGrid.innerHTML = '<div class="col-12 text-center py-4">鍔犺浇澶辫触锛岃鍒锋柊椤甸潰閲嶈瘯</div>';
     } finally {
       showLoader(false);
     }
   }
 
-// 绑定按钮点击事件
+// 缁戝畾鎸夐挳鐐瑰嚮浜嬩欢
 document.getElementById('enterPuzzleBtn').addEventListener('click', startPuzzleGame);
+if (backToGamesBtn) {
+  backToGamesBtn.addEventListener('click', closePuzzleGame);
+}
 
 async function startPuzzleGame() {
-  // 切换界面显示
-  document.getElementById('categorySection').style.display = 'none';
-  document.getElementById('puzzleSection').style.display = 'block';
+  const wordGamesTabTrigger = document.getElementById('word-games-tab');
+  if (wordGamesTabTrigger) {
+    bootstrap.Tab.getOrCreateInstance(wordGamesTabTrigger).show();
+  }
+  if (wordGameEntry) {
+    wordGameEntry.style.display = 'none';
+  }
+  if (puzzleSection) {
+    puzzleSection.style.display = 'block';
+  }
 
-  showLoader(true); // 显示加载中动画
+  showLoader(true); // 鏄剧ず鍔犺浇涓姩鐢?
 
   try {
     const res = await fetch('/vocabulary/api/puzzle');
@@ -256,6 +445,15 @@ async function startPuzzleGame() {
   }
 }
 
+function closePuzzleGame() {
+  if (puzzleSection) {
+    puzzleSection.style.display = 'none';
+  }
+  if (wordGameEntry) {
+    wordGameEntry.style.display = 'block';
+  }
+}
+
 function renderPuzzleGrid(grid, wordObjects) {
   const container = document.getElementById('puzzleGrid');
   const listContainer = document.getElementById('puzzleWordList');
@@ -263,11 +461,11 @@ function renderPuzzleGrid(grid, wordObjects) {
   container.innerHTML = '';
   listContainer.innerHTML = '';
 
-  // ⭐ 存储完整的单词对象数组
+  // 猸?瀛樺偍瀹屾暣鐨勫崟璇嶅璞℃暟缁?
   puzzleTargetWords = wordObjects;
   puzzleFoundCount = 0;
 
-  // 1. 渲染网格 (保持不变)
+  // 1. 娓叉煋缃戞牸 (淇濇寔涓嶅彉)
   grid.forEach((row, r) => {
     row.forEach((char, c) => {
       const cell = document.createElement('div');
@@ -280,10 +478,10 @@ function renderPuzzleGrid(grid, wordObjects) {
     });
   });
 
-  // 2. ⭐ 修改：渲染带释义的单词清单
+  // 2. 猸?淇敼锛氭覆鏌撳甫閲婁箟鐨勫崟璇嶆竻鍗?
   wordObjects.forEach(item => {
     const li = document.createElement('li');
-    li.className = 'list-group-item py-3'; // 加宽间距
+    li.className = 'list-group-item py-3'; // 鍔犲闂磋窛
     li.id = `puzzle-word-${item.word}`;
     li.innerHTML = `
       <div class="d-flex justify-content-between align-items-center">
@@ -298,18 +496,18 @@ function renderPuzzleGrid(grid, wordObjects) {
 
 function onPuzzleCellClick(r, c, el) {
   if (puzzleSelectedCells.length === 0) {
-    // 第一次点击：设为起点
+    // 绗竴娆＄偣鍑伙細璁句负璧风偣
     puzzleSelectedCells.push({r, c, el});
     el.classList.add('selected');
   } else {
-    // 第二次点击：设为终点
+    // 绗簩娆＄偣鍑伙細璁句负缁堢偣
     const start = puzzleSelectedCells[0];
     const end = {r, c, el};
 
-    // 检查这两点之间是否是一个目标单词
+    // 妫€鏌ヨ繖涓ょ偣涔嬮棿鏄惁鏄竴涓洰鏍囧崟璇?
     checkPuzzleMatch(start, end);
 
-    // 无论是否匹配，都要清除起点的黄色高亮
+    // 鏃犺鏄惁鍖归厤锛岄兘瑕佹竻闄よ捣鐐圭殑榛勮壊楂樹寒
     start.el.classList.remove('selected');
     puzzleSelectedCells = [];
   }
@@ -319,8 +517,8 @@ function checkPuzzleMatch(start, end) {
   let selectedWord = "";
   let cells = [];
 
-  // 逻辑：必须是同行或同列
-  if (start.r === end.r) { // 水平方向
+  // 閫昏緫锛氬繀椤绘槸鍚岃鎴栧悓鍒?
+  if (start.r === end.r) { // 姘村钩鏂瑰悜
     const row = start.r;
     const c1 = Math.min(start.c, end.c);
     const c2 = Math.max(start.c, end.c);
@@ -329,7 +527,7 @@ function checkPuzzleMatch(start, end) {
       selectedWord += target.innerText;
       cells.push(target);
     }
-  } else if (start.c === end.c) { // 垂直方向
+  } else if (start.c === end.c) { // 鍨傜洿鏂瑰悜
     const col = start.c;
     const r1 = Math.min(start.r, end.r);
     const r2 = Math.max(start.r, end.r);
@@ -342,7 +540,7 @@ function checkPuzzleMatch(start, end) {
 
   const reversed = selectedWord.split('').reverse().join('');
 
-  // ⭐ 修改：从对象数组中查找匹配的单词
+  // 猸?淇敼锛氫粠瀵硅薄鏁扮粍涓煡鎵惧尮閰嶇殑鍗曡瘝
   const matchObj = puzzleTargetWords.find(item =>
     item.word === selectedWord || item.word === reversed
   );
@@ -364,30 +562,30 @@ function checkPuzzleMatch(start, end) {
 
       puzzleFoundCount++;
 
-      // ⭐ 修改点：当所有单词找完时
+      // 猸?淇敼鐐癸細褰撴墍鏈夊崟璇嶆壘瀹屾椂
       if (puzzleFoundCount === puzzleTargetWords.length) {
-        // 使用 async/await 必须在包裹函数或这里处理
+        // 浣跨敤 async/await 蹇呴』鍦ㄥ寘瑁瑰嚱鏁版垨杩欓噷澶勭悊
         setTimeout(async () => {
           try {
-            // 1. 发送请求到后端结算
+            // 1. 鍙戦€佽姹傚埌鍚庣缁撶畻
             const response = await fetch('/vocabulary/api/puzzle/complete', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' }
             });
             const data = await response.json();
 
-            // 2. 动态修改弹窗的文字内容
+            // 2. 鍔ㄦ€佷慨鏀瑰脊绐楃殑鏂囧瓧鍐呭
             const modalBody = document.querySelector('#finishModal .modal-content p');
             if (modalBody) {
               if (data.rewarded) {
-                // 成功获得金币
+                // 鎴愬姛鑾峰緱閲戝竵
                 modalBody.innerHTML = `
                   <div class="text-success mb-2"><strong>+2 Coins Received!</strong></div>
                   ${data.message}<br>
                   <span class="badge bg-warning text-dark mt-2">Total Coins: ${data.coins}</span>
                 `;
               } else {
-                // 已达上限
+                // 宸茶揪涓婇檺
                 modalBody.innerHTML = `
                   <div class="text-muted mb-2">Completed!</div>
                   ${data.message}
@@ -395,14 +593,14 @@ function checkPuzzleMatch(start, end) {
               }
             }
 
-            // 3. 如果页面上有全局金币显示位置，顺便更新它
+            // 3. 濡傛灉椤甸潰涓婃湁鍏ㄥ眬閲戝竵鏄剧ず浣嶇疆锛岄『渚挎洿鏂板畠
             const globalCoinSpan = document.getElementById('user-coins');
             if (globalCoinSpan) globalCoinSpan.innerText = data.coins;
 
           } catch (error) {
             console.error("Reward claim failed:", error);
           } finally {
-            // 4. 最后显示弹窗
+            // 4. 鏈€鍚庢樉绀哄脊绐?
             finishModal.show();
           }
         }, 500);
@@ -411,10 +609,10 @@ function checkPuzzleMatch(start, end) {
   }
 }
 
-  // 渲染分类卡片
+  // 娓叉煋鍒嗙被鍗＄墖
   function renderCategories(categories) {
     if (!categories || categories.length === 0) {
-      categoryGrid.innerHTML = '<div class="col-12 text-center py-4">暂无词书</div>';
+      categoryGrid.innerHTML = '<div class="col-12 text-center py-4">鏆傛棤璇嶄功</div>';
       return;
     }
 
@@ -422,7 +620,7 @@ function checkPuzzleMatch(start, end) {
     categories.forEach(cat => {
       const col = document.createElement('div');
       col.className = 'col-md-4 col-lg-3';
-      // 使用英文名称，若映射中不存在则回退到原 cat.name
+      // 浣跨敤鑻辨枃鍚嶇О锛岃嫢鏄犲皠涓笉瀛樺湪鍒欏洖閫€鍒板師 cat.name
       const displayName = categoryDisplayNames[cat.id] || cat.name;
       col.innerHTML = `
         <div class="card h-100 border-0 shadow-sm category-card" data-cat-id="${cat.id}" data-cat-name="${displayName}" style="cursor: pointer;">
@@ -442,7 +640,7 @@ function checkPuzzleMatch(start, end) {
     });
   }
 
-  // 选择分类，进入学习模式
+  // 閫夋嫨鍒嗙被锛岃繘鍏ュ涔犳ā寮?
   function selectCategory(catId, catDisplayName) {
     currentCategory = catId;
     currentCategoryName.innerText = catDisplayName;
@@ -450,12 +648,12 @@ function checkPuzzleMatch(start, end) {
     if (window.applySubjectTag) window.applySubjectTag(currentCategoryName);
     categorySection.style.display = 'none';
     learningSection.style.display = 'block';
-    // 重置计数器
+    // 閲嶇疆璁℃暟鍣?
     wordsReviewedCount = 0;
     loadNextWord();
   }
 
-  // 返回分类选择
+  // 杩斿洖鍒嗙被閫夋嫨
   function backToCategories() {
   categorySection.style.display = 'block';
   learningSection.style.display = 'none';
@@ -465,7 +663,7 @@ function checkPuzzleMatch(start, end) {
   tempChoice = null;
   wordsReviewedCount = 0;
 
-  // ⭐⭐⭐ 关键新增
+  // 猸愨瓙猸?鍏抽敭鏂板
   spellingMode = false;
   currentBatch = [];
   spellingIndex = 0;
@@ -473,7 +671,7 @@ function checkPuzzleMatch(start, end) {
   clearError();
 }
 
-  // 重置所有按钮显示状态
+  // 閲嶇疆鎵€鏈夋寜閽樉绀虹姸鎬?
   function resetButtons() {
     knownBtn.style.display = 'inline-block';
     unknownBtn.style.display = 'inline-block';
@@ -482,7 +680,7 @@ function checkPuzzleMatch(start, end) {
     meaningContainer.style.display = 'none';
   }
 
-  // 加载下一个单词
+  // 鍔犺浇涓嬩竴涓崟璇?
   async function loadNextWord() {
     if (spellingMode) return;
     if (!currentCategory) return;
@@ -493,7 +691,7 @@ function checkPuzzleMatch(start, end) {
 
     try {
       const response = await fetch(`/vocabulary/api/next?category=${currentCategory}`);
-      if (!response.ok) throw new Error('加载单词失败');
+      if (!response.ok) throw new Error('鍔犺浇鍗曡瘝澶辫触');
       const word = await response.json();
       displayWord(word);
       currentWordId = word.id;
@@ -502,21 +700,21 @@ function checkPuzzleMatch(start, end) {
       setAllButtonsDisabled(false);
     } catch (error) {
       showError(error.message);
-      wordDisplay.innerText = '😢';
-      progressInfo.innerText = '错误';
+      wordDisplay.innerText = '馃槩';
+      progressInfo.innerText = '閿欒';
     } finally {
       showLoader(false);
     }
   }
 
-  // 显示单词
+  // 鏄剧ず鍗曡瘝
   function displayWord(word) {
     wordDisplay.innerText = word.word;
-    progressInfo.innerText = `current status：${word.status}`;
-    currentMeaning = word.meaning || '暂无释义';
+    progressInfo.innerText = `current status锛?{word.status}`;
+    currentMeaning = word.meaning || '鏆傛棤閲婁箟';
   }
 
-  // 处理用户初步选择
+  // 澶勭悊鐢ㄦ埛鍒濇閫夋嫨
   function handleChoice(known) {
     tempChoice = known;
     meaningText.innerText = currentMeaning;
@@ -535,36 +733,36 @@ function checkPuzzleMatch(start, end) {
     setAllButtonsDisabled(false);
   }
 
-  // 最终提交记录
-  // 最终提交记录
+  // 鏈€缁堟彁浜よ褰?
+  // 鏈€缁堟彁浜よ褰?
 async function submitFinal(known) {
   setAllButtonsDisabled(true);
   showLoader(true);
   clearError();
 
   try {
-    // ⭐ 1️⃣ 先更新已背诵计数（必须在前）
+    // 猸?1锔忊儯 鍏堟洿鏂板凡鑳岃璁℃暟锛堝繀椤诲湪鍓嶏級
     if (known) {
       wordsReviewedCount++;
     }
 
-    // ⭐ 2️⃣ 判断是否完成一组（5个词）
+    // 猸?2锔忊儯 鍒ゆ柇鏄惁瀹屾垚涓€缁勶紙5涓瘝锛?
     const isCompletedSet = known && wordsReviewedCount % 5 === 0;
 
-    // ⭐ 3️⃣ 发送给后端（新增 completed_set）
+    // 猸?3锔忊儯 鍙戦€佺粰鍚庣锛堟柊澧?completed_set锛?
     const response = await fetch('/vocabulary/api/record', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         word_id: currentWordId,
         known: known,
-        completed_set: isCompletedSet   // ⭐ 关键新增
+        completed_set: isCompletedSet   // 猸?鍏抽敭鏂板
       })
     });
 
-    if (!response.ok) throw new Error('提交失败');
+    if (!response.ok) throw new Error('鎻愪氦澶辫触');
 
-    // ⭐ 4️⃣ 记录这5个词（用于拼写）
+    // 猸?4锔忊儯 璁板綍杩?涓瘝锛堢敤浜庢嫾鍐欙級
     if (known) {
       currentBatch.push({
         id: currentWordId,
@@ -573,9 +771,9 @@ async function submitFinal(known) {
       });
     }
 
-    // ⭐ 5️⃣ 弹窗（用新变量）
+    // 猸?5锔忊儯 寮圭獥锛堢敤鏂板彉閲忥級
     if (isCompletedSet) {
-      alert("💰 +1 Coin!");
+      alert("馃挵 +1 Coin!");
       encouragementModal.show();
     }
 
@@ -590,7 +788,7 @@ async function submitFinal(known) {
   }
 }
 
-  // 控制所有按钮禁用状态
+  // 鎺у埗鎵€鏈夋寜閽鐢ㄧ姸鎬?
   function setAllButtonsDisabled(disabled) {
     const btns = [knownBtn, unknownBtn, nextBtn, mistakeBtn];
     btns.forEach(btn => {
@@ -598,7 +796,7 @@ async function submitFinal(known) {
     });
   }
 
-  // 工具函数
+  // 宸ュ叿鍑芥暟
   function showLoader(show) {
     loader.style.display = show ? 'inline-block' : 'none';
   }
@@ -611,7 +809,7 @@ async function submitFinal(known) {
     errorMsg.innerText = '';
   }
 
-  // 事件绑定
+  // 浜嬩欢缁戝畾
   knownBtn.addEventListener('click', () => handleChoice(true));
   unknownBtn.addEventListener('click', () => handleChoice(false));
 
@@ -622,28 +820,28 @@ async function submitFinal(known) {
   });
 
   mistakeBtn.addEventListener('click', () => {
-    submitFinal(false); // 记错了，提交不认识
+    submitFinal(false); // 璁伴敊浜嗭紝鎻愪氦涓嶈璇?
   });
 
   backBtn.addEventListener('click', backToCategories);
 
   document.getElementById('finishConfirmBtn').addEventListener('click', () => {
   finishModal.hide();
-  loadNextWord(); // ✅ 在这里继续
+  loadNextWord(); // 鉁?鍦ㄨ繖閲岀户缁?
 });
-  // ⭐ 1️⃣ 拼写
+  // 猸?1锔忊儯 鎷煎啓
 startSpellingBtn.addEventListener('click', () => {
   encouragementModal.hide();
   startSpelling();
 });
 
-// ⭐ 2️⃣ 跳过继续
+// 猸?2锔忊儯 璺宠繃缁х画
 skipContinueBtn.addEventListener('click', () => {
   encouragementModal.hide();
-  currentBatch = []; // 清空这5个词
+  currentBatch = []; // 娓呯┖杩?涓瘝
 });
 
-// ⭐ 3️⃣ 跳过休息（你原来的）
+// 猸?3锔忊儯 璺宠繃浼戞伅锛堜綘鍘熸潵鐨勶級
 breakBtn.addEventListener('click', () => {
   encouragementModal.hide();
   currentBatch = [];
@@ -671,7 +869,7 @@ breakBtn.addEventListener('click', () => {
   const container = document.getElementById('wordDisplay');
   const btnContainer = document.getElementById('buttonContainer');
 
-  // ⭐ 按钮在最下面（你想要的）
+  // 猸?鎸夐挳鍦ㄦ渶涓嬮潰锛堜綘鎯宠鐨勶級
   btnContainer.innerHTML = `
     <div class="d-flex justify-content-center gap-3 mt-4">
       <button class="btn btn-primary px-4" onclick="checkSpelling('${correctWord}')">Submit</button>
@@ -679,7 +877,7 @@ breakBtn.addEventListener('click', () => {
     </div>
   `;
 
-  // ⭐ 上面：输入格子
+  // 猸?涓婇潰锛氳緭鍏ユ牸瀛?
   let boxes = '';
   for (let i = 0; i < correctWord.length; i++) {
     boxes += `<span class="letter-box" id="letter-${i}">_</span>`;
@@ -711,10 +909,10 @@ function initTyping(correctWord) {
   updateBoxes(input.value, correctWord);
 });
 
-  // ⭐ 强制聚焦（关键）
+  // 猸?寮哄埗鑱氱劍锛堝叧閿級
   setTimeout(() => input.focus(), 0);
 
-  // ⭐ 点击任意地方都重新聚焦（核心体验）
+  // 猸?鐐瑰嚮浠绘剰鍦版柟閮介噸鏂拌仛鐒︼紙鏍稿績浣撻獙锛?
   document.addEventListener('click', () => {
     input.focus();
   });
@@ -765,12 +963,12 @@ function finishSpelling() {
   spellingMode = false;
   currentBatch = [];
 
-  tempChoice = null;              // ⭐ 重置选择状态
-  meaningContainer.style.display = 'none'; // ⭐ 隐藏释义
+  tempChoice = null;              // 猸?閲嶇疆閫夋嫨鐘舵€?
+  meaningContainer.style.display = 'none'; // 猸?闅愯棌閲婁箟
 
-  restoreButtons();               // ⭐ 恢复按钮
+  restoreButtons();               // 猸?鎭㈠鎸夐挳
   resetButtons();
-  setAllButtonsDisabled(false);   // ⭐ 解锁按钮
+  setAllButtonsDisabled(false);   // 猸?瑙ｉ攣鎸夐挳
 
 }
 function restoreButtons() {
@@ -783,13 +981,13 @@ function restoreButtons() {
     <button class="btn btn-warning btn-lg" id="mistakeBtn" style="display:none;">Mistake</button>
   `;
 
-  // ⭐ 覆盖全局变量（关键！！！）
+  // 猸?瑕嗙洊鍏ㄥ眬鍙橀噺锛堝叧閿紒锛侊紒锛?
   knownBtn = document.getElementById('knownBtn');
   unknownBtn = document.getElementById('unknownBtn');
   nextBtn = document.getElementById('nextBtn');
   mistakeBtn = document.getElementById('mistakeBtn');
 
-  // ⭐ 重新绑定事件
+  // 猸?閲嶆柊缁戝畾浜嬩欢
   knownBtn.addEventListener('click', () => handleChoice(true));
 unknownBtn.addEventListener('click', () => handleChoice(false));
 
@@ -803,16 +1001,16 @@ mistakeBtn.addEventListener('click', () => {
 }
 
 function quitSpelling() {
-  // ⭐ 1. 关闭拼写状态
+  // 猸?1. 鍏抽棴鎷煎啓鐘舵€?
   spellingMode = false;
 
-  // ⭐ 2. 清空批次（防止残留）
+  // 猸?2. 娓呯┖鎵规锛堥槻姝㈡畫鐣欙級
   currentBatch = [];
 
-  // ⭐ 3. 重置索引
+  // 猸?3. 閲嶇疆绱㈠紩
   spellingIndex = 0;
 
-  // ⭐ 4. UI恢复
+  // 猸?4. UI鎭㈠
   meaningContainer.style.display = 'none';
   tempChoice = null;
 
@@ -820,11 +1018,11 @@ function quitSpelling() {
   resetButtons();
   setAllButtonsDisabled(false);
 
-  // ⭐ 5. 继续学习（关键）
+  // 猸?5. 缁х画瀛︿範锛堝叧閿級
   loadNextWord();
 }
 
-  // 页面加载
+  // 椤甸潰鍔犺浇
   loadCategories();
 </script>
 
@@ -885,28 +1083,28 @@ function quitSpelling() {
 .real-input {
   position: absolute;
   opacity: 0;
-  pointer-events: none; /* 防止挡住点击 */
+  pointer-events: none; /* 闃叉鎸′綇鐐瑰嚮 */
 }
 
-  /* 拼图容器：使用 CSS Grid 布局 */
+  /* 鎷煎浘瀹瑰櫒锛氫娇鐢?CSS Grid 甯冨眬 */
 .puzzle-container {
     display: grid !important;
     grid-template-columns: repeat(15, 35px);
-    /* 强制行高也是 35px，确保 15 行正好占满 */
+    /* 寮哄埗琛岄珮涔熸槸 35px锛岀‘淇?15 琛屾濂藉崰婊?*/
     grid-template-rows: repeat(15, 35px);
     gap: 2px;
-    padding: 5px; /* 缩小内边距 */
-    background-color: #dee2e6; /* 这里的灰色是格子的缝隙颜色 */
+    padding: 5px; /* 缂╁皬鍐呰竟璺?*/
+    background-color: #dee2e6; /* 杩欓噷鐨勭伆鑹叉槸鏍煎瓙鐨勭紳闅欓鑹?*/
     border: 3px solid #0d6efd;
     border-radius: 8px;
 
-    /* ⭐ 关键修改：去掉 min-height，改用 height: fit-content */
+    /* 猸?鍏抽敭淇敼锛氬幓鎺?min-height锛屾敼鐢?height: fit-content */
     height: fit-content;
     width: fit-content;
-    margin-bottom: 0; /* 去掉底部外边距 */
+    margin-bottom: 0; /* 鍘绘帀搴曢儴澶栬竟璺?*/
 }
 
-/* 每个小格子样式 */
+/* 姣忎釜灏忔牸瀛愭牱寮?*/
 .puzzle-cell {
   width: 35px;
   height: 35px;
@@ -922,33 +1120,33 @@ function quitSpelling() {
 
 .puzzle-cell:hover { background-color: #e7f1ff; }
 
-/* 选中第一个字母时的黄色状态 */
+/* 閫変腑绗竴涓瓧姣嶆椂鐨勯粍鑹茬姸鎬?*/
 .puzzle-cell.selected {
   background-color: #ffc107 !important;
   color: #000;
 }
 
-/* 成功找到单词后的绿色状态 */
+/* 鎴愬姛鎵惧埌鍗曡瘝鍚庣殑缁胯壊鐘舵€?*/
 .puzzle-cell.found {
   background-color: #198754 !important;
   color: white;
   border-color: #198754;
 }
 
-/* 右侧列表单词被找到后的划掉效果 */
+/* 鍙充晶鍒楄〃鍗曡瘝琚壘鍒板悗鐨勫垝鎺夋晥鏋?*/
 .word-found {
   text-decoration: line-through;
   color: #adb5bd;
   background-color: #f8f9fa;
 }
 
-  /* 单词列表条目微调 */
+  /* 鍗曡瘝鍒楄〃鏉＄洰寰皟 */
 .list-group-item {
   transition: all 0.3s ease;
   border-left: 4px solid transparent;
 }
 
-/* 找到单词后的左侧边框变绿 */
+/* 鎵惧埌鍗曡瘝鍚庣殑宸︿晶杈规鍙樼豢 */
 .word-found {
   border-left-color: #198754 !important;
   background-color: #f8fff9 !important;

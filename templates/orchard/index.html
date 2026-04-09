@@ -10,30 +10,57 @@
     --diicsu-blue-light: #e8f0f8;
   }
 
+  .text-diicsu { color: var(--diicsu-blue-dark) !important; }
+
+  body::before {
+    content: "";
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100vw;
+    height: 100vh;
+    background-image: url("{{ url_for('static', filename='pictures/diicsu-shield.png') }}");
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 500px auto;
+    opacity: 0.03;
+    z-index: -1;
+    pointer-events: none;
+  }
+
   .orchard-header {
     position: relative;
-    background:
-      radial-gradient(120% 120% at 90% 20%, rgba(99, 193, 182, 0.2), rgba(99, 193, 182, 0) 55%),
-      linear-gradient(135deg, #c8def3 0%, #b7d4ef 55%, #a8caea 100%);
+    background: var(--diicsu-blue-light);
     color: #144b7a;
-    border: 1px solid rgba(31, 97, 159, 0.2);
-    border-radius: 16px;
-    padding: 2rem;
+    border: 1px solid rgba(31, 97, 159, 0.1);
+    border-radius: var(--bs-border-radius);
+    padding: 1.6rem;
     margin-bottom: 2rem;
     box-shadow: var(--app-shadow);
     overflow: hidden;
-    animation: orchardHeaderGlow 8s ease-in-out infinite;
   }
 
-  .orchard-header::before {
-    content: "";
-    position: absolute;
-    inset: -30% -10% auto auto;
-    width: 260px;
-    height: 260px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(99, 193, 182, 0.28) 0%, rgba(99, 193, 182, 0) 72%);
+  .orchard-header .hero-shield {
+    height: 220px;
+    width: auto;
+    max-width: none;
+    object-fit: contain;
+    top: 50%;
+    right: 18%;
+    transform: translateY(-50%);
+    opacity: 0.12;
+    mix-blend-mode: multiply;
     pointer-events: none;
+  }
+
+  .orchard-header .hero-mascot {
+    height: 176px;
+    position: absolute;
+    right: 18px;
+    bottom: -10px;
+    opacity: 0.95;
+    z-index: 0;
   }
 
   .orchard-header-content {
@@ -43,17 +70,15 @@
 
   .orchard-header h1 i {
     display: inline-block;
-    animation: orchardIconFloat 2.8s ease-in-out infinite;
     transform-origin: center;
   }
 
   .orchard-brand-banner {
-    height: 34px;
+    height: 38px;
     width: auto;
     margin-bottom: 0.45rem;
     filter: none;
     opacity: 0.98;
-    animation: orchardBannerPulse 4s ease-in-out infinite;
   }
 
   .orchard-header .btn {
@@ -66,6 +91,41 @@
     transform: translateY(-1px);
     box-shadow: 0 10px 20px rgba(20, 75, 122, 0.2);
     filter: brightness(1.03);
+  }
+
+  .coin-pill {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(31, 97, 159, 0.2);
+    border-radius: 999px;
+    padding: 0.3rem 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-size: 1.08rem;
+    color: #154675;
+  }
+
+  .orchard-top-actions {
+    padding-right: 150px;
+  }
+
+  @media (max-width: 991.98px) {
+    .orchard-header .hero-shield {
+      right: -5%;
+      height: 180px;
+      opacity: 0.08;
+    }
+
+    .orchard-top-actions {
+      padding-right: 0;
+      text-align: left !important;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .orchard-header .hero-mascot {
+      display: none;
+    }
   }
   
   .showcase-container {
@@ -915,23 +975,34 @@
 {% endblock %}
 
 {% block content %}
-<div class="orchard-header d-flex justify-content-between align-items-center">
+<div class="orchard-header d-flex justify-content-between align-items-center position-relative">
+  <img src="{{ url_for('static', filename='pictures/diicsu-shield.png') }}"
+       alt="DIICSU Shield Watermark"
+       class="position-absolute hero-shield">
+
   <div class="orchard-header-content">
     <img src="{{ url_for('static', filename='pictures/diicsu-logo-banner.png') }}" alt="DIICSU" class="orchard-brand-banner">
-    <h1 class="mb-1"><i class="bi bi-tree-fill me-2"></i>My Academic Orchard</h1>
+    <h1 class="mb-1 fw-bold text-diicsu"><i class="bi bi-tree-fill me-2"></i>My Academic Orchard</h1>
     <p class="mb-0 opacity-75">Plant seeds of knowledge, harvest fruits of success.</p>
   </div>
-  <div class="text-end orchard-header-content">
-    <div class="fs-4 fw-bold mb-2">
+
+  <div class="text-end orchard-header-content orchard-top-actions">
+    <div class="coin-pill fw-bold mb-2">
       <i class="bi bi-coin text-warning me-1"></i> <span id="coin-balance">{{ current_user.coins | default(0) }}</span> Coins
     </div>
-    <button class="btn btn-light text-primary fw-bold" data-bs-toggle="modal" data-bs-target="#shopModal">
-      <i class="bi bi-shop me-1"></i> Farm Shop
-    </button>
-    <button class="btn btn-outline-light ms-2" data-bs-toggle="modal" data-bs-target="#inventoryModal">
-      <i class="bi bi-box-seam me-1"></i> Inventory
-    </button>
+    <div class="d-flex flex-wrap gap-2 justify-content-lg-end justify-content-start">
+      <button class="btn btn-light text-primary fw-bold" data-bs-toggle="modal" data-bs-target="#shopModal">
+        <i class="bi bi-shop me-1"></i> Farm Shop
+      </button>
+      <button class="btn btn-outline-primary fw-bold" data-bs-toggle="modal" data-bs-target="#inventoryModal">
+        <i class="bi bi-box-seam me-1"></i> Inventory
+      </button>
+    </div>
   </div>
+
+  <img src="{{ url_for('static', filename='pictures/diicsu-mascot.png') }}"
+       alt="DIICSU Mascot"
+       class="hero-mascot d-none d-md-block">
 </div>
 
 <div class="row">
