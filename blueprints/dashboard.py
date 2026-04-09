@@ -95,6 +95,28 @@ def calculate_streak(dates):
     return streak
 
 
+def _to_date(value):
+    """
+    Convert various timestamp formats to a date object.
+    Supports: second/millisecond timestamp, ISO string, datetime object.
+    """
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        if value > 1e12:
+            value = value / 1000.0
+        return datetime.fromtimestamp(value).date()
+    if isinstance(value, str):
+        try:
+            dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
+        except ValueError:
+            dt = datetime.strptime(value, "%Y-%m-%d")
+        return dt.date()
+    if isinstance(value, datetime):
+        return value.date()
+    return None
+
+
 @dashboard_bp.route("/")
 @login_required
 def index():
@@ -102,14 +124,11 @@ def index():
     calendar_start = today - timedelta(days=today.weekday())  # Monday
     calendar_end = calendar_start + timedelta(days=27)
 
-    # 定义一个内部辅助函数，安全地处理日期转换
     def safe_iso(d):
         if d is None:
             return today.isoformat()
-        # 如果 d 已经是字符串（SQLite 常见情况），直接返回
         if isinstance(d, str):
             return d
-        # 如果 d 是日期对象，调用 isoformat()
         if hasattr(d, 'isoformat'):
             return d.isoformat()
         return str(d)
@@ -184,7 +203,7 @@ def index():
         .all()
     )
 
-    # --- 1. 计算总量统计 (用于卡片显示) ---
+    # --- 1. 总量统计 ---
     vocab_mastered = (
         db.session.query(func.count(UserVocabularyProgress.id))
         .filter(UserVocabularyProgress.user_id == current_user.id)
@@ -214,7 +233,7 @@ def index():
         except (UnicodeDecodeError, ValueError, TypeError):
             prog.permanent_correct = []
             db.session.commit()
-        
+
         answers = prog.answers
         if isinstance(answers, list):
             listening_question_count += len(answers)
@@ -226,19 +245,28 @@ def index():
     shadowing_count = db.session.query(func.count(UserShadowingRecord.id)).filter(UserShadowingRecord.user_id == current_user.id).scalar() or 0
     speaking_submissions = english_corner_count + academic_scenario_count + shadowing_count
 
-
-    # --- 2. 每日增量统计 (用于时间轴) ---
+    # --- 2. 每日增量统计 ---
     daily_vocab = db.session.query(
         func.date(UserVocabularyProgress.last_reviewed_at).label('date'),
         func.count(UserVocabularyProgress.id).label('count')
     ).filter(UserVocabularyProgress.user_id == current_user.id, UserVocabularyProgress.status == "mastered") \
      .group_by(func.date(UserVocabularyProgress.last_reviewed_at)).all()
 
-    daily_listening = db.session.query(
-        func.date(UserListeningProgress.last_attempt_at).label('date'),
-        func.count(UserListeningProgress.id).label('count')
-    ).filter(UserListeningProgress.user_id == current_user.id) \
-     .group_by(func.date(UserListeningProgress.last_attempt_at)).all()
+    listening_daily_lectures = {}
+    listening_daily_correct = {}
+
+    for prog in progresses:
+        completion_times = prog.exercise_completion_times or []
+        for ts in completion_times:
+            d = _to_date(ts)
+            if d:
+                day_str = d.isoformat()
+                listening_daily_lectures[day_str] = listening_daily_lectures.get(day_str, 0) + 1
+
+        qct = prog.question_correct_times or {}
+        for question_days in qct.values():
+            for day in question_days.keys():
+                listening_daily_correct[day] = listening_daily_correct.get(day, 0) + 1
 
     daily_speaking = db.session.query(
         func.date(UserSpeakingSubmission.submitted_at).label('date'),
@@ -258,29 +286,33 @@ def index():
     ).filter(UserShadowingRecord.user_id == current_user.id) \
      .group_by(func.date(UserShadowingRecord.created_at)).all()
 
-
-    # --- 3. 构造里程碑 (使用 safe_iso 修复报错) ---
+    # --- 3. 构造里程碑 ---
     growth_milestones = []
-    
+
     for d, c in daily_vocab:
-        if d and c > 0: 
-            growth_milestones.append({"kind": "vocabulary", "title": "Words Mastered", "value": c, "unit": "words", "event_date": safe_iso(d)})
-    
-    for d, c in daily_listening:
-        if d and c > 0: 
-            growth_milestones.append({"kind": "listening", "title": "Listening Practice", "value": c, "unit": "sessions", "event_date": safe_iso(d)})
+        if d and c > 0:
+            growth_milestones.append({"key": "vocab_mastered", "kind": "vocabulary", "title": "Words Mastered", "value": c, "unit": "words", "event_date": safe_iso(d)})
+
+    for d, c in listening_daily_lectures.items():
+        if d and c > 0:
+            # 修改点：标题改为 "Exercise Completed"，单位改为 "exercises"
+            growth_milestones.append({"key": "listening_lecture", "kind": "listening", "title": "Listening Exercise Completed", "value": c, "unit": "exercises", "event_date": d})
+
+    for d, c in listening_daily_correct.items():
+        if d and c > 0:
+            growth_milestones.append({"key": "listening_correct", "kind": "listening", "title": "Listening Correct Answers", "value": c, "unit": "questions", "event_date": safe_iso(d)})
 
     for d, c in daily_speaking:
-        if d and c > 0: 
-            growth_milestones.append({"kind": "speaking", "title": "English Corner", "value": c, "unit": "exercises", "event_date": safe_iso(d)})
+        if d and c > 0:
+            growth_milestones.append({"key": "speaking", "kind": "speaking", "title": "English Corner", "value": c, "unit": "exercises", "event_date": safe_iso(d)})
 
     for d, c in daily_scenarios:
-        if d and c > 0: 
-            growth_milestones.append({"kind": "scenario", "title": "Academic Scenario", "value": c, "unit": "sessions", "event_date": safe_iso(d)})
+        if d and c > 0:
+            growth_milestones.append({"key": "scenario", "kind": "scenario", "title": "Academic Scenario", "value": c, "unit": "sessions", "event_date": safe_iso(d)})
 
     for d, c in daily_shadowing:
-        if d and c > 0: 
-            growth_milestones.append({"kind": "shadowing", "title": "Shadowing Practice", "value": c, "unit": "exercises", "event_date": safe_iso(d)})
+        if d and c > 0:
+            growth_milestones.append({"key": "shadowing", "kind": "shadowing", "title": "Shadowing Practice", "value": c, "unit": "exercises", "event_date": safe_iso(d)})
 
     streak_count = calculate_streak([m.event_date for m in journal_markers])
 
