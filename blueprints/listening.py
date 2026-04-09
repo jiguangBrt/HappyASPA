@@ -1,18 +1,51 @@
 from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
 from models import db, ListeningExercise, UserListeningProgress
-from datetime import datetime, timezone
+from datetime import datetime
 from time_utils import utcnow_naive
-from sqlalchemy.orm.attributes import flag_modified  # 新增导入
+from sqlalchemy.orm.attributes import flag_modified
 
 listening_bp = Blueprint("listening", __name__, url_prefix="/listening")
+
+
+def _migrate_question_correct_times(progress):
+    """
+    数据迁移：确保 question_correct_times 是
+    { 题目序号: { 日期: 时间戳 }, ... }
+    永远保留所有日期，不删除历史！
+    """
+    if not isinstance(progress.question_correct_times, dict):
+        progress.question_correct_times = {}
+        flag_modified(progress, "question_correct_times")
+        return
+
+    new_qct = {}
+    for q_idx, data in progress.question_correct_times.items():
+        # 题目序号转字符串（统一格式）
+        key = str(q_idx)
+        if key not in new_qct:
+            new_qct[key] = {}
+
+        if isinstance(data, dict):
+            # 直接合并，保留所有旧日期
+            for date_str, ts in data.items():
+                new_qct[key][date_str] = ts
+
+        elif isinstance(data, list):
+            # 旧数组格式 → 转字典
+            for ts in data:
+                date_str = ts[:10]
+                new_qct[key][date_str] = ts
+
+    progress.question_correct_times = new_qct
+    flag_modified(progress, "question_correct_times")
 
 
 @listening_bp.route("/")
 @login_required
 def index():
     difficulty = request.args.get("difficulty", type=int)
-    category = request.args.get("category", type=str)  
+    category = request.args.get("category", type=str)
     accent = request.args.get("accent", type=str)
 
     query = ListeningExercise.query
@@ -24,7 +57,6 @@ def index():
         query = query.filter(ListeningExercise.accent == accent)
 
     exercises = query.order_by(ListeningExercise.difficulty).all()
-
     return render_template(
         "listening/index.html",
         exercises=exercises,
@@ -49,6 +81,11 @@ def get_practice_data(exercise_id):
     progress = UserListeningProgress.query.filter_by(
         user_id=current_user.id, exercise_id=exercise_id
     ).first()
+
+    if progress:
+        _migrate_question_correct_times(progress)
+        db.session.commit()
+
     return jsonify({
         "exercise": {
             "id": exercise.id,
@@ -67,6 +104,7 @@ def get_practice_data(exercise_id):
             "completed": progress.completed if progress else False,
             "permanent_answered": progress.permanent_answered or [] if progress else [],
             "permanent_correct": progress.permanent_correct or [] if progress else [],
+            "exercise_completion_times": progress.exercise_completion_times or [] if progress else [],
             "notes": progress.notes if progress else "",
         },
     })
@@ -82,7 +120,7 @@ def save_progress():
     completed = data.get("completed", False)
     reset = data.get("reset", False)
     duration_spent = data.get("duration_spent", 0)
-    reset_mode = data.get("reset_mode", False)   # 重置模式标志
+    reset_mode = data.get("reset_mode", False)
 
     if not exercise_id:
         return jsonify({"error": "exercise_id required"}), 400
@@ -91,15 +129,20 @@ def save_progress():
     if not exercise:
         return jsonify({"error": "Exercise not found"}), 404
 
-    # 重置请求即使没有其他数据也需要处理
-    if (not answers and last_position is None and duration_spent <= 0) and not reset:
-        return jsonify({"success": True})
-
+    # 先查询当前用户 + 当前练习的进度
     progress = UserListeningProgress.query.filter_by(
         user_id=current_user.id, exercise_id=exercise_id
     ).first()
+
+    # 🔥 修复：自动删除重复的空记录（只保留第一条）
+    if progress:
+        duplicates = UserListeningProgress.query.filter_by(
+            user_id=current_user.id, exercise_id=exercise_id
+        ).offset(1).all()
     
-    # 记录首次正确答题的题目索引，用于前端显示奖励提示
+        for dup in duplicates:
+            db.session.delete(dup)
+
     first_correct_questions = []
     if not progress:
         progress = UserListeningProgress(
@@ -109,114 +152,100 @@ def save_progress():
         progress.permanent_correct = []
         progress.answers = {}
         progress.notes_history = []
+        progress.question_correct_times = {}
         db.session.add(progress)
 
+    # 自动迁移旧数据（保证多日期共存）
+    _migrate_question_correct_times(progress)
+
     if reset:
-        # 重置：清空所有临时进度，但保留永久记录
         progress.last_position = 0
         progress.answers = {}
         progress.completed = False
         flag_modified(progress, "answers")
         progress.last_attempt_at = datetime.utcnow()
-        db.session.add(progress)
         db.session.commit()
         return jsonify({"success": True})
-    else:
-        # 正常保存进度
-        if last_position is not None:
-            progress.last_position = last_position
-            db.session.add(progress)
 
-        # 确保永久记录字段是列表
-        if progress.permanent_answered is None:
-            progress.permanent_answered = []
-            flag_modified(progress, "permanent_answered")
-        if progress.permanent_correct is None:
-            progress.permanent_correct = []
-            flag_modified(progress, "permanent_correct")
+    # 正常保存进度
+    if last_position is not None:
+        progress.last_position = last_position
 
-        questions = exercise.questions or []
+    questions = exercise.questions or []
+    current_time = datetime.utcnow().isoformat()
+    current_date = current_time[:10]
 
-        # 处理答案
-        if answers:
-            for q_idx_str, selected_opt in answers.items():
-                q_idx = int(q_idx_str)
-                if q_idx >= len(questions) or q_idx < 0:
-                    continue
+    # ==============================
+    # 🔥 核心修复 1：立即保存时间戳
+    # ==============================
+    if answers:
+        for q_idx_str, selected_opt in answers.items():
+            q_idx = int(q_idx_str)
+            if q_idx >= len(questions) or q_idx < 0:
+                continue
 
-                # 记录到永久已答（第一次答）
-                # 只有正确答题才记录到永久已答，错题下次重新出现
-                if q_idx not in progress.permanent_answered:
-                    progress.permanent_answered.append(q_idx)
-                    flag_modified(progress, "permanent_answered")
+            # 记录已答题
+            if q_idx not in progress.permanent_answered:
+                progress.permanent_answered.append(q_idx)
+                flag_modified(progress, "permanent_answered")
 
-                # 判断正确性
-                correct_answer = questions[q_idx].get("answer")
-                correct_answer_int = None
-                if correct_answer is not None:
-                    try:
-                        correct_answer_int = int(correct_answer)
-                    except (ValueError, TypeError):
-                        pass
+            correct_answer = questions[q_idx].get("answer")
+            try:
+                correct_int = int(correct_answer)
+            except:
+                continue
 
-                if correct_answer_int is not None and selected_opt == correct_answer_int:
-                    # 只有非重置模式且首次正确时，才更新永久正确
-                    if not reset_mode and q_idx not in progress.permanent_correct:
-                        progress.permanent_correct.append(q_idx)
-                        flag_modified(progress, "permanent_correct")
-                        if current_user.total_correct_questions is None:
-                            current_user.total_correct_questions = 0
-                        current_user.total_correct_questions += 1
-                        
-                        # 首次正确答题奖励金币
-                        if current_user.coins is None:
-                            current_user.coins = 0
-                        current_user.coins += 1
-                        
-                        db.session.add(current_user)
-                        
-                        # 记录首次正确答题的题目索引，用于前端显示奖励提示
-                        first_correct_questions.append(q_idx)
+            if selected_opt == correct_int:
+                q_key = str(q_idx)
 
-            # 合并临时答案
-            if progress.answers is None:
-                progress.answers = answers
-            else:
-                merged = {**progress.answers, **answers}
-                progress.answers = merged
-            flag_modified(progress, "answers")
-            db.session.add(progress)
+                # 🔥 关键：保留所有历史日期，只更新当天
+                if q_key not in progress.question_correct_times:
+                    progress.question_correct_times[q_key] = {}
 
-        if completed:
-            progress.completed = True
-            db.session.add(progress)
+                # 覆盖今天，但保留昨天/前天
+                progress.question_correct_times[q_key][current_date] = current_time
+                flag_modified(progress, "question_correct_times")
 
-    # 累计学习时长
+                # 首次正确奖励
+                if not reset_mode and q_idx not in progress.permanent_correct:
+                    progress.permanent_correct.append(q_idx)
+                    flag_modified(progress, "permanent_correct")
+                    current_user.total_correct_questions = (current_user.total_correct_questions or 0) + 1
+                    current_user.coins = (current_user.coins or 0) + 1
+                    db.session.add(current_user)
+                    first_correct_questions.append(q_idx)
+
+        # 保存答案
+        progress.answers = {**(progress.answers or {}), **answers}
+        flag_modified(progress, "answers")
+
+    # 完成练习
+    if completed:
+        progress.completed = True
+        t = datetime.utcnow().isoformat()
+        d = t[:10]
+        progress.exercise_completion_times = [
+            ts for ts in (progress.exercise_completion_times or [])
+            if not ts.startswith(d)
+        ]
+        progress.exercise_completion_times.append(t)
+        flag_modified(progress, "exercise_completion_times")
+
+    # 时长统计
     if duration_spent > 0:
-        if current_user.total_listening_duration is None:
-            current_user.total_listening_duration = 0
-        current_user.total_listening_duration += duration_spent
+        current_user.total_listening_duration = (current_user.total_listening_duration or 0) + duration_spent
         db.session.add(current_user)
 
     progress.last_attempt_at = utcnow_naive()
-    db.session.add(progress)
-
-    # 标记 JSON 字段
     flag_modified(progress, "permanent_answered")
     flag_modified(progress, "permanent_correct")
-    flag_modified(progress, "answers")
 
     db.session.commit()
-    
-    # 返回金币奖励信息
-    response_data = {"success": True}
-    if first_correct_questions:
-        response_data["coin_reward"] = len(first_correct_questions)
-        response_data["first_correct_questions"] = first_correct_questions
-        response_data["coins"] = current_user.coins
-        response_data["message"] = f"🎉 This is your first time getting this question right! You are rewarded with {len(first_correct_questions)} coin！"
-    
-    return jsonify(response_data)
+    return jsonify({
+        "success": True,
+        "coin_reward": len(first_correct_questions),
+        "coins": current_user.coins
+    })
 
 
 @listening_bp.route("/progress/<int:exercise_id>", methods=["GET"])
@@ -225,6 +254,9 @@ def get_progress(exercise_id):
     progress = UserListeningProgress.query.filter_by(
         user_id=current_user.id, exercise_id=exercise_id
     ).first()
+    if progress:
+        _migrate_question_correct_times(progress)
+        db.session.commit()
     if not progress:
         return jsonify({"exists": False})
     return jsonify({
@@ -235,6 +267,7 @@ def get_progress(exercise_id):
         "last_attempt_at": progress.last_attempt_at.isoformat() if progress.last_attempt_at else None,
         "permanent_answered": progress.permanent_answered or [],
         "permanent_correct": progress.permanent_correct or [],
+        "exercise_completion_times": progress.exercise_completion_times or [],
         "notes": progress.notes or "",
     })
 
@@ -260,23 +293,18 @@ def save_notes():
         progress.permanent_correct = []
         progress.answers = {}
         progress.notes_history = []
+        progress.question_correct_times = {}
         db.session.add(progress)
-        db.session.flush()
 
-    # 如果笔记内容变化，追加历史
     if progress.notes != new_notes:
-        history_entry = {
+        progress.notes_history.append({
             "content": new_notes,
             "created_at": datetime.utcnow().isoformat()
-        }
-        if progress.notes_history is None:
-            progress.notes_history = []
-        progress.notes_history.append(history_entry)
+        })
         progress.notes = new_notes
         flag_modified(progress, "notes_history")
-        db.session.add(progress)
+        db.session.commit()
 
-    db.session.commit()
     return jsonify({"success": True})
 
 
@@ -286,6 +314,4 @@ def get_notes_history(exercise_id):
     progress = UserListeningProgress.query.filter_by(
         user_id=current_user.id, exercise_id=exercise_id
     ).first()
-    if not progress or not progress.notes_history:
-        return jsonify({"history": []})
-    return jsonify({"history": progress.notes_history})
+    return jsonify({"history": progress.notes_history or []})

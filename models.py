@@ -350,6 +350,12 @@ class UserListeningProgress(db.Model):
     # 永久记录：已正确答对的题目索引列表（首次正确才记录）
     permanent_correct = db.Column(db.JSON, default=lambda: list())
     
+    # 练习完成记录：记录每次完成整个练习的时间（本练习内所有题目都答对）
+    exercise_completion_times = db.Column(db.JSON, default=lambda: list())
+    
+    # 题目正确记录：记录每道题每次正确的时间（重置后重新做对算新的一次）
+    question_correct_times = db.Column(db.JSON, default=lambda: dict())
+    
 # ─────────────────────────────────────────────
 # Writing
 # ─────────────────────────────────────────────

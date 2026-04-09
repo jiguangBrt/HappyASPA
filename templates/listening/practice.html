@@ -1,4 +1,5 @@
-{% extends 'base.html' %}
+127.0.0.1 - - [08/Apr/2026 17:13:36] "POST /listening/progress HTTP/1.1" 200 -
+practice.html:{% extends 'base.html' %}
 {% block title %}{{ exercise.title }} - Listening Practice{% endblock %}
 
 {% block content %}
@@ -135,6 +136,7 @@
     let isFullscreen = false;
     let remainingSeconds = 30;
     let ignorePermanent = false;
+    let exerciseCompletedFlag = false;   // 防止重复记录完成状态
 
     const videoElem = document.getElementById('mainVideo');
     const videoContainer = document.getElementById('videoContainer');
@@ -210,12 +212,11 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             });
-            
+
             const data = await response.json();
-            
+
             // 处理金币奖励提示
             if (data.coin_reward && data.coin_reward > 0) {
-                // 如果有当前题目，传递题目索引用于显示位置判断
                 const currentQIdx = currentQuestion ? currentQuestion.idx : null;
                 showCoinRewardToast(data.message, data.coins, currentQIdx);
             }
@@ -258,26 +259,19 @@
         const notesContent = notesTextarea.value.trim();
         if (!notesContent) return;
 
-        // 构建预填充参数
         const title = `Listening Notes: ${exerciseTitle}`;
         const content = notesContent;
         const category = 'Listening';
-        
-        // 编码URL参数
+
         const encodedTitle = encodeURIComponent(title);
         const encodedContent = encodeURIComponent(content);
         const encodedCategory = encodeURIComponent(category);
-        
-        // 跳转到论坛新建帖子页面，通过URL参数传递预填充内容
+
         const newPostUrl = `/forum/new?title=${encodedTitle}&content=${encodedContent}&category=${encodedCategory}&source=listening&exercise_id=${exerciseId}`;
-        
-        // 在当前页面跳转
         window.location.href = newPostUrl;
     });
 
-    // 简单的toast通知函数
     function showToast(message, type = 'info') {
-        // 创建toast元素
         const toast = document.createElement('div');
         toast.className = `toast align-items-center text-bg-${type === 'success' ? 'success' : 'danger'} border-0`;
         toast.setAttribute('role', 'alert');
@@ -290,13 +284,9 @@
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
     `;
-
-        // 添加到页面并显示
         document.body.appendChild(toast);
         const bsToast = new bootstrap.Toast(toast);
         bsToast.show();
-
-        // 自动移除
         toast.addEventListener('hidden.bs.toast', () => {
             toast.remove();
         });
@@ -311,13 +301,11 @@
             selectedAnswer = userAnswers.get(String(idx));
             isCorrectAlready = (selectedAnswer === question.answer);
         } else if (!ignorePermanent) {
-            // 只有正确答题才记录为已答，错题下次重新出现
             isCorrectAlready = permanentCorrect.has(idx);
         }
-        
-        // 错题不显示历史提示，像新题一样重新出现
+
         const shouldDisable = isCorrectAlready;
-        
+
         if (currentQuestion) hideQuestion();
 
         currentQuestion = { idx, question };
@@ -333,7 +321,6 @@
                 let extraClass = '';
                 if (shouldDisable && i === question.answer) extraClass = 'correct-selected';
                 if (hasAnswered && !isCorrectAlready && i === selectedAnswer) extraClass = 'wrong-selected';
-                // 错题不显示历史状态，像新题一样
                 const disabled = shouldDisable && isCorrectAlready;
                 return `<div class="option-item ${extraClass}" data-opt-index="${i}" ${disabled ? 'data-disabled="true"' : ''}>${opt}</div>`;
             }).join('');
@@ -344,7 +331,6 @@
             if (isCorrectAlready) {
                 feedbackHtml = '<div class="feedback mt-2" style="color: #28a745;">✅ Correct! (Previous answer)</div>';
             } else {
-                // 错题不显示任何历史提示，下次重新出现
                 feedbackHtml = '';
             }
         } else {
@@ -430,63 +416,62 @@
             : questionArea.querySelector('.feedback');
 
         userAnswers.set(String(qIdx), selectedIdx);
-        saveProgress(video.currentTime, userAnswers, false);
+
+        // 🔥 修改点1：无论是否已经正确，都立即保存当前题的进度（删除原有的alreadyCorrect判断）
+        saveProgress(video.currentTime, new Map([[String(qIdx), selectedIdx]]), false);
 
         if (isCorrect) {
-            // 显示正确答案提示，并检查是否有金币奖励
             feedbackDiv.innerHTML = '✅ Correct!';
             feedbackDiv.style.color = '#28a745';
             const optionsDivs = isFullscreen
                 ? fullscreenPopup.querySelectorAll('.option-item')
                 : questionArea.querySelectorAll('.option-item');
             optionsDivs.forEach(div => { div.style.pointerEvents = 'none'; });
-            
-            // 设置默认隐藏计时器（2秒），如果有金币奖励会在showCoinRewardToast中覆盖
+
+            // 检查是否所有题目都已答对，且尚未标记完成
+            if (!exerciseCompletedFlag && checkAllQuestionsCorrect()) {
+                exerciseCompletedFlag = true;
+                saveProgress(video.currentTime, userAnswers, true);
+            }
+
             currentQuestion.hideTimeout = setTimeout(() => {
                 if (currentQuestion && currentQuestion.idx === qIdx) hideQuestion();
             }, 2000);
-            
+
             if (questionTimeout) clearInterval(questionTimeout);
             questionTimeout = null;
         } else {
             feedbackDiv.innerHTML = '❌ Try again. Click any option to retry.';
             feedbackDiv.style.color = '#dc3545';
-            
-            // 保持选项可点击，让用户可以重新选择
+
             const optionsDivs = isFullscreen
                 ? fullscreenPopup.querySelectorAll('.option-item')
                 : questionArea.querySelectorAll('.option-item');
-            optionsDivs.forEach(div => { 
-                div.style.pointerEvents = 'auto'; 
+            optionsDivs.forEach(div => {
+                div.style.pointerEvents = 'auto';
                 div.style.opacity = '1';
             });
-            
-            // 不清除计时器，让用户有时间重新选择
         }
     }
 
-    // 显示金币奖励提示（在interactive answers区域中）
     function showCoinRewardToast(message, newCoinCount, qIdx) {
         const feedbackDiv = isFullscreen
             ? fullscreenPopup.querySelector('.feedback')
             : questionArea.querySelector('.feedback');
-            
+
         if (feedbackDiv && currentQuestion && currentQuestion.idx === qIdx) {
-            // 清除之前的隐藏计时器
             if (currentQuestion.hideTimeout) {
                 clearTimeout(currentQuestion.hideTimeout);
             }
-            
-            // 在正确答案提示下方添加金币奖励提示
+
             feedbackDiv.innerHTML = `
                 <div class="mb-1">✅ Correct!</div>
                 <div class="text-warning fw-bold">
-                    <i class="bi bi-coin me-1"></i>${message}
+                    <i class="bi bi-coin me-1"></i>${message || '🎉 This is your first time getting this question right! You are rewarded with 1 coin！'}
                 </div>
                 <small class="text-muted">Current Coins: ${newCoinCount}</small>
             `;
-            
-            // 设置新的15秒隐藏计时器
+
             currentQuestion.hideTimeout = setTimeout(() => {
                 if (currentQuestion && currentQuestion.idx === qIdx) hideQuestion();
             }, 6000);
@@ -504,6 +489,23 @@
         } else {
             questionArea.innerHTML = '<div class="text-muted text-center py-3">Questions will appear here as you watch the video.</div>';
         }
+    }
+
+    function checkAllQuestionsCorrect() {
+        if (!questions || questions.length === 0) {
+            console.log('题目列表为空，返回false');
+            return false;
+        }
+
+        for (let i = 0; i < questions.length; i++) {
+            const question = questions[i];
+            const userAnswer = userAnswers.get(String(i));
+
+            if (userAnswer === undefined || userAnswer !== question.answer) {
+                return false;
+            }
+        }
+        return true;
     }
 
     function toggleFullscreen() {
@@ -563,9 +565,8 @@
           </div>
         `).join('');
 
-                // 为历史记录分享按钮添加事件监听器
                 document.querySelectorAll('.share-history-btn').forEach(btn => {
-                    btn.addEventListener('click', function() {
+                    btn.addEventListener('click', function () {
                         const content = this.getAttribute('data-content');
                         const date = this.getAttribute('data-date');
                         shareHistoryToForum(content, date);
@@ -579,23 +580,14 @@
         }
     }
 
-    // 分享历史记录到论坛
     function shareHistoryToForum(content, date) {
         if (!content || content.trim().length === 0) return;
-
-        // 构建预填充参数
         const title = `Listening Notes (${date}): ${exerciseTitle}`;
         const category = 'Listening';
-        
-        // 编码URL参数
         const encodedTitle = encodeURIComponent(title);
         const encodedContent = encodeURIComponent(content);
         const encodedCategory = encodeURIComponent(category);
-        
-        // 跳转到论坛新建帖子页面，通过URL参数传递预填充内容
         const newPostUrl = `/forum/new?title=${encodedTitle}&content=${encodedContent}&category=${encodedCategory}&source=listening&exercise_id=${exerciseId}&from_history=true`;
-        
-        // 在当前页面跳转
         window.location.href = newPostUrl;
     }
 
@@ -636,12 +628,9 @@
             permanentCorrect = new Set(prog.permanent_correct || []);
             notesContent = prog.notes || '';
             notesTextarea.value = notesContent;
-
-            // 根据已有笔记内容设置分享按钮状态
             shareNotesBtn.disabled = notesContent.trim().length === 0;
 
             lastPosition = prog.last_position || 0;
-            // 只加载正确答题到userAnswers，错题可以重新选择
             userAnswers = new Map();
             if (prog.answers) {
                 Object.entries(prog.answers).forEach(([k, v]) => {
@@ -649,7 +638,6 @@
                     const selectedOpt = Number(v);
                     const question = questions[qIdx];
                     if (question && selectedOpt === question.answer) {
-                        // 只记录正确答题
                         userAnswers.set(k, selectedOpt);
                     }
                 });
@@ -663,6 +651,12 @@
 
             if (video && video.currentTime !== lastPosition && mode !== 'resume') {
                 saveProgress(video.currentTime, userAnswers, false);
+            }
+
+            // 加载完成后检查是否已经全部正确（例如从历史状态恢复）
+            if (!exerciseCompletedFlag && questions.length > 0 && checkAllQuestionsCorrect()) {
+                exerciseCompletedFlag = true;
+                saveProgress(video.currentTime, userAnswers, true);
             }
         } catch (err) {
             console.error('Load data error:', err);
@@ -711,27 +705,29 @@
                     fetch('/listening/progress', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ exercise_id: exerciseId, duration_spent: delta, completed: true })
+                        body: JSON.stringify({ exercise_id: exerciseId, duration_spent: delta })
                     });
                 }
                 playStartTime = null;
             }
-            saveProgress(video.currentTime, userAnswers, true);
-        });
-        video.addEventListener('seeked', () => {
-            saveProgress(video.currentTime, userAnswers, false);
+
+            if (!exerciseCompletedFlag && questions && questions.length > 0) {
+                const allCorrect = checkAllQuestionsCorrect();
+                saveProgress(video.currentTime, userAnswers, allCorrect);
+                if (allCorrect) exerciseCompletedFlag = true;
+            } else {
+                saveProgress(video.currentTime, userAnswers, false);
+            }
         });
 
         window.addEventListener('beforeunload', () => {
-        if (video && !video.paused && playStartTime) {
-            const delta = (Date.now() - playStartTime) / 1000;
-            if (delta > 0) {
-                navigator.sendBeacon('/listening/progress', JSON.stringify({ exercise_id: exerciseId, duration_spent: delta }));
+            if (video && !video.paused && playStartTime) {
+                const delta = (Date.now() - playStartTime) / 1000;
+                if (delta > 0) {
+                    navigator.sendBeacon('/listening/progress', JSON.stringify({ exercise_id: exerciseId, duration_spent: delta }));
+                }
             }
-        }
-        // 移除自动保存笔记功能，改为手动保存
-        // saveNotesToServer();
-    });
+        });
     }
 
     const style = document.createElement('style');
@@ -757,9 +753,9 @@
         loadData();
     });
 
-    // ========== 词汇卡片高度与视频区域对齐 ==========
+    // 词汇卡片高度与视频区域对齐
     function syncVocabHeight() {
-        const isLg = window.innerWidth >= 992; // Bootstrap lg 断点
+        const isLg = window.innerWidth >= 992;
         if (!isLg) {
             document.getElementById('vocabArea').style.maxHeight = '';
             return;
@@ -768,14 +764,10 @@
         const vocabArea = document.getElementById('vocabArea');
         if (!videoContainer || !vocabArea) return;
 
-        // 获取视频容器的实际高度（包括视频和可能的边距）
         const videoHeight = videoContainer.clientHeight;
-        // 获取卡片头的高度（固定类 .card-header-soft）
         const cardHeader = document.querySelector('#vocabArea').parentElement.querySelector('.card-header-soft');
         const headerHeight = cardHeader ? cardHeader.clientHeight : 52;
-        // 卡片 body 已有的上下内边距
-        const bodyPadding = 16; // Bootstrap card-body 默认 padding 1rem = 16px
-        // 计算可用高度：视频容器高度 - 卡片头高度 - 卡片body的上下内边距
+        const bodyPadding = 16;
         const targetHeight = videoHeight - headerHeight - bodyPadding * 2;
         if (targetHeight > 0) {
             vocabArea.style.maxHeight = targetHeight + 'px';
@@ -784,18 +776,14 @@
         }
     }
 
-    // 页面加载完成后执行，并监听窗口变化
     document.addEventListener('DOMContentLoaded', function () {
         syncVocabHeight();
-        // 监听窗口大小变化
         window.addEventListener('resize', syncVocabHeight);
-        // 视频加载完成可能改变高度（如海报加载）
         const video = document.getElementById('mainVideo');
         if (video) {
             video.addEventListener('loadedmetadata', syncVocabHeight);
             video.addEventListener('loadeddata', syncVocabHeight);
         }
-        // 确保全屏切换后重新计算
         document.addEventListener('fullscreenchange', syncVocabHeight);
         document.addEventListener('webkitfullscreenchange', syncVocabHeight);
         document.addEventListener('mozfullscreenchange', syncVocabHeight);
@@ -831,20 +819,20 @@
         color: #fff;
     }
 
-    /* 分享按钮淡雅绿色样式 - 模仿speaking模块 */
+    /* 分享按钮淡雅绿色样式 */
     .btn-share-forum {
         border: 1px solid color-mix(in srgb, #198754 40%, #FFFFFF);
         color: #198754;
         background: transparent;
         transition: all 0.2s ease;
     }
-    
+
     .btn-share-forum:hover:not(:disabled) {
         background: color-mix(in srgb, #198754 12%, #FFFFFF);
         color: #198754;
         border-color: color-mix(in srgb, #198754 40%, #FFFFFF);
     }
-    
+
     .btn-share-forum:disabled {
         opacity: 0.6;
         cursor: not-allowed;
@@ -879,7 +867,7 @@
         border-left: 3px solid #dc3545;
     }
 
-    /* Key Vocabulary 半透明背景（保留） */
+    /* Key Vocabulary 半透明背景 */
     #vocabArea {
         background-color: rgba(91, 140, 158, 0.06);
         border-radius: 8px;
