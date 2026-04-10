@@ -300,13 +300,13 @@
         <h3 class="fw-bold mb-2">Excellent!</h3>
         <p class="text-muted mb-4">You've learned 5 words. Keep up the great work!</p>
         <div class="d-flex justify-content-center gap-3">
-  <!-- 鎷煎啓 -->
+          <!-- 拼写 -->
           <button class="btn btn-primary px-4" id="startSpellingBtn">Start Spelling</button>
 
-  <!-- 璺宠繃缁х画 -->
+          <!-- 跳过继续 -->
           <button class="btn btn-secondary px-4" id="skipContinueBtn">Skip & Continue</button>
 
-  <!-- 璺宠繃浼戞伅 -->
+          <!-- 跳过休息 -->
           <button class="btn btn-outline-secondary px-4" id="takeBreakBtn">Take a break</button>
         </div>
       </div>
@@ -318,7 +318,7 @@
 <div class="modal fade" id="errorModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content text-center p-4">
-      <h4 class="text-danger mb-3">鉂?Wrong</h4>
+      <h4 class="text-danger mb-3">❌ Wrong</h4>
       <p id="errorText"></p>
       <button class="btn btn-danger mt-3" data-bs-dismiss="modal">OK</button>
     </div>
@@ -328,7 +328,7 @@
 <div class="modal fade" id="finishModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content text-center p-4">
-      <h4 class="text-success mb-3">馃帀 Completed!</h4>
+      <h4 class="text-success mb-3">🎉 Completed!</h4>
       <p>You finished this round of spelling!</p>
       <button class="btn btn-success mt-3" id="finishConfirmBtn">Continue</button>
     </div>
@@ -339,7 +339,7 @@
 {% block scripts %}
 {{ super() }}
 <script>
-  // 鑻辨枃鍒嗙被鍚嶇О鏄犲皠锛堝熀浜庡垎绫籌D锛?
+  // 英文分类名称映射（基于分类ID）
   const categoryDisplayNames = {
     'cs': 'Computer Science',
     'civil': 'Civil Engineering',
@@ -349,24 +349,24 @@
     'academic': 'Academic English'
   };
 
-  // 鐘舵€佸彉閲?
+  // 状态变量
   let currentCategory = null;
-  let currentBatch = [];     // 猸?褰撳墠5涓瘝
-  let spellingMode = false;  // 猸?鏄惁鎷煎啓妯″紡
-  let spellingIndex = 0;     // 猸?鎷煎啓杩涘害
+  let currentBatch = [];     // 当前5个词
+  let spellingMode = false;  // 是否拼写模式
+  let spellingIndex = 0;     // 拼写进度
   let currentWordId = null;
   let currentMeaning = '';
-  let tempChoice = null; // true=璁よ瘑, false=涓嶈璇?
-  let wordsReviewedCount = 0; // 褰撳墠璇嶄功瀛︿範浼氳瘽涓凡鑳岃鐨勫崟璇嶆暟
+  let tempChoice = null; // true=认识, false=不认识
+  let wordsReviewedCount = 0; // 当前词书学习会话中已背诵的单词数
   let knownBtn = document.getElementById('knownBtn');
   let unknownBtn = document.getElementById('unknownBtn');
   let nextBtn = document.getElementById('nextBtn');
   let mistakeBtn = document.getElementById('mistakeBtn');
-  let puzzleTargetWords = [];   // 鍚庣浼犳潵鐨?5 涓瘝
-  let puzzleSelectedCells = []; // 瀛樺偍鐢ㄦ埛鐐瑰嚮鐨?[璧风偣, 缁堢偣]
-  let puzzleFoundCount = 0;    // 宸叉壘鍒扮殑鍗曡瘝鏁伴噺
+  let puzzleTargetWords = [];   // 后端传来的 5 个词
+  let puzzleSelectedCells = []; // 存储用户点击的 [起点, 终点]
+  let puzzleFoundCount = 0;    // 已找到的单词数量
 
-  // DOM 鍏冪礌
+  // DOM 元素
   const categoryGrid = document.getElementById('categoryGrid');
   const learningSection = document.getElementById('learningSection');
   const categorySection = document.getElementById('categorySection');
@@ -383,7 +383,7 @@
   const wordGameEntry = document.getElementById('wordGameEntry');
   const backToGamesBtn = document.getElementById('backToGamesBtn');
 
-  // 寮圭獥鍏冪礌
+  // 弹窗元素
   const encouragementModal = new bootstrap.Modal(document.getElementById('encouragementModal'));
   const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
   const finishModal = new bootstrap.Modal(document.getElementById('finishModal'));
@@ -391,29 +391,29 @@
   const skipContinueBtn = document.getElementById('skipContinueBtn');
   const breakBtn = document.getElementById('takeBreakBtn');
 
-  // 鍒濆鍖栵細鍔犺浇鍒嗙被鍒楄〃
+  // 初始化：加载分类列表
   async function loadCategories() {
     showLoader(true);
     clearError();
 
     try {
       const response = await fetch('/vocabulary/api/categories');
-      if (!response.ok) throw new Error('鍔犺浇鍒嗙被澶辫触');
+      if (!response.ok) throw new Error('加载分类失败');
       const categories = await response.json();
       renderCategories(categories);
 
-      // 鏇存柊鎬诲崟璇嶆暟锛堟墍鏈夊垎绫诲崟璇嶆暟涔嬪拰锛?
+      // 更新总单词数（所有分类单词数之和）
       const total = categories.reduce((sum, cat) => sum + cat.count, 0);
       totalWordsBadge.textContent = `${total} words`;
     } catch (error) {
       showError(error.message);
-      categoryGrid.innerHTML = '<div class="col-12 text-center py-4">鍔犺浇澶辫触锛岃鍒锋柊椤甸潰閲嶈瘯</div>';
+      categoryGrid.innerHTML = '<div class="col-12 text-center py-4">加载失败，请刷新页面重试</div>';
     } finally {
       showLoader(false);
     }
   }
 
-// 缁戝畾鎸夐挳鐐瑰嚮浜嬩欢
+// 绑定按钮点击事件
 document.getElementById('enterPuzzleBtn').addEventListener('click', startPuzzleGame);
 if (backToGamesBtn) {
   backToGamesBtn.addEventListener('click', closePuzzleGame);
@@ -431,7 +431,7 @@ async function startPuzzleGame() {
     puzzleSection.style.display = 'block';
   }
 
-  showLoader(true); // 鏄剧ず鍔犺浇涓姩鐢?
+  showLoader(true); // 显示加载中动画
 
   try {
     const res = await fetch('/vocabulary/api/puzzle');
@@ -461,11 +461,11 @@ function renderPuzzleGrid(grid, wordObjects) {
   container.innerHTML = '';
   listContainer.innerHTML = '';
 
-  // 猸?瀛樺偍瀹屾暣鐨勫崟璇嶅璞℃暟缁?
+  // 存储完整的单词对象数组
   puzzleTargetWords = wordObjects;
   puzzleFoundCount = 0;
 
-  // 1. 娓叉煋缃戞牸 (淇濇寔涓嶅彉)
+  // 1. 渲染网格 (保持不变)
   grid.forEach((row, r) => {
     row.forEach((char, c) => {
       const cell = document.createElement('div');
@@ -478,10 +478,10 @@ function renderPuzzleGrid(grid, wordObjects) {
     });
   });
 
-  // 2. 猸?淇敼锛氭覆鏌撳甫閲婁箟鐨勫崟璇嶆竻鍗?
+  // 2. 修改：渲染带释义的单词清单
   wordObjects.forEach(item => {
     const li = document.createElement('li');
-    li.className = 'list-group-item py-3'; // 鍔犲闂磋窛
+    li.className = 'list-group-item py-3'; // 加宽间距
     li.id = `puzzle-word-${item.word}`;
     li.innerHTML = `
       <div class="d-flex justify-content-between align-items-center">
@@ -496,18 +496,18 @@ function renderPuzzleGrid(grid, wordObjects) {
 
 function onPuzzleCellClick(r, c, el) {
   if (puzzleSelectedCells.length === 0) {
-    // 绗竴娆＄偣鍑伙細璁句负璧风偣
+    // 第一次点击：设为起点
     puzzleSelectedCells.push({r, c, el});
     el.classList.add('selected');
   } else {
-    // 绗簩娆＄偣鍑伙細璁句负缁堢偣
+    // 第二次点击：设为终点
     const start = puzzleSelectedCells[0];
     const end = {r, c, el};
 
-    // 妫€鏌ヨ繖涓ょ偣涔嬮棿鏄惁鏄竴涓洰鏍囧崟璇?
+    // 检查这两点之间是否是一个目标单词
     checkPuzzleMatch(start, end);
 
-    // 鏃犺鏄惁鍖归厤锛岄兘瑕佹竻闄よ捣鐐圭殑榛勮壊楂樹寒
+    // 无论是否匹配，都要清除起点的黄色高亮
     start.el.classList.remove('selected');
     puzzleSelectedCells = [];
   }
@@ -517,8 +517,8 @@ function checkPuzzleMatch(start, end) {
   let selectedWord = "";
   let cells = [];
 
-  // 閫昏緫锛氬繀椤绘槸鍚岃鎴栧悓鍒?
-  if (start.r === end.r) { // 姘村钩鏂瑰悜
+  // 逻辑：必须是同行或同列
+  if (start.r === end.r) { // 水平方向
     const row = start.r;
     const c1 = Math.min(start.c, end.c);
     const c2 = Math.max(start.c, end.c);
@@ -527,7 +527,7 @@ function checkPuzzleMatch(start, end) {
       selectedWord += target.innerText;
       cells.push(target);
     }
-  } else if (start.c === end.c) { // 鍨傜洿鏂瑰悜
+  } else if (start.c === end.c) { // 垂直方向
     const col = start.c;
     const r1 = Math.min(start.r, end.r);
     const r2 = Math.max(start.r, end.r);
@@ -540,7 +540,7 @@ function checkPuzzleMatch(start, end) {
 
   const reversed = selectedWord.split('').reverse().join('');
 
-  // 猸?淇敼锛氫粠瀵硅薄鏁扮粍涓煡鎵惧尮閰嶇殑鍗曡瘝
+  // 修改：从对象数组中查找匹配的单词
   const matchObj = puzzleTargetWords.find(item =>
     item.word === selectedWord || item.word === reversed
   );
@@ -562,30 +562,30 @@ function checkPuzzleMatch(start, end) {
 
       puzzleFoundCount++;
 
-      // 猸?淇敼鐐癸細褰撴墍鏈夊崟璇嶆壘瀹屾椂
+      // 修改点：当所有单词找完时
       if (puzzleFoundCount === puzzleTargetWords.length) {
-        // 浣跨敤 async/await 蹇呴』鍦ㄥ寘瑁瑰嚱鏁版垨杩欓噷澶勭悊
+        // 使用 async/await 必须在包装函数或这里处理
         setTimeout(async () => {
           try {
-            // 1. 鍙戦€佽姹傚埌鍚庣缁撶畻
+            // 1. 发送请求到后端结算
             const response = await fetch('/vocabulary/api/puzzle/complete', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' }
             });
             const data = await response.json();
 
-            // 2. 鍔ㄦ€佷慨鏀瑰脊绐楃殑鏂囧瓧鍐呭
+            // 2. 动态修改弹窗的文字内容
             const modalBody = document.querySelector('#finishModal .modal-content p');
             if (modalBody) {
               if (data.rewarded) {
-                // 鎴愬姛鑾峰緱閲戝竵
+                // 成功获得金币
                 modalBody.innerHTML = `
                   <div class="text-success mb-2"><strong>+2 Coins Received!</strong></div>
                   ${data.message}<br>
                   <span class="badge bg-warning text-dark mt-2">Total Coins: ${data.coins}</span>
                 `;
               } else {
-                // 宸茶揪涓婇檺
+                // 已达上限
                 modalBody.innerHTML = `
                   <div class="text-muted mb-2">Completed!</div>
                   ${data.message}
@@ -593,14 +593,14 @@ function checkPuzzleMatch(start, end) {
               }
             }
 
-            // 3. 濡傛灉椤甸潰涓婃湁鍏ㄥ眬閲戝竵鏄剧ず浣嶇疆锛岄『渚挎洿鏂板畠
+            // 3. 如果页面上有全局金币显示位，顺便更新它
             const globalCoinSpan = document.getElementById('user-coins');
             if (globalCoinSpan) globalCoinSpan.innerText = data.coins;
 
           } catch (error) {
             console.error("Reward claim failed:", error);
           } finally {
-            // 4. 鏈€鍚庢樉绀哄脊绐?
+            // 4. 最后显示弹窗
             finishModal.show();
           }
         }, 500);
@@ -609,10 +609,10 @@ function checkPuzzleMatch(start, end) {
   }
 }
 
-  // 娓叉煋鍒嗙被鍗＄墖
+  // 渲染分类卡片
   function renderCategories(categories) {
     if (!categories || categories.length === 0) {
-      categoryGrid.innerHTML = '<div class="col-12 text-center py-4">鏆傛棤璇嶄功</div>';
+      categoryGrid.innerHTML = '<div class="col-12 text-center py-4">暂无词书</div>';
       return;
     }
 
@@ -620,7 +620,7 @@ function checkPuzzleMatch(start, end) {
     categories.forEach(cat => {
       const col = document.createElement('div');
       col.className = 'col-md-4 col-lg-3';
-      // 浣跨敤鑻辨枃鍚嶇О锛岃嫢鏄犲皠涓笉瀛樺湪鍒欏洖閫€鍒板師 cat.name
+      // 使用英文名称，若映射中不存在则回退到原 cat.name
       const displayName = categoryDisplayNames[cat.id] || cat.name;
       col.innerHTML = `
         <div class="card h-100 border-0 shadow-sm category-card" data-cat-id="${cat.id}" data-cat-name="${displayName}" style="cursor: pointer;">
@@ -640,7 +640,7 @@ function checkPuzzleMatch(start, end) {
     });
   }
 
-  // 閫夋嫨鍒嗙被锛岃繘鍏ュ涔犳ā寮?
+  // 选择分类，进入学习模式
   function selectCategory(catId, catDisplayName) {
     currentCategory = catId;
     currentCategoryName.innerText = catDisplayName;
@@ -648,12 +648,12 @@ function checkPuzzleMatch(start, end) {
     if (window.applySubjectTag) window.applySubjectTag(currentCategoryName);
     categorySection.style.display = 'none';
     learningSection.style.display = 'block';
-    // 閲嶇疆璁℃暟鍣?
+    // 重置计数器
     wordsReviewedCount = 0;
     loadNextWord();
   }
 
-  // 杩斿洖鍒嗙被閫夋嫨
+  // 返回分类选择
   function backToCategories() {
   categorySection.style.display = 'block';
   learningSection.style.display = 'none';
@@ -663,7 +663,7 @@ function checkPuzzleMatch(start, end) {
   tempChoice = null;
   wordsReviewedCount = 0;
 
-  // 猸愨瓙猸?鍏抽敭鏂板
+  // 重置拼写状态
   spellingMode = false;
   currentBatch = [];
   spellingIndex = 0;
@@ -671,7 +671,7 @@ function checkPuzzleMatch(start, end) {
   clearError();
 }
 
-  // 閲嶇疆鎵€鏈夋寜閽樉绀虹姸鎬?
+  // 重置所有按钮显示状态
   function resetButtons() {
     knownBtn.style.display = 'inline-block';
     unknownBtn.style.display = 'inline-block';
@@ -680,7 +680,7 @@ function checkPuzzleMatch(start, end) {
     meaningContainer.style.display = 'none';
   }
 
-  // 鍔犺浇涓嬩竴涓崟璇?
+  // 加载下一个单词
   async function loadNextWord() {
     if (spellingMode) return;
     if (!currentCategory) return;
@@ -691,7 +691,7 @@ function checkPuzzleMatch(start, end) {
 
     try {
       const response = await fetch(`/vocabulary/api/next?category=${currentCategory}`);
-      if (!response.ok) throw new Error('鍔犺浇鍗曡瘝澶辫触');
+      if (!response.ok) throw new Error('加载单词失败');
       const word = await response.json();
       displayWord(word);
       currentWordId = word.id;
@@ -700,21 +700,21 @@ function checkPuzzleMatch(start, end) {
       setAllButtonsDisabled(false);
     } catch (error) {
       showError(error.message);
-      wordDisplay.innerText = '馃槩';
-      progressInfo.innerText = '閿欒';
+      wordDisplay.innerText = '😩';
+      progressInfo.innerText = '错误';
     } finally {
       showLoader(false);
     }
   }
 
-  // 鏄剧ず鍗曡瘝
+  // 显示单词
   function displayWord(word) {
     wordDisplay.innerText = word.word;
-    progressInfo.innerText = `current status锛?{word.status}`;
-    currentMeaning = word.meaning || '鏆傛棤閲婁箟';
+    progressInfo.innerText = `current status：${word.status}`;
+    currentMeaning = word.meaning || '暂无释义';
   }
 
-  // 澶勭悊鐢ㄦ埛鍒濇閫夋嫨
+  // 处理用户初步选择
   function handleChoice(known) {
     tempChoice = known;
     meaningText.innerText = currentMeaning;
@@ -733,36 +733,35 @@ function checkPuzzleMatch(start, end) {
     setAllButtonsDisabled(false);
   }
 
-  // 鏈€缁堟彁浜よ褰?
-  // 鏈€缁堟彁浜よ褰?
+  // 最终提交记录
 async function submitFinal(known) {
   setAllButtonsDisabled(true);
   showLoader(true);
   clearError();
 
   try {
-    // 猸?1锔忊儯 鍏堟洿鏂板凡鑳岃璁℃暟锛堝繀椤诲湪鍓嶏級
+    // 1. 先更新已背诵计数（必须在前面）
     if (known) {
       wordsReviewedCount++;
     }
 
-    // 猸?2锔忊儯 鍒ゆ柇鏄惁瀹屾垚涓€缁勶紙5涓瘝锛?
+    // 2. 判断是否完成一组（5个词）
     const isCompletedSet = known && wordsReviewedCount % 5 === 0;
 
-    // 猸?3锔忊儯 鍙戦€佺粰鍚庣锛堟柊澧?completed_set锛?
+    // 3. 发送给后端（新增completed_set）
     const response = await fetch('/vocabulary/api/record', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         word_id: currentWordId,
         known: known,
-        completed_set: isCompletedSet   // 猸?鍏抽敭鏂板
+        completed_set: isCompletedSet   // 关键新增
       })
     });
 
-    if (!response.ok) throw new Error('鎻愪氦澶辫触');
+    if (!response.ok) throw new Error('提交失败');
 
-    // 猸?4锔忊儯 璁板綍杩?涓瘝锛堢敤浜庢嫾鍐欙級
+    // 4. 记录这个词（用于拼写）
     if (known) {
       currentBatch.push({
         id: currentWordId,
@@ -771,9 +770,9 @@ async function submitFinal(known) {
       });
     }
 
-    // 猸?5锔忊儯 寮圭獥锛堢敤鏂板彉閲忥級
+    // 5. 弹窗（用新变量）
     if (isCompletedSet) {
-      alert("馃挵 +1 Coin!");
+      alert("+1 Coin!");
       encouragementModal.show();
     }
 
@@ -788,7 +787,7 @@ async function submitFinal(known) {
   }
 }
 
-  // 鎺у埗鎵€鏈夋寜閽鐢ㄧ姸鎬?
+  // 控制所有按钮禁用状态
   function setAllButtonsDisabled(disabled) {
     const btns = [knownBtn, unknownBtn, nextBtn, mistakeBtn];
     btns.forEach(btn => {
@@ -796,7 +795,7 @@ async function submitFinal(known) {
     });
   }
 
-  // 宸ュ叿鍑芥暟
+  // 工具函数
   function showLoader(show) {
     loader.style.display = show ? 'inline-block' : 'none';
   }
@@ -809,7 +808,7 @@ async function submitFinal(known) {
     errorMsg.innerText = '';
   }
 
-  // 浜嬩欢缁戝畾
+  // 事件绑定
   knownBtn.addEventListener('click', () => handleChoice(true));
   unknownBtn.addEventListener('click', () => handleChoice(false));
 
@@ -820,28 +819,28 @@ async function submitFinal(known) {
   });
 
   mistakeBtn.addEventListener('click', () => {
-    submitFinal(false); // 璁伴敊浜嗭紝鎻愪氦涓嶈璇?
+    submitFinal(false); // 记错了，提交不认识
   });
 
   backBtn.addEventListener('click', backToCategories);
 
   document.getElementById('finishConfirmBtn').addEventListener('click', () => {
   finishModal.hide();
-  loadNextWord(); // 鉁?鍦ㄨ繖閲岀户缁?
+  loadNextWord(); // 在这里继续
 });
-  // 猸?1锔忊儯 鎷煎啓
+  // 1. 拼写
 startSpellingBtn.addEventListener('click', () => {
   encouragementModal.hide();
   startSpelling();
 });
 
-// 猸?2锔忊儯 璺宠繃缁х画
+// 2. 跳过继续
 skipContinueBtn.addEventListener('click', () => {
   encouragementModal.hide();
-  currentBatch = []; // 娓呯┖杩?涓瘝
+  currentBatch = []; // 清空这5个词
 });
 
-// 猸?3锔忊儯 璺宠繃浼戞伅锛堜綘鍘熸潵鐨勶級
+// 3. 跳过休息（你原来的）
 breakBtn.addEventListener('click', () => {
   encouragementModal.hide();
   currentBatch = [];
@@ -869,7 +868,7 @@ breakBtn.addEventListener('click', () => {
   const container = document.getElementById('wordDisplay');
   const btnContainer = document.getElementById('buttonContainer');
 
-  // 猸?鎸夐挳鍦ㄦ渶涓嬮潰锛堜綘鎯宠鐨勶級
+  // 按钮在最下面（你想要的）
   btnContainer.innerHTML = `
     <div class="d-flex justify-content-center gap-3 mt-4">
       <button class="btn btn-primary px-4" onclick="checkSpelling('${correctWord}')">Submit</button>
@@ -877,7 +876,7 @@ breakBtn.addEventListener('click', () => {
     </div>
   `;
 
-  // 猸?涓婇潰锛氳緭鍏ユ牸瀛?
+  // 上面：输入格子
   let boxes = '';
   for (let i = 0; i < correctWord.length; i++) {
     boxes += `<span class="letter-box" id="letter-${i}">_</span>`;
@@ -909,10 +908,10 @@ function initTyping(correctWord) {
   updateBoxes(input.value, correctWord);
 });
 
-  // 猸?寮哄埗鑱氱劍锛堝叧閿級
+  // 强制聚焦（关键）
   setTimeout(() => input.focus(), 0);
 
-  // 猸?鐐瑰嚮浠绘剰鍦版柟閮介噸鏂拌仛鐒︼紙鏍稿績浣撻獙锛?
+  // 点击任意地方都重新聚焦（核心体验）
   document.addEventListener('click', () => {
     input.focus();
   });
@@ -963,12 +962,12 @@ function finishSpelling() {
   spellingMode = false;
   currentBatch = [];
 
-  tempChoice = null;              // 猸?閲嶇疆閫夋嫨鐘舵€?
-  meaningContainer.style.display = 'none'; // 猸?闅愯棌閲婁箟
+  tempChoice = null;              // 重置选择状态
+  meaningContainer.style.display = 'none'; // 隐藏释义
 
-  restoreButtons();               // 猸?鎭㈠鎸夐挳
+  restoreButtons();               // 恢复按钮
   resetButtons();
-  setAllButtonsDisabled(false);   // 猸?瑙ｉ攣鎸夐挳
+  setAllButtonsDisabled(false);   // 解锁按钮
 
 }
 function restoreButtons() {
@@ -981,13 +980,13 @@ function restoreButtons() {
     <button class="btn btn-warning btn-lg" id="mistakeBtn" style="display:none;">Mistake</button>
   `;
 
-  // 猸?瑕嗙洊鍏ㄥ眬鍙橀噺锛堝叧閿紒锛侊紒锛?
+  // 覆盖全局变量（关键！！）
   knownBtn = document.getElementById('knownBtn');
   unknownBtn = document.getElementById('unknownBtn');
   nextBtn = document.getElementById('nextBtn');
   mistakeBtn = document.getElementById('mistakeBtn');
 
-  // 猸?閲嶆柊缁戝畾浜嬩欢
+  // 重新绑定事件
   knownBtn.addEventListener('click', () => handleChoice(true));
 unknownBtn.addEventListener('click', () => handleChoice(false));
 
@@ -1001,16 +1000,16 @@ mistakeBtn.addEventListener('click', () => {
 }
 
 function quitSpelling() {
-  // 猸?1. 鍏抽棴鎷煎啓鐘舵€?
+  // 1. 关闭拼写状态
   spellingMode = false;
 
-  // 猸?2. 娓呯┖鎵规锛堥槻姝㈡畫鐣欙級
+  // 2. 清空批次（防止残留）
   currentBatch = [];
 
-  // 猸?3. 閲嶇疆绱㈠紩
+  // 3. 重置索引
   spellingIndex = 0;
 
-  // 猸?4. UI鎭㈠
+  // 4. UI恢复
   meaningContainer.style.display = 'none';
   tempChoice = null;
 
@@ -1018,11 +1017,11 @@ function quitSpelling() {
   resetButtons();
   setAllButtonsDisabled(false);
 
-  // 猸?5. 缁х画瀛︿範锛堝叧閿級
+  // 5. 继续学习（关键）
   loadNextWord();
 }
 
-  // 椤甸潰鍔犺浇
+  // 页面加载
   loadCategories();
 </script>
 
@@ -1083,28 +1082,28 @@ function quitSpelling() {
 .real-input {
   position: absolute;
   opacity: 0;
-  pointer-events: none; /* 闃叉鎸′綇鐐瑰嚮 */
+  pointer-events: none; /* 防止挡住点击 */
 }
 
-  /* 鎷煎浘瀹瑰櫒锛氫娇鐢?CSS Grid 甯冨眬 */
+  /* 拼图容器：使用 CSS Grid 布局 */
 .puzzle-container {
     display: grid !important;
     grid-template-columns: repeat(15, 35px);
-    /* 寮哄埗琛岄珮涔熸槸 35px锛岀‘淇?15 琛屾濂藉崰婊?*/
+    /* 强制行高也是 35px，确保 15 行正好占满 */
     grid-template-rows: repeat(15, 35px);
     gap: 2px;
-    padding: 5px; /* 缂╁皬鍐呰竟璺?*/
-    background-color: #dee2e6; /* 杩欓噷鐨勭伆鑹叉槸鏍煎瓙鐨勭紳闅欓鑹?*/
+    padding: 5px; /* 缩小内边距 */
+    background-color: #dee2e6; /* 这里的灰色是格子的缝隙颜色 */
     border: 3px solid #0d6efd;
     border-radius: 8px;
 
-    /* 猸?鍏抽敭淇敼锛氬幓鎺?min-height锛屾敼鐢?height: fit-content */
+    /* 关键修改：去掉 min-height，改成 height: fit-content */
     height: fit-content;
     width: fit-content;
-    margin-bottom: 0; /* 鍘绘帀搴曢儴澶栬竟璺?*/
+    margin-bottom: 0; /* 去掉底部外边距 */
 }
 
-/* 姣忎釜灏忔牸瀛愭牱寮?*/
+/* 每个小格子样式 */
 .puzzle-cell {
   width: 35px;
   height: 35px;
@@ -1120,33 +1119,33 @@ function quitSpelling() {
 
 .puzzle-cell:hover { background-color: #e7f1ff; }
 
-/* 閫変腑绗竴涓瓧姣嶆椂鐨勯粍鑹茬姸鎬?*/
+/* 选中第一个字母时的黄色状态 */
 .puzzle-cell.selected {
   background-color: #ffc107 !important;
   color: #000;
 }
 
-/* 鎴愬姛鎵惧埌鍗曡瘝鍚庣殑缁胯壊鐘舵€?*/
+/* 成功找到单词后的绿色状态 */
 .puzzle-cell.found {
   background-color: #198754 !important;
   color: white;
   border-color: #198754;
 }
 
-/* 鍙充晶鍒楄〃鍗曡瘝琚壘鍒板悗鐨勫垝鎺夋晥鏋?*/
+/* 右侧列表单词被找到后的划掉效果 */
 .word-found {
   text-decoration: line-through;
   color: #adb5bd;
   background-color: #f8f9fa;
 }
 
-  /* 鍗曡瘝鍒楄〃鏉＄洰寰皟 */
+  /* 单词列表条目微调 */
 .list-group-item {
   transition: all 0.3s ease;
   border-left: 4px solid transparent;
 }
 
-/* 鎵惧埌鍗曡瘝鍚庣殑宸︿晶杈规鍙樼豢 */
+/* 找到单词后的左侧边框变绿 */
 .word-found {
   border-left-color: #198754 !important;
   background-color: #f8fff9 !important;
