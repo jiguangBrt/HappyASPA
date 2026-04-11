@@ -27,9 +27,18 @@ This sprint completed the transition from feature expansion to **stabilization a
 | **No major feature drop in Sprint 4** | Deferred only at polish granularity | Sprint 4 focused on stabilization and UI consistency. Remaining items are mostly copy/content polish and further visual tuning rather than architectural changes. |
 
 ## Feedback Captured
-| Module | Feedback Captured |
+### Client Positive Feedback
+| Area | Positive Feedback |
 | :--- | :--- |
-| **Listening** | Continue proofreading difficult-word content and add richer guided explanations for key vocabulary in context. |
-| **Forum & Community** | Consider adding stronger anti-abuse constraints (e.g., invitation-code usage limits and optional moderation queue) as community traffic grows. |
-| **UI/UX Consistency** | Keep a shared visual checklist for border radius, mascot scale, overlay opacity, and watermark strength across all pages to avoid style drift. |
-| **Data & Reliability** | Extend automated checks for timestamp/coin boundary logic and multi-day progress integrity to reduce regression risk in future sprints. |
+| **Forum Structure** | The client is very satisfied with the clear separation between `Discussion` and `Guide`, and believes this structure improves learning-focused community quality. |
+| **Product Identity** | The client recognizes the site-wide visual consistency and can clearly perceive this as an English-learning platform. |
+| **Mascot Design** | The client especially likes the mascot visuals and finds them memorable and welcoming for users. |
+| **Orchard Experience** | The client finds the Orchard/farming gameplay interesting and engaging, with clear value for learner motivation. |
+
+### Potential Improvement Opportunities
+| Area | Improvement Opportunity |
+| :--- | :--- |
+| **Listening Content Quality** | Continue proofreading difficult-word content and provide richer in-context guidance for key vocabulary. |
+| **Forum & Community Safety** | Consider stronger anti-abuse constraints (e.g., invitation-code usage limits and optional moderation queue) as community traffic grows. |
+| **UI/UX Governance** | Maintain a shared visual checklist for border radius, mascot scale, overlay opacity, and watermark strength to avoid style drift across pages. |
+| **Data & Reliability** | Extend automated checks for timestamp/coin boundary logic and multi-day progress integrity to reduce future regression risk. |
